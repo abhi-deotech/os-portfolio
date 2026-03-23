@@ -96,8 +96,15 @@ function App() {
 
       {/* Context Menus — Desktop */}
       <Menu id={DESKTOP_MENU_ID} animation="fade" theme="dark" className="os-context-menu">
+        <Item onClick={() => openWindow('terminal')}>
+          <div className="font-mono font-bold text-os-onSurfaceVariant text-xs mr-2">{'>_'}</div> Open Terminal
+        </Item>
+        <Item onClick={() => openWindow('about')}>
+          <CustomIcon icon={User} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> About Me
+        </Item>
+        <Separator />
         <Item onClick={() => openWindow('settings')}>
-          <CustomIcon icon={SettingsIcon} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> Change Wallpaper…
+          <CustomIcon icon={Wallpaper} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> Personalize…
         </Item>
         <Item onClick={() => createFolder(`New Folder`)}>
           <CustomIcon icon={FolderPlus} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> New Folder
@@ -186,120 +193,120 @@ function App() {
       {/* Windows Layer */}
       <div className="absolute inset-0 pointer-events-none z-10 p-24 flex items-center justify-center">
         <div className="relative w-full h-full pointer-events-none flex items-center justify-center">
-
-          {openWindows.includes('about') && (
-            <Window id="about" title="About Me" width={950} height={650}>
-              <div className="flex flex-col h-full relative p-8">
-                <h1 className="font-display text-4xl font-extrabold mb-2 bg-gradient-to-r from-os-primary to-os-secondary bg-clip-text text-transparent w-fit">
-                  Abhimanyu Saxena.
-                </h1>
-                <p className="text-os-onSurfaceVariant text-lg max-w-2xl leading-relaxed mb-6 font-light">
-                  Passionate and versatile Software Engineer | Team Lead with nearly 3 years in end-to-end application development.
-                </p>
-                <h3 className="font-display font-bold text-os-onSurface mb-3 text-sm uppercase tracking-widest opacity-50">Core Arsenal</h3>
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {["JavaScript", "React.js", "C++", "Python", "Docker", "Git", "IoT"].map(skill => (
-                    <div key={skill} className="px-3 py-1 rounded-full text-xs font-semibold bg-transparent border border-os-secondary/30 text-os-secondary shadow-[0_0_10px_rgba(0,210,253,0.1)]">
-                      {skill}
-                    </div>
-                  ))}
-                </div>
-                <h3 className="font-display font-bold text-os-onSurface mb-3 text-sm uppercase tracking-widest opacity-50">Experience</h3>
-                <div className="flex flex-col space-y-3 overflow-y-auto pr-2 pb-4">
-                  {[
-                    { company: 'Deotechsolutions', role: 'Software Engineer | Team Lead', period: '2025 - Present' },
-                    { company: 'LendFoundry', role: 'Software Engineer', period: '2021 - 2024' },
-                  ].map((exp) => (
-                    <div key={exp.company} className="bg-os-surfaceContainerLow/30 p-4 rounded-xl border border-os-outline/10">
-                      <div className="flex justify-between items-center mb-1">
-                        <h4 className="font-bold text-os-onSurface">{exp.company}</h4>
-                        <span className="text-xs text-os-primary font-mono bg-os-primary/10 px-2 py-0.5 rounded">{exp.period}</span>
+          <AnimatePresence>
+            {openWindows.includes('about') && (
+              <Window key="about" id="about" title="About Me" width={950} height={650}>
+                <div className="flex flex-col h-full relative p-8">
+                  <h1 className="font-display text-4xl font-extrabold mb-2 bg-gradient-to-r from-os-primary to-os-secondary bg-clip-text text-transparent w-fit">
+                    Abhimanyu Saxena.
+                  </h1>
+                  <p className="text-os-onSurfaceVariant text-lg max-w-2xl leading-relaxed mb-6 font-light">
+                    Passionate and versatile Software Engineer | Team Lead with nearly 3 years in end-to-end application development.
+                  </p>
+                  <h3 className="font-display font-bold text-os-onSurface mb-3 text-sm uppercase tracking-widest opacity-50">Core Arsenal</h3>
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {["JavaScript", "React.js", "C++", "Python", "Docker", "Git", "IoT"].map(skill => (
+                      <div key={skill} className="px-3 py-1 rounded-full text-xs font-semibold bg-transparent border border-os-secondary/30 text-os-secondary shadow-[0_0_10px_rgba(0,210,253,0.1)]">
+                        {skill}
                       </div>
-                      <p className="text-sm text-os-onSurfaceVariant">{exp.role}</p>
-                    </div>
+                    ))}
+                  </div>
+                  <h3 className="font-display font-bold text-os-onSurface mb-3 text-sm uppercase tracking-widest opacity-50">Experience</h3>
+                  <div className="flex flex-col space-y-3 overflow-y-auto pr-2 pb-4">
+                    {[
+                      { company: 'Deotechsolutions', role: 'Software Engineer | Team Lead', period: '2025 - Present' },
+                      { company: 'LendFoundry', role: 'Software Engineer', period: '2021 - 2024' },
+                    ].map((exp) => (
+                      <div key={exp.company} className="bg-os-surfaceContainerLow/30 p-4 rounded-xl border border-os-outline/10">
+                        <div className="flex justify-between items-center mb-1">
+                          <h4 className="font-bold text-os-onSurface">{exp.company}</h4>
+                          <span className="text-xs text-os-primary font-mono bg-os-primary/10 px-2 py-0.5 rounded">{exp.period}</span>
+                        </div>
+                        <p className="text-sm text-os-onSurfaceVariant">{exp.role}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Window>
+            )}
+
+            {openWindows.includes('projects') && (
+              <Window key="projects" id="projects" title="Projects" width={1050} height={700}>
+                <div className="grid grid-cols-2 gap-6 h-full p-8">
+                  {[
+                    { title: "Lumina OS", stack: "React, Tailwind, Framer", color: "os-primary" },
+                    { title: "MERN Dashboard", stack: "MongoDB, Express, React, Node", color: "os-secondary" },
+                    { title: "IoT Controller", stack: "Python, MQTT, C++", color: "os-tertiary" },
+                    { title: "Smart Home UI", stack: "Vite, Next.js, HSL", color: "os-secondary" }
+                  ].map((p, i) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ y: -8 }}
+                      className="os-card-glow bg-os-surfaceContainerLow/50 backdrop-blur-md rounded-2xl border border-os-outline/10 hover:border-os-primary/50 hover:bg-os-surfaceContainerHighest/80 transition-all p-6 flex flex-col justify-end group cursor-pointer shadow-lg aspect-video h-48 relative overflow-hidden"
+                    >
+                      <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent z-0" />
+                      <div className="relative z-10">
+                        <h3 className={`font-display font-extrabold text-xl mb-1 text-os-onSurface group-hover:text-${p.color} transition-colors`}>{p.title}</h3>
+                        <p className="text-xs text-os-onSurfaceVariant font-medium uppercase tracking-wider">{p.stack}</p>
+                      </div>
+                    </motion.div>
                   ))}
                 </div>
-              </div>
-            </Window>
-          )}
+              </Window>
+            )}
 
-          {openWindows.includes('projects') && (
-            <Window id="projects" title="Projects" width={1050} height={700}>
-              <div className="grid grid-cols-2 gap-6 h-full p-8">
-                {[
-                  { title: "Lumina OS", stack: "React, Tailwind, Framer", color: "os-primary" },
-                  { title: "MERN Dashboard", stack: "MongoDB, Express, React, Node", color: "os-secondary" },
-                  { title: "IoT Controller", stack: "Python, MQTT, C++", color: "os-tertiary" },
-                  { title: "Smart Home UI", stack: "Vite, Next.js, HSL", color: "os-secondary" }
-                ].map((p, i) => (
-                  <motion.div
-                    key={i}
-                    whileHover={{ y: -8 }}
-                    className="os-card-glow bg-os-surfaceContainerLow/50 backdrop-blur-md rounded-2xl border border-os-outline/10 hover:border-os-primary/50 hover:bg-os-surfaceContainerHighest/80 transition-all p-6 flex flex-col justify-end group cursor-pointer shadow-lg aspect-video h-48 relative overflow-hidden"
-                  >
-                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent z-0" />
-                    <div className="relative z-10">
-                      <h3 className={`font-display font-extrabold text-xl mb-1 text-os-onSurface group-hover:text-${p.color} transition-colors`}>{p.title}</h3>
-                      <p className="text-xs text-os-onSurfaceVariant font-medium uppercase tracking-wider">{p.stack}</p>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </Window>
-          )}
+            {openWindows.includes('terminal') && (
+              <Window key="terminal" id="terminal" title="Terminal" width={850} height={550}>
+                <div className="p-8 h-full">
+                  <Terminal />
+                </div>
+              </Window>
+            )}
 
-          {openWindows.includes('terminal') && (
-            <Window id="terminal" title="Terminal" width={850} height={550}>
-              <div className="p-8 h-full">
-                <Terminal />
-              </div>
-            </Window>
-          )}
+            {openWindows.includes('games') && (
+              <Window key="games" id="games" title="Game Center" width={1200} height={800}>
+                <div className="h-full w-full"><Games /></div>
+              </Window>
+            )}
 
-          {openWindows.includes('games') && (
-            <Window id="games" title="Game Center" width={1200} height={800}>
-              <div className="h-full w-full"><Games /></div>
-            </Window>
-          )}
+            {openWindows.includes('snake') && (
+              <Window key="snake" id="snake" title="Snake Retro" width={750} height={750}>
+                <div className="h-full w-full">
+                  <Snake onBack={() => useOSStore.getState().closeWindow('snake')} />
+                </div>
+              </Window>
+            )}
 
-          {openWindows.includes('snake') && (
-            <Window id="snake" title="Snake Retro" width={750} height={750}>
-              <div className="h-full w-full">
-                <Snake onBack={() => useOSStore.getState().closeWindow('snake')} />
-              </div>
-            </Window>
-          )}
+            {openWindows.includes('memory') && (
+              <Window key="memory" id="memory" title="Memory Match" width={950} height={700}>
+                <div className="h-full w-full">
+                  <MemoryGame onBack={() => useOSStore.getState().closeWindow('memory')} />
+                </div>
+              </Window>
+            )}
 
-          {openWindows.includes('memory') && (
-            <Window id="memory" title="Memory Match" width={950} height={700}>
-              <div className="h-full w-full">
-                <MemoryGame onBack={() => useOSStore.getState().closeWindow('memory')} />
-              </div>
-            </Window>
-          )}
+            {openWindows.includes('settings') && (
+              <Window key="settings" id="settings" title="System Settings" width={950} height={650}>
+                <div className="h-full w-full"><Settings /></div>
+              </Window>
+            )}
 
-          {openWindows.includes('settings') && (
-            <Window id="settings" title="System Settings" width={950} height={650}>
-              <div className="h-full w-full"><Settings /></div>
-            </Window>
-          )}
+            {openWindows.includes('cv') && (
+              <Window key="cv" id="cv" title="Resume.pdf" width={900} height={800}>
+                <div className="h-full w-full bg-white flex items-center justify-center overflow-hidden">
+                  <iframe src="/Abhimanyu.pdf" title="Abhimanyu Saxena Resume" className="w-full h-full border-0" />
+                </div>
+              </Window>
+            )}
 
-          {openWindows.includes('cv') && (
-            <Window id="cv" title="Resume.pdf" width={900} height={800}>
-              <div className="h-full w-full bg-white flex items-center justify-center overflow-hidden">
-                <iframe src="/Abhimanyu.pdf" title="Abhimanyu Saxena Resume" className="w-full h-full border-0" />
-              </div>
-            </Window>
-          )}
-
-          {openWindows.includes('files') && (
-            <Window id="files" title="File Explorer" width={780} height={560}>
-              <div className="h-full w-full">
-                <FileExplorer />
-              </div>
-            </Window>
-          )}
-
+            {openWindows.includes('files') && (
+              <Window key="files" id="files" title="File Explorer" width={780} height={560}>
+                <div className="h-full w-full">
+                  <FileExplorer />
+                </div>
+              </Window>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

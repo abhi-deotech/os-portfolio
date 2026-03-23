@@ -28,18 +28,20 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
       onDragEnd={() => setIsDragging(false)}
       initial={{ scale: 0.95, opacity: 0, x: -width/2, y: -height/2 }}
       animate={{ 
-        scale: 1, 
+        scale: window.innerWidth < 640 ? 0.7 : 1, 
         opacity: 1, 
         ...(isMaximized ? { top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', borderRadius: 0, x: 0, y: 0 } : {})
       }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       onMouseDown={() => focusWindow(id)}
       style={{
-        ...(!isMaximized ? { width, height, minWidth, minHeight, resize: 'both', overflow: 'hidden', top: '50%', left: '50%' } : { zIndex: isActive ? 60 : 10 }),
+        ...(!isMaximized ? { width, height, minWidth, minHeight, top: '50%', left: '50%' } : { zIndex: isActive ? 60 : 10 }),
         borderColor: isActive && !isMaximized ? accentHex : undefined,
-        boxShadow: isActive && !isMaximized ? `0 32px 64px rgba(0,0,0,0.5), 0 0 20px ${accentHex}33` : undefined
+        boxShadow: isActive && !isMaximized ? `0 32px 64px rgba(0,0,0,0.5), 0 0 20px ${accentHex}33` : undefined,
+        resize: isMaximized ? 'none' : 'both',
+        overflow: 'hidden'
       }}
-      className={`absolute flex flex-col transition-shadow duration-300 pointer-events-auto ${
+      className={`absolute flex flex-col transition-shadow duration-300 pointer-events-auto group/window ${
         isActive 
           ? 'z-50 border' 
           : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgba(0,0,0,0.3)] z-10'
@@ -55,7 +57,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
         style={{ 
           touchAction: "none", 
           cursor: isMaximized ? 'default' : 'grab',
-          backgroundColor: isActive ? `${accentHex}15` : 'rgba(25, 37, 64, 0.4)' // Fallback to surfaceContainerHighest logic or transparent
+          backgroundColor: isActive ? `${accentHex}15` : 'rgba(25, 37, 64, 0.4)'
         }}
       >
         <div className="flex space-x-2.5 z-50 w-24 group/controls" onPointerDown={(e) => e.stopPropagation()}>
@@ -66,6 +68,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
             <CustomIcon icon={X} size={10} strokeWidth={4} color="text-[#4c0000]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
           </button>
           <button 
+            onClick={() => closeWindow(id)}
             className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123]"
           >
             <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
@@ -88,7 +91,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
       </div>
 
       {/* Content Area */}
-      <div className="flex-grow overflow-auto text-os-onSurface relative scrollbar-hide">
+      <div className="flex-grow overflow-auto text-os-onSurface relative scrollbar-os">
         {/* Subtle Ambient Glow behind content */}
         <div className="absolute top-[-50%] left-[-20%] w-[140%] h-[140%] bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-os-primaryDim/5 to-transparent pointer-events-none -z-10 rounded-full blur-3xl opacity-50" />
         
@@ -99,6 +102,13 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
         
         {children}
       </div>
+
+      {/* Resize Handle (Visual Only for now as native resize is enabled) */}
+      {!isMaximized && (
+        <div className="absolute bottom-1 right-1 w-4 h-4 cursor-nwse-resize opacity-0 group-hover/window:opacity-100 transition-opacity z-50 pointer-events-none">
+           <div className="absolute bottom-1 right-1 w-2 h-2 rounded-full bg-os-outline/30 blur-[1px]" />
+        </div>
+      )}
     </motion.div>
   );
 };

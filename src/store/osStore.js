@@ -123,6 +123,8 @@ const useOSStore = create(
           terminalHistory: [...state.terminalHistory, entry],
         })),
 
+      clearTerminalHistory: () => set({ terminalHistory: [] }),
+
       setIsDragging: (isDragging) => set({ isDragging }),
     }),
     {

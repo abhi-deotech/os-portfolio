@@ -23,7 +23,8 @@
   --os-tertiary: rgb(var(--os-tertiary-rgb));
   --os-on-surface: #dee5ff;
   --os-on-surface-variant: #a3aac4;
-  --os-outline: #6d758c;
+  --os-outline-rgb: 109, 117, 140;
+  --os-outline: rgb(var(--os-outline-rgb));
   --desktop-gradient: radial-gradient(circle at 50% -20%, #1a103c 0%, #060e20 60%, #030712 100%);
 }
 
@@ -46,7 +47,8 @@
   --os-tertiary: rgb(var(--os-tertiary-rgb));
   --os-on-surface: #0f172a;
   --os-on-surface-variant: #475569;
-  --os-outline: #94a3b8;
+  --os-outline-rgb: 148, 163, 184;
+  --os-outline: rgb(var(--os-outline-rgb));
   --desktop-gradient: radial-gradient(circle at 50% -20%, #e0e7ff 0%, #f8fafc 60%, #f1f5f9 100%);
 }
 
@@ -62,6 +64,23 @@
   .glass-panel {
     @apply bg-os-surfaceContainerHighest/50 backdrop-blur-2xl border border-os-outline/10 shadow-2xl;
   }
+  
+  /* Custom Scrollbar - Glassmorphic */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-os-outline/20 rounded-full border border-white/5;
+    backdrop-filter: blur(4px);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-os-primary/40;
+  }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }

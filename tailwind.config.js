@@ -24,7 +24,7 @@ export default {
           tertiary: "rgb(var(--os-tertiary-rgb) / <alpha-value>)",
           onSurface: "var(--os-on-surface)",
           onSurfaceVariant: "var(--os-on-surface-variant)",
-          outline: "var(--os-outline)",
+          outline: "rgb(var(--os-outline-rgb) / <alpha-value>)",
         }
       }
     },

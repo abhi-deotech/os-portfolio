@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import useOSStore from '../store/osStore';
 
 const Terminal = () => {
-  const { terminalHistory, addTerminalEntry } = useOSStore();
+  const { terminalHistory, addTerminalEntry, clearTerminalHistory } = useOSStore();
   const [input, setInput] = useState('');
   const terminalRef = useRef(null);
 
@@ -17,12 +17,15 @@ const Terminal = () => {
       const cmd = input.trim().toLowerCase();
       if (!cmd) return;
       
+      const args = cmd.split(' ');
+      const baseCmd = args[0];
+      
       addTerminalEntry({ type: 'input', text: cmd });
 
       let output = '';
-      switch (cmd) {
+      switch (baseCmd) {
         case 'help':
-          output = 'Available commands: help, about, skills, clear, contact, whoami, lumina';
+          output = 'Available commands: help, about, skills, clear, contact, whoami, ls, cat, date, neofetch';
           break;
         case 'about':
           output = 'Abhimanyu Saxena. Software Engineer | Team Lead. Building high-end web experiences.';
@@ -31,18 +34,30 @@ const Terminal = () => {
           output = '> React, Node.js, Python, Docker, WebGL, UI/UX Architecture\n> System Design, Cloud Deployments, Full-Stack Mastery';
           break;
         case 'clear':
-          // The actual clear logic should be in store, but we'll mock output for now
-          // If you want actual clear, you'd need a clearHistory method in osStore.
-          output = '[SYSTEM MESSAGE] Terminal history cleared (simulated for UI context).';
+          clearTerminalHistory();
+          setInput('');
+          return;
+        case 'ls':
+          output = 'Desktop/  Documents/  Projects/  Media/  System.md  Resume.pdf';
+          break;
+        case 'cat':
+          if (args[1] === 'system.md') {
+            output = '# Lumina OS v2.0\nStatus: Online\nKernel: Stable\nUptime: 100%';
+          } else {
+            output = args[1] ? `File not found: ${args[1]}` : 'Usage: cat <filename>';
+          }
+          break;
+        case 'date':
+          output = new Date().toString();
+          break;
+        case 'neofetch':
+          output = 'OS: Lumina Desktop v1.0.0\nKernel: 6.8.0-lumina-os\nUptime: 3 years, 2 months\nPackages: 1337 (npm)\nShell: zsh 5.9\nResolution: 2560x1440\nDE: Lumina\nWM: Framer-Motion\nTerminal: Lumina-Term\nCPU: M3 Max (8) @ 4.06GHz\nMemory: 64GB';
           break;
         case 'contact':
           output = 'Email: saxena.abhimanyu.as@gmail.com\nLocation: Jaipur/Kota, Rajasthan\nGitHub: github.com/abhimanyu';
           break;
         case 'whoami':
           output = 'guest_user@lumina-os-core';
-          break;
-        case 'lumina':
-          output = 'Lumina Engine v2.0 - "The Digital Architect"\nMica Glassmorphism / React / Vite / TailwindCSS';
           break;
         default:
           output = `Command not found: ${cmd}. Type "help" for a list of commands.`;
