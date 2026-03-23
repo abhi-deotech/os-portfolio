@@ -1,6 +1,6 @@
 services:
   - type: static
-    name: vibe-os-portfolio
+    name: os-portfolio
     env: static
     buildCommand: npm run build
     staticPublishDir: dist

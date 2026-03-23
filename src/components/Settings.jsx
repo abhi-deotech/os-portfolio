@@ -28,7 +28,7 @@ const Settings = () => {
   const wallpapers = [
     { id: 'neon-nebula', name: 'Neon Nebula', color: 'from-[#cc97ff] to-[#00d2fd]' },
     { id: 'cyber-grid', name: 'Cyber Grid', color: 'from-[#00f5a0] to-[#00d2fd]' },
-    { id: 'sunset-vibes', name: 'Sunset Vibes', color: 'from-[#ff4d4d] to-[#ffaf40]' }
+    { id: 'sunset-glow', name: 'Sunset Glow', color: 'from-[#ff4d4d] to-[#ffaf40]' }
   ];
 
   const accentColors = [

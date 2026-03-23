@@ -22,7 +22,7 @@ const Games = () => {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#cc97ff] to-[#be8af0] flex items-center justify-center shadow-[0_0_20px_rgba(204,151,255,0.4)]">
             <Gamepad2 size={24} className="text-[#360061]" />
           </div>
-          <span className="font-display font-bold text-xl tracking-tight">Vibe<span className="text-[#cc97ff]">X</span></span>
+          <span className="font-display font-bold text-xl tracking-tight">Nexus<span className="text-[#cc97ff]">X</span></span>
         </div>
 
         <nav className="flex-1 px-4 space-y-2">

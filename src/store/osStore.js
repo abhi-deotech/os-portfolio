@@ -6,7 +6,7 @@ const DEFAULT_FILE_SYSTEM = [
     id: 'root-projects',
     name: 'Projects',
     children: [
-      { id: 'file-vibeOS', name: 'VibeOS.md' },
+      { id: 'file-os-info', name: 'System.md' },
       { id: 'file-mern', name: 'MERN-Dashboard.md' },
       { id: 'file-iot', name: 'IoT-Controller.md' },
     ]
@@ -38,7 +38,7 @@ const useOSStore = create(
       isDragging: false,
       terminalHistory: [
         { type: 'input', text: 'neofetch' },
-        { type: 'output', text: 'OS: Lumina Desktop v1.0.0\nKernel: 6.8.0-vibe-os\nUptime: 3 years, 2 months\nPackages: 1337 (npm)\nShell: zsh 5.9\nResolution: 2560x1440\nDE: Lumina\nWM: Framer-Motion\nTerminal: Vibe-Term\nCPU: M3 Max (8) @ 4.06GHz\nMemory: 64GB' }
+        { type: 'output', text: 'OS: Lumina Desktop v1.0.0\nKernel: 6.8.0-lumina-os\nUptime: 3 years, 2 months\nPackages: 1337 (npm)\nShell: zsh 5.9\nResolution: 2560x1440\nDE: Lumina\nWM: Framer-Motion\nTerminal: Lumina-Term\nCPU: M3 Max (8) @ 4.06GHz\nMemory: 64GB' }
       ],
 
       // Icon positions: { [iconId]: { x, y } }
@@ -126,7 +126,7 @@ const useOSStore = create(
       setIsDragging: (isDragging) => set({ isDragging }),
     }),
     {
-      name: 'vibe-os-settings',
+      name: 'os-settings',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         activeAccent: state.activeAccent,

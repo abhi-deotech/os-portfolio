@@ -227,7 +227,7 @@ function App() {
             <Window id="projects" title="Projects" width={1050} height={700}>
               <div className="grid grid-cols-2 gap-6 h-full p-8">
                 {[
-                  { title: "Vibe OS", stack: "React, Tailwind, Framer", color: "os-primary" },
+                  { title: "Lumina OS", stack: "React, Tailwind, Framer", color: "os-primary" },
                   { title: "MERN Dashboard", stack: "MongoDB, Express, React, Node", color: "os-secondary" },
                   { title: "IoT Controller", stack: "Python, MQTT, C++", color: "os-tertiary" },
                   { title: "Smart Home UI", stack: "Vite, Next.js, HSL", color: "os-secondary" }
@@ -249,7 +249,7 @@ function App() {
           )}
 
           {openWindows.includes('terminal') && (
-            <Window id="terminal" title="Vibe Terminal" width={850} height={550}>
+            <Window id="terminal" title="Terminal" width={850} height={550}>
               <div className="p-8 h-full">
                 <Terminal />
               </div>

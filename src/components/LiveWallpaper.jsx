@@ -19,7 +19,7 @@ const wallpaperConfigs = {
     ],
     overlay: 'bg-[url("https://www.transparenttextures.com/patterns/cubes.png")] opacity-10 mix-blend-overlay'
   },
-  'sunset-vibes': {
+  'sunset-glow': {
     background: '#1a0b1c',
     elements: [
       { color: 'bg-gradient-to-r from-[#ff4d4d]/40 to-[#ff4d4d]/10', size: 'w-[50vw] h-[50vw]', initial: { x: '-30%', y: '10%' }, animate: { x: ['-30%', '-10%', '-30%'], y: ['10%', '30%', '10%'] } },

@@ -43,7 +43,7 @@ const ControlCenter = () => {
                  <span className="text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest">Network</span>
                   <div className="flex items-center space-x-1">
                      <CustomIcon icon={Signal} size={12} color="text-[#00d2fd]" glow="#00d2fd" />
-                     <span className="text-xs font-bold text-white">Vibe-5G</span>
+                     <span className="text-xs font-bold text-white">Nexus-5G</span>
                   </div>
                </div>
             </div>
