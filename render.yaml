@@ -1,0 +1,7 @@
+services:
+  - type: static
+    name: vibe-os-portfolio
+    env: static
+    buildCommand: npm run build
+    staticPublishDir: dist
+    autoDeploy: true
