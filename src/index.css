@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;500;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --os-background: #060e20;
+  --os-surface: #060e20;
+  --os-surface-container-low: #091328;
+  --os-surface-container-high: #141f38;
+  --os-surface-container-highest: #192540;
+  
+  /* RGB components for opacity support */
+  --os-primary-rgb: 204, 151, 255;
+  --os-secondary-rgb: 0, 210, 253;
+  --os-tertiary-rgb: 0, 245, 160;
+  
+  --os-primary: rgb(var(--os-primary-rgb));
+  --os-primary-dim: #9c48ea;
+  --os-secondary: rgb(var(--os-secondary-rgb));
+  --os-secondary-dim: #00c3eb;
+  --os-tertiary: rgb(var(--os-tertiary-rgb));
+  --os-on-surface: #dee5ff;
+  --os-on-surface-variant: #a3aac4;
+  --os-outline: #6d758c;
+  --desktop-gradient: radial-gradient(circle at 50% -20%, #1a103c 0%, #060e20 60%, #030712 100%);
+}
+
+.light-mode {
+  --os-background: #f8fafc;
+  --os-surface: #ffffff;
+  --os-surface-container-low: #f1f5f9;
+  --os-surface-container-high: #e2e8f0;
+  --os-surface-container-highest: #cbd5e1;
+  
+  /* Light mode RGB components */
+  --os-primary-rgb: 124, 58, 237;
+  --os-secondary-rgb: 14, 165, 233;
+  --os-tertiary-rgb: 5, 150, 105;
+
+  --os-primary: rgb(var(--os-primary-rgb));
+  --os-primary-dim: #5b21b6;
+  --os-secondary: rgb(var(--os-secondary-rgb));
+  --os-secondary-dim: #0369a1;
+  --os-tertiary: rgb(var(--os-tertiary-rgb));
+  --os-on-surface: #0f172a;
+  --os-on-surface-variant: #475569;
+  --os-outline: #94a3b8;
+  --desktop-gradient: radial-gradient(circle at 50% -20%, #e0e7ff 0%, #f8fafc 60%, #f1f5f9 100%);
+}
+
+@layer base {
+  body {
+    @apply bg-os-background text-os-onSurface font-sans antialiased overflow-hidden m-0 p-0 select-none;
+    background: var(--desktop-gradient);
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-os-surfaceContainerHighest/50 backdrop-blur-2xl border border-os-outline/10 shadow-2xl;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .os-card-glow {
+    @apply relative overflow-hidden transition-all duration-300;
+  }
+  .os-card-glow::after {
+    content: '';
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none;
+    background: radial-gradient(circle at center, rgb(var(--os-primary-rgb) / 0.15), transparent);
+  }
+  .os-card-glow:hover::after {
+    @apply opacity-100;
+  }
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ===========================
+   react-contexify OS Theme
+   =========================== */
+.os-context-menu.contexify {
+  background: rgba(14, 14, 22, 0.75) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 1rem !important;
+  padding: 6px !important;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  min-width: 200px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+}
+
+.os-context-menu .contexify_item {
+  border-radius: 0.6rem !important;
+  color: #a3aac4 !important;
+  transition: background 0.1s ease, color 0.1s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 8px 12px !important;
+}
+
+.os-context-menu .contexify_item:hover > .contexify_itemContent {
+  color: white !important;
+}
+
+.os-context-menu .contexify_item.contexify_item-active > .contexify_itemContent,
+.os-context-menu .contexify_item:hover,
+.os-context-menu .contexify_item.contexify_item-active {
+  background: rgba(var(--os-primary-rgb), 0.15) !important;
+  color: white !important;
+}
+
+.os-context-menu .contexify_itemContent {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: #c4c8d8 !important;
+  transition: color 0.1s ease !important;
+}
+
+.os-context-menu .contexify_separator {
+  background: rgba(255, 255, 255, 0.06) !important;
+  margin: 4px 8px !important;
+}
+
