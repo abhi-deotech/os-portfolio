@@ -12,7 +12,7 @@ const Snake = ({ onBack }) => {
   const isFocused = activeWindow === 'games' || activeWindow === 'snake';
   
   const [snake, setSnake] = useState(INITIAL_SNAKE);
-  const [direction, setDirection] = useState(INITIAL_DIRECTION);
+  const directionRef = useRef(INITIAL_DIRECTION);
   const [food, setFood] = useState({ x: 5, y: 5 });
   const [gameOver, setGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -20,24 +20,26 @@ const Snake = ({ onBack }) => {
   const [highScore, setHighScore] = useState(0);
   const gameLoopRef = useRef();
 
-  const generateFood = useCallback(() => {
+  const generateFood = useCallback((currentSnake) => {
     let newFood;
     while (true) {
       newFood = {
         x: Math.floor(Math.random() * GRID_SIZE),
         y: Math.floor(Math.random() * GRID_SIZE),
       };
-      if (!snake.some(segment => segment.x === newFood.x && segment.y === newFood.y)) break;
+      if (!currentSnake.some(segment => segment.x === newFood.x && segment.y === newFood.y)) break;
     }
     setFood(newFood);
-  }, [snake]);
+  }, []);
 
   const moveSnake = useCallback(() => {
-    if (gameOver || !isPlaying) return;
-
     setSnake(prevSnake => {
+      if (gameOver || !isPlaying) return prevSnake;
+
       const head = { ...prevSnake[0] };
-      switch (direction) {
+      const currentDirection = directionRef.current;
+
+      switch (currentDirection) {
         case 'UP': head.y -= 1; break;
         case 'DOWN': head.y += 1; break;
         case 'LEFT': head.x -= 1; break;
@@ -49,51 +51,60 @@ const Snake = ({ onBack }) => {
       if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE ||
           prevSnake.some(segment => segment.x === head.x && segment.y === head.y)) {
         setGameOver(true);
-        if (score > highScore) setHighScore(score);
+        setIsPlaying(false);
         return prevSnake;
       }
 
       const newSnake = [head, ...prevSnake];
+      
+      // Check if eating food
+      // Note: We use the food state from the closure here. 
+      // Since moveSnake is recreated when food changes, this is safe.
       if (head.x === food.x && head.y === food.y) {
         setScore(s => s + 10);
-        generateFood();
+        generateFood(newSnake);
+        // Don't pop -> growth
       } else {
         newSnake.pop();
       }
       return newSnake;
     });
-  }, [direction, food, gameOver, score, highScore, generateFood]);
+  }, [food, gameOver, isPlaying, generateFood]);
+
+  useEffect(() => {
+    if (score > highScore) setHighScore(score);
+  }, [score, highScore]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isFocused || !isPlaying || gameOver) return;
       
       switch (e.key) {
-        case 'ArrowUp': if (direction !== 'DOWN') setDirection('UP'); break;
-        case 'ArrowDown': if (direction !== 'UP') setDirection('DOWN'); break;
-        case 'ArrowLeft': if (direction !== 'RIGHT') setDirection('LEFT'); break;
-        case 'ArrowRight': if (direction !== 'LEFT') setDirection('RIGHT'); break;
+        case 'ArrowUp': if (directionRef.current !== 'DOWN') directionRef.current = 'UP'; break;
+        case 'ArrowDown': if (directionRef.current !== 'UP') directionRef.current = 'DOWN'; break;
+        case 'ArrowLeft': if (directionRef.current !== 'RIGHT') directionRef.current = 'LEFT'; break;
+        case 'ArrowRight': if (directionRef.current !== 'LEFT') directionRef.current = 'RIGHT'; break;
         default: break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [direction, isFocused, isPlaying, gameOver]);
+  }, [isFocused, isPlaying, gameOver]);
 
   useEffect(() => {
     if (isPlaying && !gameOver && isFocused) {
       gameLoopRef.current = setInterval(moveSnake, Math.max(80, INITIAL_SPEED - Math.floor(score / 50) * 5));
     }
     return () => clearInterval(gameLoopRef.current);
-  }, [moveSnake, score, isPlaying, gameOver, isFocused]);
+  }, [moveSnake, isPlaying, gameOver, isFocused, score]);
 
   const resetGame = () => {
     setSnake(INITIAL_SNAKE);
-    setDirection(INITIAL_DIRECTION);
+    directionRef.current = INITIAL_DIRECTION;
     setGameOver(false);
     setIsPlaying(true);
     setScore(0);
-    generateFood();
+    generateFood(INITIAL_SNAKE);
   };
 
   return (

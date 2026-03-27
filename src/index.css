@@ -15,6 +15,9 @@
   --os-primary-rgb: 204, 151, 255;
   --os-secondary-rgb: 0, 210, 253;
   --os-tertiary-rgb: 0, 245, 160;
+  --blue-500-rgb: 59, 130, 246;
+  --red-500-rgb: 239, 68, 68;
+  --yellow-500-rgb: 234, 179, 8;
   
   --os-primary: rgb(var(--os-primary-rgb));
   --os-primary-dim: #9c48ea;
@@ -107,6 +110,21 @@
   }
   .rotate-y-180 {
     transform: rotateY(180deg);
+  }
+
+  /* Mobile Touch Improvements */
+  @media (max-width: 768px) {
+    .touch-hit-area {
+      @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+    }
+    
+    .os-window-active {
+      @apply scale-100 opacity-100 !important;
+    }
+    
+    button, .cursor-pointer {
+      @apply active:scale-95 transition-transform;
+    }
   }
 }
 

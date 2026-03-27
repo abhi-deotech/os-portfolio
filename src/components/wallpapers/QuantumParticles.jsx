@@ -1,0 +1,118 @@
+import React, { useEffect, useRef } from 'react';
+
+const QuantumParticles = ({ accentColor = '#a855f7' }) => {
+  const canvasRef = useRef(null);
+  const mouseRef = useRef({ x: 0, y: 0, active: false });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Particle settings
+    const PARTICLE_COUNT = 2500;
+    const particles = [];
+    
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.size = Math.random() * 1.5 + 0.5;
+        this.alpha = Math.random() * 0.5 + 0.1;
+      }
+
+      update() {
+        // Apply velocity
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Mouse attraction
+        if (mouseRef.current.active) {
+          const dx = mouseRef.current.x - this.x;
+          const dy = mouseRef.current.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 300) {
+            const force = (300 - dist) / 3000;
+            this.vx += (dx / dist) * force;
+            this.vy += (dy / dist) * force;
+          }
+        }
+
+        // Friction
+        this.vx *= 0.99;
+        this.vy *= 0.99;
+
+        // Boundary check
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+          this.reset();
+        }
+      }
+
+      draw() {
+        ctx.fillStyle = `${accentColor}${Math.floor(this.alpha * 255).toString(16).padStart(2, '0')}`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      animationFrameId = requestAnimationFrame(render);
+    };
+
+    const handleMouseMove = (e) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY, active: true };
+    };
+
+    const handleMouseLeave = () => {
+      mouseRef.current.active = false;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseleave', handleMouseLeave);
+
+    render();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [accentColor]);
+
+  return (
+    <canvas 
+      ref={canvasRef} 
+      className="absolute inset-0 w-full h-full pointer-events-none opacity-40 mix-blend-screen"
+    />
+  );
+};
+
+export default QuantumParticles;
