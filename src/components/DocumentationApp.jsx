@@ -47,7 +47,7 @@ const DocumentationApp = () => {
     
     try {
       for (const file of filesToFetch) {
-        const url = `https://raw.githubusercontent.com/abhi-deotech/vibe-os-portfolio/main/${file.name}`;
+        const url = `https://raw.githubusercontent.com/abhi-deotech/os-portfolio/main/${file.name}`;
         
         try {
           const response = await fetch(url);
