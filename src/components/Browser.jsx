@@ -3,8 +3,8 @@ import { Globe, ArrowLeft, ArrowRight, RotateCw, ExternalLink, Bookmark, ShieldA
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Browser = () => {
-  const [url, setUrl] = useState('https://www.google.com/search?q=Search&igu=1');
-  const [iframeUrl, setIframeUrl] = useState('https://www.google.com/search?q=Search&igu=1');
+  const [url, setUrl] = useState('https://en.m.wikipedia.org/wiki/Main_Page');
+  const [iframeUrl, setIframeUrl] = useState('https://en.m.wikipedia.org/wiki/Main_Page');
   const [isBlocked, setIsBlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 

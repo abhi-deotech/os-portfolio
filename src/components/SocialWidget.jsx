@@ -32,9 +32,11 @@ const LinkedinIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
+import useOSStore from '../store/osStore';
 import { motion } from 'framer-motion';
 
 const SocialWidget = () => {
+  const { unlockAchievement } = useOSStore();
   const [activeTab, setActiveTab] = useState('github');
   const [githubData, setGithubData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -206,7 +208,13 @@ const SocialWidget = () => {
             <span className="text-base font-black text-white tracking-tight">@{githubData.username}</span>
             <span className="text-xs font-bold text-white/30 uppercase tracking-widest mt-1 truncate max-w-[180px]">{githubData.bio || 'Developer'}</span>
           </div>
-          <a href={`https://github.com/${githubUsername}`} target="_blank" rel="noreferrer" className="ml-auto p-2.5 rounded-xl bg-white/5 text-white/40 hover:text-os-primary hover:bg-os-primary/10 transition-all">
+          <a 
+            href={`https://github.com/${githubUsername}`} 
+            target="_blank" 
+            rel="noreferrer" 
+            onClick={() => unlockAchievement('socialite')}
+            className="ml-auto p-2.5 rounded-xl bg-white/5 text-white/40 hover:text-os-primary hover:bg-os-primary/10 transition-all"
+          >
             <ExternalLink size={18} />
           </a>
         </div>
@@ -299,6 +307,7 @@ const SocialWidget = () => {
             href={`https://linkedin.com/in/${linkedinUsername}`} 
             target="_blank" 
             rel="noreferrer"
+            onClick={() => unlockAchievement('socialite')}
             className="flex-shrink-0 p-2 rounded-lg bg-[#0077b5] text-white hover:bg-[#008de4] transition-all"
           >
             <LinkedinIcon size={18} />

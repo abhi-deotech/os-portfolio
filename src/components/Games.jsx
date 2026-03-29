@@ -6,12 +6,14 @@ import { useIsMobile } from '../hooks/useMediaQuery';
 
 const Games = () => {
   const isMobile = useIsMobile();
-  const { openWindow } = useOSStore();
+  const { openWindow, unlockAchievement } = useOSStore();
   const [activeTab, setActiveTab] = useState('home');
   const [showSidebar, setShowSidebar] = useState(true);
+  const [hasTriggeredAchievement, setHasTriggeredAchievement] = useState(false);
 
   const launchGame = (gameId) => {
     openWindow(gameId);
+    unlockAchievement('gamer');
   };
 
   const handleTabClick = (tabId) => {

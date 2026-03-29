@@ -116,7 +116,8 @@ const MusicApp = () => {
     setMusicCurrentTime, 
     toggleLikeSong,
     setMusicView,
-    activeAccent 
+    activeAccent,
+    unlockAchievement
   } = useOSStore();
   const playerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -180,6 +181,7 @@ const MusicApp = () => {
             }
             if (event.data === window.YT.PlayerState.PLAYING) {
               setMusicIsPlaying(true);
+              unlockAchievement('audiophile');
             }
             if (event.data === window.YT.PlayerState.PAUSED) {
               setMusicIsPlaying(false);
@@ -420,7 +422,11 @@ const MusicApp = () => {
                 {!isMobile && <button className="text-os-onSurfaceVariant hover:text-white transition-colors"><Shuffle size={16} /></button>}
                 <button className="text-os-onSurfaceVariant hover:text-white transition-colors" onClick={handlePrev}><SkipBack size={20} fill="currentColor" /></button>
                 <button 
-                  onClick={() => setMusicIsPlaying(!music.isPlaying)}
+                  onClick={() => {
+                    const nextState = !music.isPlaying;
+                    setMusicIsPlaying(nextState);
+                    if (nextState) unlockAchievement('audiophile');
+                  }}
                   className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
                 >
                   {music.isPlaying ? <Pause size={20} fill="black" /> : <Play size={20} fill="black" className="translate-x-0.5" />}

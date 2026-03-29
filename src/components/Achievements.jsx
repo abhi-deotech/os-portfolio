@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Terminal as TermIcon, Edit3, Search, Activity, Zap } from 'lucide-react';
+import { Trophy, Star, Terminal as TermIcon, Edit3, Search, Activity, Zap, Gamepad2, Music, Palette, Gauge, Book, Share2 } from 'lucide-react';
 import useOSStore from '../store/osStore';
 
 const Achievements = () => {
@@ -13,6 +13,12 @@ const Achievements = () => {
     { id: 'hacker', title: 'Mainframe Access', desc: 'Tried to SSH into a remote host.', icon: <Zap className="w-5 h-5" />, color: 'from-red-400 to-neon-red' },
     { id: 'writer', title: 'Poet in Exile', desc: 'Saved your first note in Notepad.', icon: <Edit3 className="w-5 h-5" />, color: 'from-cyan-400 to-cyan-600' },
     { id: 'monitor', title: 'System Admin', desc: 'Opened the Task Manager to monitor resources.', icon: <Activity className="w-5 h-5" />, color: 'from-os-primary to-blue-500' },
+    { id: 'gamer', title: 'NexusX Explorer', desc: 'Launched your first game in the Game Center.', icon: <Gamepad2 className="w-5 h-5" />, color: 'from-orange-400 to-red-500' },
+    { id: 'audiophile', title: 'Music Lover', desc: 'Played a track in the Music app.', icon: <Music className="w-5 h-5" />, color: 'from-pink-400 to-rose-600' },
+    { id: 'decorator', title: 'Interior Designer', desc: 'Customized your desktop theme in Settings.', icon: <Palette className="w-5 h-5" />, color: 'from-indigo-400 to-violet-600' },
+    { id: 'speed_demon', title: 'Speed Demon', desc: 'Personalized your system performance with a benchmark.', icon: <Gauge className="w-5 h-5" />, color: 'from-yellow-400 to-amber-600' },
+    { id: 'architect', title: 'Deep Diver', desc: 'Explored the system architecture documentation.', icon: <Book className="w-5 h-5" />, color: 'from-emerald-400 to-teal-600' },
+    { id: 'socialite', title: 'Well Connected', desc: 'Visited my LinkedIn or GitHub profile.', icon: <Share2 className="w-5 h-5" />, color: 'from-sky-400 to-blue-500' },
     { id: 'easter_egg', title: 'Rabbit Hole', desc: 'Found the secret matrix mode.', icon: <Trophy className="w-5 h-5" />, color: 'from-yellow-400 to-orange-500' },
   ];
 

@@ -30,11 +30,18 @@ const Terminal = () => {
   const { 
     terminalHistory, addTerminalEntry, clearTerminalHistory, 
     fileSystem, terminalTheme, setTerminalTheme, installApp,
-    openWindow, installedApps
+    openWindow, installedApps, unlockAchievement,
+    terminalCommandCount, incrementCommandCount
   } = useOSStore();
   const [input, setInput] = useState('');
   const [currentPath, setCurrentPath] = useState(['~']);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const scrollRef = useRef(null);
+  
+  // Filter history to only include user inputs for easier navigation
+  const inputHistory = terminalHistory
+    .filter(entry => entry.type === 'input')
+    .map(entry => entry.text);
 
   const themes = {
     default: { bg: 'bg-[#0c0c0c]/80', border: 'border-white/5', text: 'text-white', primary: 'text-os-primary', secondary: 'text-os-secondary' },
@@ -64,6 +71,10 @@ const Terminal = () => {
     whoami: () => 'guest@lumina-os',
     date: () => new Date().toString(),
     ls: (args) => {
+      const showAll = args.includes('-a');
+      const longFormat = args.includes('-l');
+      const pathArg = args.find(a => !a.startsWith('-'));
+
       const getDirContent = (nodes, path) => {
         if (path.length === 0 || path[0] === '~') {
           if (path.length <= 1) return nodes;
@@ -73,9 +84,31 @@ const Terminal = () => {
         return null;
       };
       
-      const content = getDirContent(fileSystem, currentPath);
-      if (!content) return 'ls: error accessing current directory';
-      return content.map(f => f.name + (f.children ? '/' : '')).join('  ');
+      let targetPath = currentPath;
+      if (pathArg) {
+        if (pathArg === '..') targetPath = currentPath.length > 1 ? currentPath.slice(0, -1) : ['~'];
+        else if (pathArg === '~' || pathArg === '/') targetPath = ['~'];
+        else targetPath = [...currentPath, pathArg];
+      }
+
+      const content = getDirContent(fileSystem, targetPath);
+      if (!content) return `ls: cannot access '${pathArg || '.'}': No such file or directory`;
+
+      const filteredContent = showAll ? content : content.filter(f => !f.name.startsWith('.'));
+      
+      if (longFormat) {
+        return filteredContent.map(f => {
+          const type = f.children ? 'd' : '-';
+          const size = f.children ? (f.children.length * 4096) : (f.content?.length || 0);
+          const date = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+          return `${type}rwxr-xr-x  1 guest  staff  ${size.toString().padStart(5)} ${date} ${f.name}${f.children ? '/' : ''}`;
+        }).join('\n');
+      }
+
+      return filteredContent.map(f => {
+        const isDir = !!f.children;
+        return { text: f.name + (isDir ? '/' : ''), isDir };
+      });
     },
     cd: (args) => {
       const dirName = args[0];
@@ -144,8 +177,28 @@ const Terminal = () => {
 
       if (packages[pkg]) {
         if (installedApps.includes(packages[pkg])) return `${pkg} is already installed.`;
-        installApp(packages[pkg]);
-        return `Reading package lists... Done\nBuilding dependency tree... Done\nDownloading ${pkg}... [100%]\nSetting up ${pkg} (v1.0.0)... Done\nApplication "${pkg}" is now available in your launcher.`;
+        
+        return {
+          type: 'progressive',
+          steps: [
+            `Reading package lists... Done`,
+            `Building dependency tree... Done`,
+            `Reading state information... Done`,
+            `The following NEW packages will be installed:\n  ${pkg}`,
+            `0 upgraded, 1 newly installed, 0 to remove and 0 not upgraded.`,
+            `Need to get 0 B/12.4 kB of archives.`,
+            `After this operation, 48.2 kB of additional disk space will be used.`,
+            `Get:1 http://archive.lumina-os.org/ lumina/main ${pkg} [12.4 kB]`,
+            `Selecting previously unselected package ${pkg}.`,
+            `(Reading database ... 18423 files and directories currently installed.)`,
+            `Preparing to unpack .../${pkg}_1.0.0_all.deb ...`,
+            `Unpacking ${pkg} (1.0.0) ...`,
+            `Setting up ${pkg} (1.0.0) ...`,
+            `Processing triggers for lumina-desktop (1.4.2) ...`,
+            `Application "${pkg}" is now available in your launcher.`
+          ],
+          onComplete: () => installApp(packages[pkg])
+        };
       }
       return `E: Unable to locate package ${pkg}`;
     },
@@ -185,31 +238,111 @@ const Terminal = () => {
       if (q.includes('hello') || q.includes('hi')) return "Greetings, user. How can I assist your terminal session today?";
       return "I'm still learning. Try asking about my 'stack' or 'author'. My neural net is currently in demo mode.";
     },
+    magic: () => {
+      unlockAchievement('easter_egg');
+      return "The rabbit hole goes deep... You have discovered the magic within the command line.";
+    },
   };
 
   const handleCommand = (e) => {
-    if (e.key === 'Enter') {
-      const trimmedInput = input.trim().toLowerCase();
-      addTerminalEntry({ type: 'input', text: input });
-
-      if (trimmedInput) {
-        const [cmd, ...args] = trimmedInput.split(' ');
-        if (commands[cmd]) {
-          const output = commands[cmd](args);
-          if (output !== null) {
-            addTerminalEntry({ type: 'output', text: output });
-          }
-          // Increment terminal count or just unlock if it's SSH/Matrix
-          if (cmd === 'ssh') unlockAchievement('hacker');
-          if (cmd === 'matrix' && installedApps.includes('easteregg')) unlockAchievement('easter_egg');
-          
-          // Basic terminal_wiz trigger: simple count or just first command for now
-          unlockAchievement('terminal_wiz');
-        } else {
-          addTerminalEntry({ type: 'output', text: `Command not found: ${cmd}. Type 'help' for options.` });
-        }
+    // Keep specialized keys here
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (inputHistory.length > 0) {
+        const newIndex = historyIndex < inputHistory.length - 1 ? historyIndex + 1 : historyIndex;
+        setHistoryIndex(newIndex);
+        setInput(inputHistory[inputHistory.length - 1 - newIndex]);
       }
-      setInput('');
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInput(inputHistory[inputHistory.length - 1 - newIndex]);
+      } else if (historyIndex === 0) {
+        setHistoryIndex(-1);
+        setInput('');
+      }
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      handleTabCompletion();
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const currentInput = input;
+    const trimmedInput = currentInput.trim().toLowerCase();
+    
+    addTerminalEntry({ type: 'input', text: currentInput });
+    setHistoryIndex(-1);
+    setInput(''); // Clear input immediately
+
+    if (trimmedInput) {
+      const [cmd, ...args] = trimmedInput.split(' ');
+      if (commands[cmd]) {
+        const output = commands[cmd](args);
+        
+        if (output && typeof output === 'object' && output.type === 'progressive') {
+          // Handle progressive output (like installer)
+          let step = 0;
+          const interval = setInterval(() => {
+            if (step < output.steps.length) {
+              addTerminalEntry({ type: 'output', text: output.steps[step] });
+              step++;
+            } else {
+              clearInterval(interval);
+              if (output.onComplete) output.onComplete();
+            }
+          }, 400); // 400ms delay between steps
+        } else if (output !== null) {
+          addTerminalEntry({ type: 'output', text: output });
+        }
+        
+        if (cmd === 'ssh') unlockAchievement('hacker');
+        if (cmd === 'magic') unlockAchievement('easter_egg');
+        
+        incrementCommandCount();
+        if (terminalCommandCount + 1 >= 5) unlockAchievement('terminal_wiz');
+      } else {
+        addTerminalEntry({ type: 'output', text: `Command not found: ${cmd}. Type 'help' for options.` });
+      }
+    }
+  };
+
+  const handleTabCompletion = () => {
+    const parts = input.split(' ');
+    const lastPart = parts[parts.length - 1].toLowerCase();
+    
+    // Find current directory contents
+    const getDirContent = (nodes, path) => {
+      if (path.length === 0 || path[0] === '~') {
+        if (path.length <= 1) return nodes;
+        const nextDir = nodes.find(n => n.name.toLowerCase() === path[1].toLowerCase());
+        if (nextDir && nextDir.children) return getDirContent(nextDir.children, path.slice(1));
+      }
+      return null;
+    };
+
+    const content = getDirContent(fileSystem, currentPath);
+    if (!content) return;
+
+    // Find matches
+    const matches = content
+      .filter(node => node.name.toLowerCase().startsWith(lastPart))
+      .map(node => ({
+        name: node.name + (node.children ? '/' : ''),
+        isDir: !!node.children
+      }));
+
+    if (matches.length === 1) {
+      // Single match: complete it
+      parts[parts.length - 1] = matches[0].name;
+      setInput(parts.join(' '));
+    } else if (matches.length > 1) {
+      // Multiple matches: show them as output
+      addTerminalEntry({ type: 'input', text: input }); // Echo current input
+      addTerminalEntry({ type: 'output', text: matches.map(m => ({ text: m.name, isDir: m.isDir })) });
     }
   };
 
@@ -229,13 +362,23 @@ const Terminal = () => {
               </div>
             ) : (
               <div className={`${theme.text} opacity-80 whitespace-pre-wrap leading-relaxed`}>
-                {entry.text}
+                {Array.isArray(entry.text) ? (
+                  <div className="flex flex-wrap gap-x-4">
+                    {entry.text.map((item, j) => (
+                      <span key={j} className={item.isDir ? theme.secondary : ''}>
+                        {item.text}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  entry.text
+                )}
               </div>
             )}
           </div>
         ))}
         
-        <div className="flex gap-2">
+        <form onSubmit={handleSubmit} className="flex gap-2">
           <span className={`${theme.primary} font-bold`}>➜</span>
           <span className={`${theme.secondary} font-bold`}>{currentPath.join('/')}</span>
           <input
@@ -246,7 +389,7 @@ const Terminal = () => {
             onKeyDown={handleCommand}
             className={`flex-grow bg-transparent border-none outline-none ${theme.text} p-0`}
           />
-        </div>
+        </form>
       </div>
     </div>
   );

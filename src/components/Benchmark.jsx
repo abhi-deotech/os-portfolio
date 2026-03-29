@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../store/osStore';
 
 const Benchmark = () => {
-  const { systemMetrics, updateMetrics } = useOSStore();
+  const { systemMetrics, updateMetrics, unlockAchievement } = useOSStore();
   const [isRunning, setIsRunning] = useState(false);
   const [iterations, setIterations] = useState(0);
   const [history, setHistory] = useState(Array(20).fill(0));
@@ -19,8 +19,8 @@ const Benchmark = () => {
       const startTime = performance.now();
       let count = 0;
       
-      // Heavy block for ~30ms to simulate load while keeping some UI responsiveness
-      while (performance.now() - startTime < 30) {
+      // Heavy block for ~8ms to simulate load while keeping UI responsiveness
+      while (performance.now() - startTime < 8) {
         Math.sqrt(Math.random() * 1000000);
         count++;
       }
@@ -32,7 +32,7 @@ const Benchmark = () => {
       if (now - lastTime > 500) { // Every 500ms
         updateMetrics({
           cpu: Math.floor(Math.random() * 10) + 90, // 90-100%
-          ram: (Math.random() * 0.5 + 6.5).toFixed(1), // Fake RAM spike
+          ram: Number((Math.random() * 0.5 + 6.5).toFixed(1)), // Fake RAM spike
           temp: Math.floor(Math.random() * 5) + 65, // Fake Temp spike
           isOverridden: true
         });
@@ -76,7 +76,11 @@ const Benchmark = () => {
         </div>
         
         <button 
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={() => {
+            const nextState = !isRunning;
+            setIsRunning(nextState);
+            if (nextState) unlockAchievement('speed_demon');
+          }}
           className={`group relative px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all duration-500 overflow-hidden ${isRunning ? 'bg-red-500/20 text-red-500 border border-red-500/50' : 'bg-os-primary text-black'}`}
         >
           <div className="relative z-10 flex items-center gap-3">

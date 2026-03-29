@@ -85,8 +85,13 @@ const DocumentationApp = () => {
     syncError,
     activeDocFile,
     openWindow,
-    findNodeById
+    findNodeById,
+    unlockAchievement
   } = useOSStore();
+
+  useEffect(() => {
+    unlockAchievement('architect');
+  }, [unlockAchievement]);
 
   const [selectedFile, setSelectedFile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -460,9 +465,8 @@ const DocumentationApp = () => {
                         </div>
                         <ArrowRight size={14} className="text-os-onSurfaceVariant opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-os-primary" />
                       </div>
-                      <h4 className="text-sm font-black text-os-onSurface mb-1 uppercase tracking-tight">{file.name}</h4>
                       <p className="text-[10px] text-os-onSurfaceVariant font-medium line-clamp-2 leading-relaxed italic opacity-60">
-                        {file.content.split('\n')[2]?.replace(/[#*]/g, '') || 'Module detailed technical specification.'}
+                        {file.content?.split('\n')[2]?.replace(/[#*]/g, '') || 'Module detailed technical specification.'}
                       </p>
                     </motion.div>
                   ))}

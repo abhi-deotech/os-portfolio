@@ -45,7 +45,8 @@ const Settings = () => {
     setBrightness,
     accentIntensity,
     setAccentIntensity,
-    resetSettingsToDefault
+    resetSettingsToDefault,
+    unlockAchievement
   } = useOSStore();
   const metrics = useSystemMetrics();
   const network = useNetworkInfo();
@@ -149,7 +150,7 @@ const Settings = () => {
                   {wallpapers.map((wp) => (
                     <div 
                       key={wp.id}
-                      onClick={() => setWallpaper(wp.id)}
+                      onClick={() => { setWallpaper(wp.id); unlockAchievement('decorator'); }}
                       className={`cursor-pointer rounded-xl h-12 md:h-14 border transition-all duration-300 relative overflow-hidden group/tile ${
                         wallpaper === wp.id 
                           ? 'border-[#cc97ff] shadow-[0_0_15px_rgba(204,151,255,0.3)]' 
@@ -218,7 +219,7 @@ const Settings = () => {
                     {accentColors.map(color => (
                         <div 
                             key={color.id}
-                            onClick={() => setActiveAccent(color.id)}
+                            onClick={() => { setActiveAccent(color.id); unlockAchievement('decorator'); }}
                             className={`w-8 h-8 rounded-full cursor-pointer transition-all duration-300 flex items-center justify-center`}
                             style={{ 
                                 backgroundColor: color.hex,
@@ -355,10 +356,10 @@ const Settings = () => {
                   </div>
 
                   <div className="mb-8">
-                      <div className="flex items-end gap-1 mb-1">
-                          <span className="text-4xl md:text-5xl font-display font-black tracking-tighter text-os-tertiary">{metrics.ramUsedMb}</span>
-                          <span className="text-xl font-bold text-os-onSurfaceVariant pb-1">MB</span>
-                          <span className="text-sm text-os-onSurfaceVariant/50 font-bold pb-2 ml-1">/ {metrics.ramLimitMb} MB</span>
+                      <div className="flex items-end flex-wrap gap-x-1 mb-1">
+                          <span className="text-4xl md:text-5xl font-display font-black tracking-tighter text-os-tertiary leading-none">{metrics.ramUsedMb}</span>
+                          <span className="text-xl font-bold text-os-onSurfaceVariant leading-none pb-0.5">MB</span>
+                          <span className="text-sm text-os-onSurfaceVariant/50 font-bold leading-none ml-1 pb-1">/ {metrics.ramLimitMb} MB</span>
                       </div>
                       <span className="text-xs text-os-onSurfaceVariant font-bold uppercase tracking-widest">RAM Usage ({metrics.ram}%)</span>
                   </div>

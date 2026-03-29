@@ -4,12 +4,27 @@ import { Wifi, Bluetooth, Sun, Volume2, BatteryFull, Signal, Play, Pause, SkipFo
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import useSystemMetrics from '../hooks/useSystemMetrics';
+import useNetworkInfo from '../hooks/useNetworkInfo';
 
 const ControlCenter = () => {
-  const { isControlCenterOpen, toggleControlCenter, music, setMusicIsPlaying, openWindow, transparencyEffects } = useOSStore();
+  const { 
+    isControlCenterOpen, 
+    toggleControlCenter, 
+    music, 
+    setMusicIsPlaying, 
+    openWindow, 
+    transparencyEffects,
+    brightness,
+    setBrightness,
+    setMusicVolume
+  } = useOSStore();
+  
   const isMobile = useIsMobile();
-  const [volume, setVolume] = useState(music.volume * 100);
-  const [brightness, setBrightness] = useState(80);
+  const metrics = useSystemMetrics();
+  const network = useNetworkInfo();
+  
+  const volume = Math.round(music.volume * 100);
   const [toggles, setToggles] = useState({ wifi: true, bluetooth: true, airdrop: false });
 
   const toggleState = (key) => setToggles(prev => ({ ...prev, [key]: !prev[key] }));
@@ -29,7 +44,7 @@ const ControlCenter = () => {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={isMobile ? { y: '100%', opacity: 0 } : { y: 20, opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`fixed ${isMobile ? 'inset-0 w-full h-full rounded-none' : 'bottom-24 left-8 w-[380px] rounded-[2.5rem] border'} bg-[#0e0e0e]/80 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 p-5 z-[70] shadow-[0_32px_64px_rgba(0,0,0,0.6)] flex flex-col space-y-4 select-none grayscale-0 overflow-hidden`}
+            className={`fixed ${isMobile ? 'inset-0 w-full h-full rounded-none pt-safe-top pb-safe-bottom' : 'bottom-24 left-8 w-[380px] rounded-[2.5rem] border'} bg-[#0e0e0e]/80 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 p-5 z-[70] shadow-[0_32px_64px_rgba(0,0,0,0.6)] flex flex-col space-y-4 select-none grayscale-0 overflow-hidden`}
           >
             {/* Ambient Lighting / Mica Effect Blob */}
             <div className="absolute -top-20 -right-20 w-[250px] h-[250px] bg-[#cc97ff]/20 blur-[80px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
@@ -38,15 +53,15 @@ const ControlCenter = () => {
             {/* Header / Status row */}
             <div className="flex justify-between items-center px-2 pt-1 pb-2">
                 <div className="flex items-center space-x-2">
-                  <CustomIcon icon={BatteryFull} size={16} color="text-[#00f5a0]" glow="#00f5a0" />
-                  <span className="text-xs font-bold text-white tracking-wide">98%</span>
+                  <CustomIcon icon={BatteryFull} size={16} color={metrics.ram > 80 ? "text-red-400" : "text-[#00f5a0]"} glow={metrics.ram > 80 ? "#f87171" : "#00f5a0"} />
+                  <span className="text-xs font-bold text-white tracking-wide">{100 - Math.round(metrics.cpu / 10)}%</span>
                 </div>
                <div className="flex items-center gap-4">
                   <div className="flex flex-col items-end">
                     <span className="text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest">Network</span>
                       <div className="flex items-center space-x-1">
                         <CustomIcon icon={Signal} size={12} color="text-[#00d2fd]" glow="#00d2fd" />
-                        <span className="text-xs font-bold text-white">Nexus-5G</span>
+                        <span className="text-xs font-bold text-white uppercase truncate max-w-[80px]">{network.isOnline ? 'Nexus-5G' : 'Offline'}</span>
                       </div>
                   </div>
                   {isMobile && (
@@ -71,7 +86,7 @@ const ControlCenter = () => {
                       </div>
                      <div>
                         <span className="block text-sm font-bold text-white">Wi-Fi</span>
-                        <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.wifi ? 'text-[#00d2fd]' : 'text-os-onSurfaceVariant'}`}>{toggles.wifi ? 'Home' : 'Off'}</span>
+                        <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.wifi ? 'text-[#00d2fd]' : 'text-os-onSurfaceVariant'}`}>{toggles.wifi ? (network.isOnline ? 'Nexus-Home' : 'Connected') : 'Off'}</span>
                      </div>
                    </div>
                    
@@ -138,7 +153,7 @@ const ControlCenter = () => {
                     </div>
                    <div className="h-10 md:h-6 bg-os-surfaceContainerHighest/50 rounded-full relative overflow-hidden cursor-pointer shadow-inner" onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect();
-                      setVolume(Math.round(((e.clientX - rect.left) / rect.width) * 100));
+                      setMusicVolume(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
                    }}>
                       <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#00d2fd]/50 to-[#00d2fd] transition-all duration-300" style={{ width: `${volume}%` }} />
                    </div>

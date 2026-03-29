@@ -12,6 +12,12 @@ const AchievementToast = ({ achievementId, onComplete }) => {
     hacker: { title: 'Mainframe Access', desc: 'Tried to SSH into a remote host.' },
     writer: { title: 'Poet in Exile', desc: 'Saved your first note in Notepad.' },
     monitor: { title: 'System Admin', desc: 'Opened the Task Manager to monitor resources.' },
+    gamer: { title: 'NexusX Explorer', desc: 'Launched your first game in the Game Center.' },
+    audiophile: { title: 'Music Lover', desc: 'Played a track in the Music app.' },
+    decorator: { title: 'Interior Designer', desc: 'Customized your desktop theme in Settings.' },
+    speed_demon: { title: 'Speed Demon', desc: 'Personalized your system performance with a benchmark.' },
+    architect: { title: 'Deep Diver', desc: 'Explored the system architecture documentation.' },
+    socialite: { title: 'Well Connected', desc: 'Visited my LinkedIn or GitHub profile.' },
     easter_egg: { title: 'Rabbit Hole', desc: 'Found the secret matrix mode.' },
   };
 
@@ -29,7 +35,7 @@ const AchievementToast = ({ achievementId, onComplete }) => {
       initial={{ x: 400, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 400, opacity: 0 }}
-      className={`fixed bottom-24 right-6 z-[2000] w-80 bg-black/80 ${transparencyEffects ? 'backdrop-blur-xl' : ''} border border-os-primary/30 rounded-2xl p-4 flex items-center gap-4 shadow-2xl overflow-hidden shadow-os-primary/10`}
+      className={`relative w-80 bg-black/80 ${transparencyEffects ? 'backdrop-blur-xl' : ''} border border-os-primary/30 rounded-2xl p-4 flex items-center gap-4 shadow-2xl overflow-hidden shadow-os-primary/10 pointer-events-auto`}
     >
       <div className="absolute inset-0 bg-gradient-to-r from-os-primary/5 to-transparent pointer-events-none" />
       <div className="p-3 rounded-xl bg-os-primary/20 text-os-primary">

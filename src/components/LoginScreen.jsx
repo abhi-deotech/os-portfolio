@@ -5,6 +5,9 @@ import useOSStore from '../store/osStore';
 import BootSequence from './BootSequence';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
+// Define vibrant gradient for the boot button
+const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary bg-[length:200%_auto] hover:bg-[100%_0] text-white font-bold text-xs tracking-[0.3em] uppercase border border-white/20 backdrop-blur-sm transition-all duration-700 shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_40px_rgba(var(--os-primary-rgb),0.5)]";
+
 /**
  * Login screen component for Lumina OS authentication.
  * Provides a multi-phase login experience with boot sequence animation.
@@ -77,10 +80,10 @@ const LoginScreen = () => {
                </motion.div>
 
                <motion.button
-                 whileHover={{ scale: 1.05 }}
+                 whileHover={{ scale: 1.05, letterSpacing: "0.4em" }}
                  whileTap={{ scale: 0.95 }}
                  onClick={() => setIsBooting(true)}
-                 className="mt-8 px-12 py-4 rounded-full bg-os-primary text-black font-black text-xs tracking-[0.3em] uppercase hover:shadow-[0_0_40px_rgba(var(--os-primary-rgb),0.4)] transition-all duration-500"
+                 className={BOOT_BUTTON_STYLE}
                >
                  Boot System
                </motion.button>

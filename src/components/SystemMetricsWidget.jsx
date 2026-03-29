@@ -33,7 +33,7 @@ const useCountUp = (end, duration = 1000, start = 0) => {
 const ExpandedMetric = ({ icon: Icon, label, value, unit, color, delay, isOpen }) => {
   const numericValue = typeof value === 'string' ? parseFloat(value) : value;
   const animatedValue = useCountUp(isOpen ? numericValue : 0, 1000);
-  const displayValue = unit === 'GB' ? (animatedValue / 10).toFixed(1) : animatedValue;
+  const displayValue = unit === 'GB' ? animatedValue.toFixed(1) : animatedValue;
   
   return (
     <motion.div 
@@ -125,7 +125,7 @@ const SystemMetricsWidget = () => {
       if (!systemMetrics.isOverridden) {
         updateMetrics({
           cpu: Math.floor(Math.random() * 8) + 5,
-          ram: (Math.random() * 0.1 + 4.2).toFixed(1),
+          ram: Number((Math.random() * 0.1 + 4.2).toFixed(1)),
           temp: Math.floor(Math.random() * 4) + 38,
           power: Math.floor(Math.random() * 3) + 12
         });

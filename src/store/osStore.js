@@ -442,6 +442,9 @@ const useOSStore = create(
       setWallpaper: (wp) => set({ wallpaper: wp }),
       setTransparencyEffects: (enabled) => set({ transparencyEffects: enabled }),
       setBrightness: (value) => set({ brightness: value }),
+      setMusicVolume: (value) => set((state) => ({
+        music: { ...state.music, volume: value }
+      })),
       setAccentIntensity: (value) => set({ accentIntensity: value }),
 
       resetSettingsToDefault: () => set({
@@ -491,6 +494,9 @@ const useOSStore = create(
 
       setTerminalTheme: (theme) => set({ terminalTheme: theme }),
 
+      terminalCommandCount: 0,
+      incrementCommandCount: () => set((state) => ({ terminalCommandCount: state.terminalCommandCount + 1 })),
+
       installApp: (appId) =>
         set((state) => ({
           installedApps: [...state.installedApps, appId],
@@ -515,7 +521,17 @@ const useOSStore = create(
       setIsDragging: (isDragging) => set({ isDragging }),
 
       login: (role = 'admin') => set({ isAuthenticated: true, userRole: role }),
-      logout: () => set({ isAuthenticated: false, openWindows: [], activeWindow: null, userRole: 'admin' }),
+      logout: () => set({ 
+        isAuthenticated: false, 
+        openWindows: [], 
+        activeWindow: null, 
+        isControlCenterOpen: false, 
+        isAppLauncherOpen: false, 
+        isSpotlightOpen: false, 
+        isDragging: false,
+        achievementQueue: [],
+        userRole: 'admin' 
+      }),
 
       // Filtered filesystem for UI
       getFilteredFileSystem: () => {
