@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Tree } from 'react-arborist';
-import { motion } from 'framer-motion';
-import { Folder, FolderOpen, FileText, Plus, Trash2, Edit3, Check, X } from 'lucide-react';
+import { Folder, FolderOpen, FileText, Plus, Trash2, Edit3, Check, X, HardDrive, Image, Music, Video, Archive, Settings, Monitor, File, RefreshCw } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 
@@ -12,8 +11,51 @@ const Node = ({ node, style, dragHandle }) => {
   const [renameValue, setRenameValue] = useState(node.data.name);
   const inputRef = useRef(null);
 
-  const isFolder = node.data.children !== undefined;
+  const isFolder = node.data.children !== undefined && node.data.children !== null;
   const isSelected = node.isSelected;
+
+  // Get appropriate icon based on file type
+  const getFileIcon = (type, name) => {
+    if (isFolder) {
+      return node.isOpen ? (
+        <CustomIcon icon={FolderOpen} size={15} color="text-os-secondary" glow={isSelected ? 'rgba(var(--os-secondary-rgb), 0.3)' : false} />
+      ) : (
+        <CustomIcon icon={Folder} size={15} color="text-os-secondary" glow={isSelected ? 'rgba(var(--os-secondary-rgb), 0.3)' : false} />
+      );
+    }
+
+    // File type icons
+    if (name.endsWith('.md') || name.endsWith('.txt')) {
+      return <CustomIcon icon={FileText} size={15} color="text-blue-400" />;
+    }
+    if (name.endsWith('.pdf')) {
+      return <CustomIcon icon={FileText} size={15} color="text-red-400" />;
+    }
+    if (name.endsWith('.jpg') || name.endsWith('.png') || name.endsWith('.jpeg') || name.endsWith('.gif')) {
+      return <CustomIcon icon={Image} size={15} color="text-green-400" />;
+    }
+    if (name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.ogg')) {
+      return <CustomIcon icon={Music} size={15} color="text-purple-400" />;
+    }
+    if (name.endsWith('.mp4') || name.endsWith('.avi') || name.endsWith('.mov')) {
+      return <CustomIcon icon={Video} size={15} color="text-orange-400" />;
+    }
+    if (name.endsWith('.zip') || name.endsWith('.rar') || name.endsWith('.7z')) {
+      return <CustomIcon icon={Archive} size={15} color="text-yellow-400" />;
+    }
+    if (name.endsWith('.exe') || name.endsWith('.msi') || name.endsWith('.app')) {
+      return <CustomIcon icon={Monitor} size={15} color="text-cyan-400" />;
+    }
+    if (name.endsWith('.sys') || name.endsWith('.dll') || name.endsWith('.ini') || name.endsWith('.log')) {
+      return <CustomIcon icon={Settings} size={15} color="text-gray-400" />;
+    }
+    if (name.endsWith('.json') || name.endsWith('.xml') || name.endsWith('.yml') || name.endsWith('.yaml')) {
+      return <CustomIcon icon={File} size={15} color="text-yellow-300" />;
+    }
+
+    // Default file icon
+    return <CustomIcon icon={FileText} size={15} color="text-os-onSurfaceVariant" />;
+  };
 
   const handleRenameCommit = () => {
     if (renameValue.trim()) renameNode(node.id, renameValue.trim());
@@ -32,15 +74,7 @@ const Node = ({ node, style, dragHandle }) => {
       onClick={() => node.toggle()}
     >
       {/* Icon */}
-      {isFolder ? (
-        node.isOpen ? (
-          <CustomIcon icon={FolderOpen} size={15} color="text-os-secondary" glow={isSelected ? 'rgba(var(--os-secondary-rgb), 0.3)' : false} />
-        ) : (
-          <CustomIcon icon={Folder} size={15} color="text-os-secondary" glow={isSelected ? 'rgba(var(--os-secondary-rgb), 0.3)' : false} />
-        )
-      ) : (
-        <CustomIcon icon={FileText} size={15} color="text-os-onSurfaceVariant" />
-      )}
+      {getFileIcon(node.data.type, node.data.name)}
 
       {/* Name / Rename input */}
       {isRenaming ? (
@@ -86,11 +120,7 @@ const Node = ({ node, style, dragHandle }) => {
 
 // --- File Explorer Root Component ---
 const FileExplorer = () => {
-  const { fileSystem, setFileSystem, createFolder } = useOSStore();
-
-  const handleChange = (newTree) => {
-    setFileSystem(newTree.map((n) => n.data));
-  };
+  const { fileSystem, createFolder, resetFileSystem } = useOSStore();
 
   return (
     <div className="flex flex-col h-full font-sans bg-transparent overflow-hidden">
@@ -98,15 +128,20 @@ const FileExplorer = () => {
       <div className="flex items-center gap-2 px-6 py-4 border-b border-white/5 shrink-0">
         <span className="text-xs font-bold uppercase tracking-widest text-os-onSurfaceVariant">Files</span>
         <div className="ml-auto flex items-center gap-1">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={() => createFolder(`New Folder ${Date.now() % 1000}`)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-os-primary/10 border border-os-primary/20 hover:bg-os-primary/20 transition-all text-os-primary text-xs font-bold"
           >
             <CustomIcon icon={Plus} size={12} glow="rgba(var(--os-primary-rgb), 0.4)" />
             New Folder
-          </motion.button>
+          </button>
+          <button
+            onClick={() => resetFileSystem()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-os-secondary/10 border border-os-secondary/20 hover:bg-os-secondary/20 transition-all text-os-secondary text-xs font-bold"
+          >
+            <CustomIcon icon={RefreshCw} size={12} glow="rgba(var(--os-secondary-rgb), 0.4)" />
+            Reset
+          </button>
         </div>
       </div>
 

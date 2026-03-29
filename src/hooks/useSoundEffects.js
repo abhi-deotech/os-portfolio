@@ -1,6 +1,25 @@
 import { useRef, useEffect } from 'react';
 import useOSStore from '../store/osStore';
 
+/**
+ * Custom hook for generating OS-style sound effects using Web Audio API.
+ * Creates synthesized sounds for UI interactions without external audio files.
+ *
+ * Sound types:
+ * - 'click' - Short sine wave for button presses
+ * - 'open' - Rising triangle wave for window open
+ * - 'close' - Falling triangle wave for window close
+ * - 'error' - Low sawtooth for error states
+ * - 'achievement' - Ascending chime for achievements
+ *
+ * @returns {Object} Sound control object
+ * @returns {Function} returns.playSound - Function to play a sound by type
+ *
+ * @example
+ * const { playSound } = useSoundEffects();
+ * playSound('click');
+ * playSound('achievement');
+ */
 const useSoundEffects = () => {
   const { soundEnabled } = useOSStore();
   const audioCtx = useRef(null);

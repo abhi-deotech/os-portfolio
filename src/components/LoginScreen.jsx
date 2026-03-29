@@ -5,6 +5,25 @@ import useOSStore from '../store/osStore';
 import BootSequence from './BootSequence';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
+/**
+ * Login screen component for Lumina OS authentication.
+ * Provides a multi-phase login experience with boot sequence animation.
+ *
+ * Login Flow:
+ * 1. Pre-boot: Clock display with "Boot System" button
+ * 2. Boot sequence: Animated system boot simulation
+ * 3. Login form: Password entry (default: 'guest') or guest access
+ *
+ * Features:
+ * - Animated background with ambient glow effects
+ * - Real-time clock display
+ * - Boot sequence animation
+ * - Password authentication with error feedback
+ * - Guest login option
+ * - Achievement unlock on first login
+ *
+ * @component
+ */
 const LoginScreen = () => {
   const { login, unlockAchievement } = useOSStore();
   const isMobile = useIsMobile();

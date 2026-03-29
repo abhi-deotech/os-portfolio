@@ -2,6 +2,30 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import useOSStore from '../store/osStore';
 
+/**
+ * Terminal component providing a simulated command-line interface.
+ * Supports file system navigation, system commands, and Easter eggs.
+ *
+ * Features:
+ * - 8 customizable color themes
+ * - Virtual file system with ls, cd, cat commands
+ * - Package manager (lumina-get) for installing apps
+ * - Built-in AI assistant (lumina-ai)
+ * - Achievement triggers for exploration
+ * - Persistent command history
+ *
+ * Terminal Themes:
+ * - default: Dark with purple/cyan accents
+ * - dracula: Purple/green on dark purple
+ * - solarized: Blue/green on dark teal
+ * - monokai: Pink/green on dark gray
+ * - retro: Monochrome green
+ * - cyberpunk: Yellow/magenta on black
+ * - matrix-glow: Matrix-style green glow
+ * - ocean: Cyan/teal on dark blue
+ *
+ * @component
+ */
 const Terminal = () => {
   const { 
     terminalHistory, addTerminalEntry, clearTerminalHistory, 

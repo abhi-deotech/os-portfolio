@@ -36,7 +36,7 @@ const Widgets = () => {
       return { x: 0, y: 0 }; // Positions don't matter as much in flex/grid
     } else {
       switch (type) {
-        case 'social':   return { x: window.innerWidth - 360, y: 40 };
+        case 'social':   return { x: window.innerWidth - 480, y: 40 };
         case 'metrics':  return { x: Math.floor((window.innerWidth - 300) / 2), y: Math.floor((window.innerHeight - 450) / 2) };
         default:         return { x: 40, y: 40 };
       }
@@ -55,7 +55,7 @@ const Widgets = () => {
   if (isMobile) {
     return (
       <div className="flex flex-col gap-6 items-center w-full">
-        <div className="w-full max-w-[340px]">
+        <div className="w-full max-w-[380px]">
           <SocialWidget />
         </div>
         <div className="w-full max-w-[340px]">
@@ -72,7 +72,7 @@ const Widgets = () => {
         <DraggableWidget 
           initialPos={socialPos} 
           setPos={setSocialPos} 
-          width={320}
+          width={440}
         >
           <SocialWidget />
         </DraggableWidget>

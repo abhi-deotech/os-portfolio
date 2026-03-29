@@ -4,6 +4,7 @@ import { Trophy } from 'lucide-react';
 import useOSStore from '../store/osStore';
 
 const AchievementToast = ({ achievementId, onComplete }) => {
+  const { transparencyEffects } = useOSStore();
   const achievementsList = {
     first_login: { title: 'Hello World', desc: 'Successfully logged into Lumina OS.' },
     search_pro: { title: 'Spotlight Master', desc: 'Used the global search for the first time.' },
@@ -28,7 +29,7 @@ const AchievementToast = ({ achievementId, onComplete }) => {
       initial={{ x: 400, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: 400, opacity: 0 }}
-      className="fixed bottom-24 right-6 z-[2000] w-80 bg-black/80 backdrop-blur-xl border border-os-primary/30 rounded-2xl p-4 flex items-center gap-4 shadow-2xl overflow-hidden shadow-os-primary/10"
+      className={`fixed bottom-24 right-6 z-[2000] w-80 bg-black/80 ${transparencyEffects ? 'backdrop-blur-xl' : ''} border border-os-primary/30 rounded-2xl p-4 flex items-center gap-4 shadow-2xl overflow-hidden shadow-os-primary/10`}
     >
       <div className="absolute inset-0 bg-gradient-to-r from-os-primary/5 to-transparent pointer-events-none" />
       <div className="p-3 rounded-xl bg-os-primary/20 text-os-primary">

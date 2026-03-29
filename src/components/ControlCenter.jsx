@@ -6,7 +6,7 @@ import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
 const ControlCenter = () => {
-  const { isControlCenterOpen, toggleControlCenter, music, setMusicIsPlaying, openWindow } = useOSStore();
+  const { isControlCenterOpen, toggleControlCenter, music, setMusicIsPlaying, openWindow, transparencyEffects } = useOSStore();
   const isMobile = useIsMobile();
   const [volume, setVolume] = useState(music.volume * 100);
   const [brightness, setBrightness] = useState(80);
@@ -29,7 +29,7 @@ const ControlCenter = () => {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={isMobile ? { y: '100%', opacity: 0 } : { y: 20, opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`fixed ${isMobile ? 'inset-0 w-full h-full rounded-none' : 'bottom-24 left-8 w-[380px] rounded-[2.5rem] border'} bg-[#0e0e0e]/80 backdrop-blur-3xl border-white/10 p-5 z-[70] shadow-[0_32px_64px_rgba(0,0,0,0.6)] flex flex-col space-y-4 select-none grayscale-0 overflow-hidden`}
+            className={`fixed ${isMobile ? 'inset-0 w-full h-full rounded-none' : 'bottom-24 left-8 w-[380px] rounded-[2.5rem] border'} bg-[#0e0e0e]/80 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 p-5 z-[70] shadow-[0_32px_64px_rgba(0,0,0,0.6)] flex flex-col space-y-4 select-none grayscale-0 overflow-hidden`}
           >
             {/* Ambient Lighting / Mica Effect Blob */}
             <div className="absolute -top-20 -right-20 w-[250px] h-[250px] bg-[#cc97ff]/20 blur-[80px] rounded-full pointer-events-none -z-10 mix-blend-screen" />

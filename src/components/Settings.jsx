@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings as SettingsIcon, 
   ImageIcon, 
@@ -13,24 +13,66 @@ import {
   Droplets,
   SlidersHorizontal,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  RefreshCw,
+  Signal,
+  Globe,
+  Shield,
+  Activity,
+  Download,
+  Upload,
+  Zap,
+  RotateCcw
 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import useSystemMetrics from '../hooks/useSystemMetrics';
+import useNetworkInfo from '../hooks/useNetworkInfo';
 
 const Settings = () => {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('personalization');
   const [showSidebar, setShowSidebar] = useState(true);
-  const { wallpaper, setWallpaper, activeAccent, setActiveAccent } = useOSStore();
+  const { 
+    wallpaper, 
+    setWallpaper, 
+    activeAccent, 
+    setActiveAccent,
+    transparencyEffects,
+    setTransparencyEffects,
+    brightness,
+    setBrightness,
+    accentIntensity,
+    setAccentIntensity,
+    resetSettingsToDefault
+  } = useOSStore();
   const metrics = useSystemMetrics();
+  const network = useNetworkInfo();
   
-  // Mock local state for settings toggles
-  const [transparencyEffects, setTransparencyEffects] = useState(true);
-  const [accentIntensity, setAccentIntensity] = useState(80);
-  const [brightness, setBrightness] = useState(100);
+  // Network scan states
+  const [isScanning, setIsScanning] = useState(false);
+  const [mockNetworks, setMockNetworks] = useState([
+    { id: 'current', name: 'Nexus-5G', signal: 95, secure: true, connected: true },
+    { id: 1, name: 'Lumina-Corp', signal: 78, secure: true, connected: false },
+    { id: 2, name: 'CoffeeHub_Guest', signal: 45, secure: false, connected: false },
+    { id: 3, name: 'CyberCafe_2.4G', signal: 62, secure: true, connected: false },
+  ]);
+
+  const handleNetworkScan = () => {
+    setIsScanning(true);
+    setTimeout(() => {
+      const newNetworks = [
+        { id: 'current', name: 'Nexus-5G', signal: Math.floor(Math.random() * 20 + 80), secure: true, connected: true },
+        { id: 1, name: 'Lumina-Corp', signal: Math.floor(Math.random() * 30 + 60), secure: true, connected: false },
+        { id: 2, name: 'CoffeeHub_Guest', signal: Math.floor(Math.random() * 40 + 30), secure: false, connected: false },
+        { id: Math.random(), name: 'Neural-Link_' + Math.floor(Math.random() * 999), signal: Math.floor(Math.random() * 50 + 40), secure: true, connected: false },
+        { id: Math.random(), name: 'Quantum-Net', signal: Math.floor(Math.random() * 30 + 20), secure: true, connected: false },
+      ];
+      setMockNetworks(newNetworks);
+      setIsScanning(false);
+    }, 2000);
+  };
 
   const wallpapers = [
     { id: 'neon-nebula', name: 'Neon Nebula', type: 'live', color: 'from-[#cc97ff] to-[#00d2fd]' },
@@ -218,6 +260,28 @@ const Settings = () => {
             </div>
         </section>
       </div>
+
+      {/* Reset to Default Section */}
+      <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/40 border border-os-outline/10 backdrop-blur-xl">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
+              <RotateCcw size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Reset Personalization</h3>
+              <p className="text-xs text-os-onSurfaceVariant">Restore all appearance settings to factory defaults</p>
+            </div>
+          </div>
+          <button
+            onClick={resetSettingsToDefault}
+            className="px-6 py-2.5 rounded-xl bg-os-surfaceContainerHigh hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 border border-os-outline/20 transition-all duration-300 text-sm font-semibold flex items-center gap-2 group"
+          >
+            <RotateCcw size={16} className="group-hover:-rotate-180 transition-transform duration-500" />
+            Reset to Default
+          </button>
+        </div>
+      </section>
     </div>
   );
 
@@ -291,10 +355,10 @@ const Settings = () => {
                   </div>
 
                   <div className="mb-8">
-                      <div className="flex items-end gap-2 mb-1">
+                      <div className="flex items-end gap-1 mb-1">
                           <span className="text-4xl md:text-5xl font-display font-black tracking-tighter text-os-tertiary">{metrics.ramUsedMb}</span>
                           <span className="text-xl font-bold text-os-onSurfaceVariant pb-1">MB</span>
-                          <span className="block text-xs text-os-onSurfaceVariant/40 font-bold mb-1 ml-1 self-end">/ {metrics.ramLimitMb} MB</span>
+                          <span className="text-sm text-os-onSurfaceVariant/50 font-bold pb-2 ml-1">/ {metrics.ramLimitMb} MB</span>
                       </div>
                       <span className="text-xs text-os-onSurfaceVariant font-bold uppercase tracking-widest">RAM Usage ({metrics.ram}%)</span>
                   </div>
@@ -315,6 +379,129 @@ const Settings = () => {
           </div>
       </div>
     </div>
+    );
+  };
+
+  const renderNetwork = () => {
+    const getConnectionTypeIcon = () => {
+      if (!network.isOnline) return <Signal size={16} className="text-red-400" />;
+      if (network.connectionType === 'wifi') return <Wifi size={16} className="text-os-primary" />;
+      if (network.connectionType === 'cellular') return <Signal size={16} className="text-os-secondary" />;
+      return <Globe size={16} className="text-os-tertiary" />;
+    };
+
+    return (
+      <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+        <div>
+          <h2 className="text-3xl md:text-4xl font-display font-black tracking-tight mb-2">Network</h2>
+          <p className="text-os-onSurfaceVariant text-sm">Monitor connection status and manage network interfaces.</p>
+        </div>
+
+        {/* Connection Status Card */}
+        <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/40 border border-os-outline/10 backdrop-blur-xl space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <CustomIcon icon={Activity} size={18} color="text-os-onSurfaceVariant" />
+              Connection Status
+            </h3>
+            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${network.isOnline ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+              {network.isOnline ? 'Online' : 'Offline'}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
+              <div className="flex items-center gap-2 text-os-onSurfaceVariant">
+                {getConnectionTypeIcon()}
+                <span className="text-[10px] font-bold uppercase tracking-widest">Type</span>
+              </div>
+              <span className="block text-sm font-bold text-white capitalize">{network.connectionType}</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
+              <div className="flex items-center gap-2 text-os-onSurfaceVariant">
+                <Download size={16} className="text-os-secondary" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Downlink</span>
+              </div>
+              <span className="block text-sm font-bold text-white">{network.downlink > 0 ? network.downlink + ' Mbps' : '--'}</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
+              <div className="flex items-center gap-2 text-os-onSurfaceVariant">
+                <Zap size={16} className="text-os-tertiary" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Latency</span>
+              </div>
+              <span className="block text-sm font-bold text-white">{network.rtt > 0 ? network.rtt + ' ms' : '--'}</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
+              <div className="flex items-center gap-2 text-os-onSurfaceVariant">
+                <Shield size={16} className="text-os-primary" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Data Saver</span>
+              </div>
+              <span className="block text-sm font-bold text-white">{network.saveData ? 'On' : 'Off'}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* WiFi Networks */}
+        <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/40 border border-os-outline/10 backdrop-blur-xl space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <CustomIcon icon={Wifi} size={18} color="text-os-onSurfaceVariant" />
+              Available Networks
+            </h3>
+            <button 
+              onClick={handleNetworkScan}
+              disabled={isScanning}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-os-surfaceContainerHigh/50 hover:bg-os-surfaceContainerHighest transition-colors text-xs font-semibold disabled:opacity-50"
+            >
+              <RefreshCw size={14} className={isScanning ? 'animate-spin' : ''} />
+              {isScanning ? 'Scanning...' : 'Scan'}
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {mockNetworks.map((net) => (
+              <div 
+                key={net.id} 
+                className={`flex items-center justify-between p-4 rounded-2xl transition-all ${net.connected ? 'bg-os-primary/10 border border-os-primary/20' : 'bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50'}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`p-2 rounded-xl ${net.connected ? 'bg-os-primary/20 text-os-primary' : 'bg-white/5 text-os-onSurfaceVariant'}`}>
+                    {net.secure ? <Shield size={18} /> : <Wifi size={18} />}
+                  </div>
+                  <div>
+                    <span className={`block font-bold text-sm ${net.connected ? 'text-os-primary' : 'text-white'}`}>
+                      {net.name}
+                      {net.connected && <span className="ml-2 text-[10px] font-normal opacity-60">(Connected)</span>}
+                    </span>
+                    <span className="text-[10px] text-os-onSurfaceVariant font-medium">
+                      {net.secure ? 'WPA3 Secured' : 'Open Network'}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-0.5">
+                    {[1, 2, 3, 4].map((bar) => (
+                      <div 
+                        key={bar} 
+                        className={`w-1 rounded-full ${net.signal >= bar * 25 ? 'bg-os-primary' : 'bg-os-outline/20'}`}
+                        style={{ height: `${bar * 4}px` }}
+                      />
+                    ))}
+                  </div>
+                  {!net.connected && (
+                    <button className="px-3 py-1.5 rounded-lg bg-os-primary/10 text-os-primary text-[10px] font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-colors">
+                      Connect
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     );
   };
 
@@ -399,7 +586,7 @@ const Settings = () => {
         <div className="h-full">
             {activeTab === 'personalization' && renderPersonalization()}
             {activeTab === 'system' && renderSystem()}
-            {activeTab === 'network' && renderPlaceholder('Network Config', 'Manage your virtual network connections, VPN profiles, and DNS settings.')}
+            {activeTab === 'network' && renderNetwork()}
             {activeTab === 'user' && (
               <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div>

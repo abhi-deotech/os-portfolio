@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   User, Code, FileText, LayoutGrid, Gamepad2, MousePointer2,
   Settings as SettingsIcon, ChevronUp, ChevronDown, HardDrive,
-  Wallpaper, FolderPlus, RefreshCw, Home, SlidersHorizontal, Cpu, X, Monitor, Music, Power, Brain, Hash, Activity, Trophy, Globe
+  Wallpaper, FolderPlus, RefreshCw, Home, SlidersHorizontal, Cpu, X, Monitor, Music, Power, Brain, Hash, Activity, Trophy, Globe, RotateCcw, Book
 } from 'lucide-react';
 import CustomIcon from './components/common/CustomIcon';
 import {
@@ -38,6 +38,7 @@ import TaskManager from './components/TaskManager';
 import Achievements from './components/Achievements';
 import Browser from './components/Browser';
 import AIChat from './components/AIChat';
+import DocumentationApp from './components/DocumentationApp';
 import AchievementToast from './components/AchievementToast';
 import Screensaver from './components/Screensaver';
 import useSoundEffects from './hooks/useSoundEffects';
@@ -45,9 +46,24 @@ import useOSStore from './store/osStore';
 import { useIsMobile } from './hooks/useMediaQuery';
 import './index.css';
 
+// Context menu IDs for desktop and icon menus
 const DESKTOP_MENU_ID = 'desktop-context-menu';
 const ICON_MENU_ID = 'icon-context-menu';
 
+/**
+ * Main application component for Lumina OS.
+ * Manages the desktop environment, window system, taskbar, and global state.
+ *
+ * Features:
+ * - Desktop with draggable icons
+ * - Multi-window system with various applications
+ * - Taskbar with app launcher and control center
+ * - Idle detection and screensaver
+ * - Context menus for desktop and icons
+ * - Spotlight search (Ctrl/Cmd + K)
+ *
+ * @component
+ */
 function App() {
   const {
     openWindows, openWindow, toggleControlCenter, isControlCenterOpen,
@@ -55,7 +71,8 @@ function App() {
     iconPositions, setIconPosition, resetIconPositions,
     createFolder, setIsDragging, closeWindow,
     isAuthenticated, logout, toggleSpotlight, isSpotlightOpen, openNotepad,
-    achievementQueue, removeAchievementToast
+    achievementQueue, removeAchievementToast,
+    transparencyEffects, brightness, accentIntensity, resetSettingsToDefault
   } = useOSStore();
 
   const { playSound } = useSoundEffects();
@@ -104,6 +121,7 @@ function App() {
     { id: 'achievements', title: 'Honors',   icon: <CustomIcon icon={Trophy} size={isMobile ? 32 : 28}        color="text-yellow-400" glow="rgba(250,204,21,0.3)" strokeWidth={2.5} /> },
     { id: 'browser',    title: 'Flow-Net',   icon: <CustomIcon icon={Globe} size={isMobile ? 32 : 28}         color="text-[#00d2fd]" glow="rgba(0,210,253,0.3)" strokeWidth={2.5} /> },
     { id: 'aichat',     title: 'Lumina AI',  icon: <CustomIcon icon={Brain} size={isMobile ? 32 : 28}        color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
+    { id: 'documentation', title: 'Documentation', icon: <CustomIcon icon={Book} size={isMobile ? 32 : 28}     color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} /> },
   ];
 
   useEffect(() => {
@@ -167,6 +185,8 @@ function App() {
         '--os-primary-rgb':   currentAccent.primary,
         '--os-secondary-rgb': currentAccent.secondary,
         '--os-tertiary-rgb':  currentAccent.tertiary,
+        '--os-accent-intensity': accentIntensity / 100,
+        filter: `brightness(${brightness}%)`,
       }}
       onContextMenu={handleDesktopContextMenu}
     >
@@ -191,6 +211,9 @@ function App() {
               <CustomIcon icon={FolderPlus} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> New Folder
             </Item>
             <Separator />
+            <Item onClick={() => { resetSettingsToDefault(); closeWindow('settings'); }}>
+              <CustomIcon icon={RotateCcw} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> Reset Settings
+            </Item>
             <Item onClick={resetIconPositions}>
               <CustomIcon icon={RefreshCw} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> Reset Icon Layout
             </Item>
@@ -629,13 +652,19 @@ function App() {
                 <AIChat />
               </Window>
             )}
+
+            {openWindows.includes('documentation') && (
+              <Window key="documentation" id="documentation" title="OS Documentation" width={1200} height={800}>
+                <DocumentationApp />
+              </Window>
+            )}
           </AnimatePresence>
         </div>
       </div>
 
       {/* The Taskbar (Bottom Dock) */}
       <div 
-        className={`absolute ${isMobile ? 'bottom-0 left-0 right-0 w-full h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-white/5 backdrop-blur-3xl border-white/10 flex items-center px-4 justify-between z-50 shadow-2xl transition-all duration-500`}
+        className={`absolute ${isMobile ? 'bottom-0 left-0 right-0 w-full h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-white/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 flex items-center px-4 justify-between z-50 shadow-2xl transition-all duration-500`}
       >
         {/* System & App Launcher Group (Left) */}
         <div className="flex items-center bg-black/20 rounded-2xl p-1 gap-1 border border-white/5 md:mr-4">
@@ -734,7 +763,7 @@ function App() {
               initial={isMobile ? { y: '100%', opacity: 0 } : { y: 20, opacity: 0, scale: 0.95 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={isMobile ? { y: '100%', opacity: 0 } : { y: 20, opacity: 0, scale: 0.95 }}
-              className={`fixed ${isMobile ? 'bottom-0 left-0 right-0 w-full h-[85vh] rounded-t-[3rem]' : 'bottom-24 left-8 w-[400px] rounded-[2.5rem]'} bg-white/10 backdrop-blur-[40px] border border-white/10 p-6 z-[70] shadow-2xl overflow-hidden`}
+              className={`fixed ${isMobile ? 'bottom-0 left-0 right-0 w-full h-[85vh] rounded-t-[3rem]' : 'bottom-24 left-8 w-[400px] rounded-[2.5rem]'} bg-white/10 ${transparencyEffects ? 'backdrop-blur-[40px]' : ''} border border-white/10 p-6 z-[70] shadow-2xl overflow-hidden`}
             >
               <div className="absolute -top-24 -left-24 w-[300px] h-[300px] bg-os-primary/10 blur-[100px] rounded-full -z-10" />
               <div className="flex flex-col space-y-6 h-full">

@@ -4,7 +4,7 @@ import { Search, File, AppWindow, Command, X, ArrowRight } from 'lucide-react';
 import useOSStore from '../store/osStore';
 
 const Spotlight = () => {
-  const { isSpotlightOpen, toggleSpotlight, fileSystem, openWindow, openNotepad, unlockAchievement } = useOSStore();
+  const { isSpotlightOpen, toggleSpotlight, fileSystem, openWindow, openNotepad, unlockAchievement, transparencyEffects } = useOSStore();
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -100,7 +100,7 @@ const Spotlight = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => toggleSpotlight(false)}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[1000]"
+            className={`fixed inset-0 bg-black/40 ${transparencyEffects ? 'backdrop-blur-sm' : ''} z-[1000]`}
           />
 
           {/* Search Box */}
@@ -108,7 +108,7 @@ const Spotlight = () => {
             initial={{ opacity: 0, scale: 0.9, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -20 }}
-            className="fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-2xl bg-os-surfaceContainerLow/90 backdrop-blur-2xl rounded-3xl border border-white/10 shadow-2xl z-[1001] overflow-hidden"
+            className={`fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-2xl bg-os-surfaceContainerLow/90 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl border border-white/10 shadow-2xl z-[1001] overflow-hidden`}
           >
             <div className="flex items-center px-6 py-5 gap-4 border-b border-white/5">
               <Search className="text-os-primary" size={24} />

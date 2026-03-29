@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { 
   Star, GitFork, Users, ExternalLink, RefreshCw, 
   Calendar, BookOpen, User as UserIcon, Info,
-  Briefcase, MessageSquare, Award
+  Briefcase, MessageSquare, Award, MapPin, Building2, 
+  GraduationCap, BadgeCheck, ThumbsUp, MessageCircle,
+  Share2, Clock, MoreHorizontal
 } from 'lucide-react';
 const GithubIcon = ({ size = 20, className = "" }) => (
   <svg 
@@ -30,7 +32,7 @@ const LinkedinIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const SocialWidget = () => {
   const [activeTab, setActiveTab] = useState('github');
@@ -38,18 +40,11 @@ const SocialWidget = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // LinkedIn data state (static, no loading needed)
+  const [linkedinData, setLinkedinData] = useState(null);
+  
   const githubUsername = 'abhi-deotech';
   const linkedinUsername = 'abhimanyu-saxena-b656a4183';
-
-  const linkedinData = {
-    name: 'Abhimanyu Saxena',
-    headline: 'Software Engineer | Team Lead at Deotechsolutions',
-    location: 'India',
-    connections: '500+',
-    avatar: 'https://github.com/abhi-deotech.png',
-    recentPost: 'Excited to share that we just launched our new enterprise platform!',
-    company: 'Deotechsolutions'
-  };
 
   useEffect(() => {
     const fetchGithubData = async () => {
@@ -150,24 +145,41 @@ const SocialWidget = () => {
     fetchGithubData();
   }, [githubUsername]);
 
+  // Simple load - no API needed since LinkedIn blocks scraping
+  useEffect(() => {
+    if (activeTab === 'linkedin') {
+      const LINKEDIN_PROFILE = {
+        name: 'Abhimanyu Saxena',
+        headline: 'Software Engineer | Team Lead',
+        location: 'Noida, India',
+        connections: '500+',
+        avatar: `https://github.com/${githubUsername}.png`,
+        company: 'Deotechsolutions',
+        title: 'Team Lead',
+        skills: ['React', 'Node.js', 'TypeScript', 'AWS', 'Docker', 'MongoDB']
+      };
+      setLinkedinData(LINKEDIN_PROFILE);
+    }
+  }, [activeTab, githubUsername]);
+
   const renderGithub = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center h-full py-10 opacity-50">
-          <RefreshCw className="text-os-primary animate-spin mb-4" size={32} />
-          <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.3em]">Syncing GitHub Pulse...</p>
+        <div className="flex flex-col items-center justify-center h-full py-12 opacity-50">
+          <RefreshCw className="text-os-primary animate-spin mb-4" size={40} />
+          <p className="text-sm font-bold text-white/40 uppercase tracking-[0.2em]">Syncing GitHub Pulse...</p>
         </div>
       );
     }
 
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-full py-10 text-center px-4">
-          <p className="text-red-500 text-xs font-bold mb-2">Sync Failed</p>
-          <p className="text-white/40 text-[10px] leading-relaxed">{error}</p>
+        <div className="flex flex-col items-center justify-center h-full py-12 text-center px-4">
+          <p className="text-red-500 text-sm font-bold mb-3">Sync Failed</p>
+          <p className="text-white/40 text-xs leading-relaxed">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="mt-6 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 text-[10px] font-bold transition-all"
+            className="mt-6 px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 text-xs font-bold transition-all"
           >
             Retry Sync
           </button>
@@ -183,65 +195,66 @@ const SocialWidget = () => {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col h-full gap-4"
       >
-        <div className="flex items-center gap-4 py-1">
+        <div className="flex items-center gap-5 py-2">
           <div className="relative">
-            <img src={githubData.avatar} alt="Avatar" className="w-14 h-14 rounded-2xl border-2 border-os-primary/20 pointer-events-none p-0.5" />
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-black border border-white/10 rounded-lg flex items-center justify-center">
-               <GithubIcon size={10} className="text-os-primary" />
+            <img src={githubData.avatar} alt="Avatar" className="w-16 h-16 rounded-2xl border-2 border-os-primary/20 pointer-events-none p-0.5" />
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-black border border-white/10 rounded-lg flex items-center justify-center">
+               <GithubIcon size={12} className="text-os-primary" />
             </div>
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-black text-white tracking-tight">@{githubData.username}</span>
-            <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest mt-0.5 truncate max-w-[150px]">{githubData.bio || 'Developer'}</span>
+            <span className="text-base font-black text-white tracking-tight">@{githubData.username}</span>
+            <span className="text-xs font-bold text-white/30 uppercase tracking-widest mt-1 truncate max-w-[180px]">{githubData.bio || 'Developer'}</span>
           </div>
-          <a href={`https://github.com/${githubUsername}`} target="_blank" rel="noreferrer" className="ml-auto p-2 rounded-lg bg-white/5 text-white/40 hover:text-os-primary hover:bg-os-primary/10 transition-all">
-            <ExternalLink size={14} />
+          <a href={`https://github.com/${githubUsername}`} target="_blank" rel="noreferrer" className="ml-auto p-2.5 rounded-xl bg-white/5 text-white/40 hover:text-os-primary hover:bg-os-primary/10 transition-all">
+            <ExternalLink size={18} />
           </a>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-3">
           {[
             { icon: Star, val: githubData.stars, label: 'Stars', color: 'text-yellow-400' },
             { icon: GitFork, val: githubData.repos, label: 'Repos', color: 'text-os-primary' },
             { icon: Users, val: githubData.followers, label: 'Fans', color: 'text-blue-400' }
           ].map((item, i) => (
-            <div key={i} className="p-2.5 bg-white/[0.03] rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1 hover:bg-white/[0.05] transition-colors">
-              <item.icon size={12} className={item.color} />
-              <span className="text-xs font-black text-white">{item.val}</span>
-              <span className="text-[7px] font-bold text-white/20 uppercase tracking-widest">{item.label}</span>
+            <div key={i} className="p-4 bg-white/[0.03] rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1.5 hover:bg-white/[0.05] transition-colors">
+              <item.icon size={18} className={item.color} />
+              <span className="text-sm font-black text-white">{item.val}</span>
+              <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{item.label}</span>
             </div>
           ))}
         </div>
 
-        {/* Contribution Heatmap */}
-        <div className="space-y-2">
+        <div className="space-y-3">
            <div className="flex items-center justify-between px-1">
-              <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Contribution Matrix</span>
-              <span className="text-[7px] font-bold text-os-primary opacity-50 uppercase tracking-widest font-mono">365 Days</span>
+              <span className="text-xs font-black text-white/30 uppercase tracking-[0.15em]">Contribution Matrix</span>
+              <span className="text-[10px] font-bold text-os-primary/60 uppercase tracking-widest font-mono">6 Months</span>
            </div>
-           <div className="p-3 bg-black/40 rounded-2xl border border-white/5 overflow-hidden border-os-primary/10 transition-all">
-              <img 
-                 src={`https://ghchart.rshah.org/cc97ff/${githubUsername}`} 
-                 alt="GitHub Contributions" 
-                 className="w-full h-auto brightness-90 contrast-125 filter grayscale-[0.2] invert opacity-80"
-                 style={{ mixBlendMode: 'screen' }}
-              />
+           <div className="p-4 sm:p-5 bg-white rounded-2xl border border-white/10 overflow-hidden shadow-lg">
+              <div className="relative w-full overflow-hidden" style={{ aspectRatio: '3/1' }}>
+                 <img 
+                    src={`https://ghchart.rshah.org/22c55e/${githubUsername}`} 
+                    alt="GitHub Contributions" 
+                    className="absolute inset-0 h-full w-auto max-w-none object-cover object-right"
+                    style={{ width: '200%', marginLeft: '-100%' }}
+                 />
+              </div>
            </div>
         </div>
 
         {/* Recent Activity List */}
-        <div className="space-y-2 overflow-hidden">
-           <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] px-1">Recent Pulses</span>
-           <div className="flex flex-col gap-1.5">
+        <div className="space-y-3 overflow-hidden">
+           <span className="text-xs font-black text-white/30 uppercase tracking-[0.15em] px-1">Recent Pulses</span>
+           <div className="flex flex-col gap-2">
               {githubData.recentEvents?.map((event, i) => (
-                 <div key={i} className="flex items-center gap-2 p-2 bg-white/[0.03] rounded-xl border border-white/5 text-[9px]">
-                    <div className={`w-1.5 h-1.5 rounded-full ${event.type === 'PushEvent' ? 'bg-os-primary shadow-[0_0_5px_var(--os-primary-rgb)]' : 'bg-yellow-500 shadow-[0_0_5px_rgba(234,179,8,0.5)]'}`} />
-                    <span className="text-white/40 font-bold">{event.type === 'PushEvent' ? 'Pushed to' : 'Starred'}</span>
-                    <span className="text-white/80 font-black truncate max-w-[150px]">{event.repo.name.split('/')[1]}</span>
+                 <div key={i} className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/5 text-sm">
+                    <div className={`w-2 h-2 rounded-full ${event.type === 'PushEvent' ? 'bg-os-primary shadow-[0_0_8px_var(--os-primary-rgb)]' : 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]'}`} />
+                    <span className="text-white/50 font-bold">{event.type === 'PushEvent' ? 'Pushed to' : 'Starred'}</span>
+                    <span className="text-white font-black truncate max-w-[180px]">{event.repo.name.split('/')[1]}</span>
                  </div>
               ))}
               {(!githubData.recentEvents || githubData.recentEvents.length === 0) && (
-                 <p className="text-[9px] text-white/20 italic px-2">No recent pulses detected...</p>
+                 <p className="text-sm text-white/30 italic px-2">No recent pulses detected...</p>
               )}
            </div>
         </div>
@@ -250,88 +263,103 @@ const SocialWidget = () => {
   };
 
   const renderLinkedin = () => {
+    if (!linkedinData) return null;
+
     return (
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col h-full gap-4"
+        className="flex flex-col h-full"
       >
-        <div className="flex items-center gap-4 py-1">
-          <img src={linkedinData.avatar} alt="Avatar" className="w-14 h-14 rounded-full border-2 border-[#0077b5]/40 p-0.5 pointer-events-none" />
-          <div className="flex flex-col">
-            <span className="text-sm font-black text-white tracking-tight">{linkedinData.name}</span>
-            <span className="text-[9px] font-bold text-white/50 leading-tight mt-0.5">{linkedinData.headline}</span>
+        {/* Compact Header */}
+        <div className="flex items-start gap-4 pb-4 border-b border-white/5">
+          <div className="relative flex-shrink-0">
+            <img 
+              src={linkedinData.avatar} 
+              alt="Avatar" 
+              className="w-16 h-16 rounded-2xl border-2 border-[#0077b5]/30 pointer-events-none"
+            />
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0077b5] rounded-full flex items-center justify-center">
+              <BadgeCheck size={12} className="text-white" />
+            </div>
           </div>
-          <a href={`https://linkedin.com/in/${linkedinUsername}`} target="_blank" rel="noreferrer" className="ml-auto p-2 rounded-lg bg-white/5 text-white/40 hover:text-[#70b5f9] hover:bg-white/10 transition-all">
-            <ExternalLink size={14} />
+          
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base font-black text-white tracking-tight">{linkedinData.name}</h2>
+            <p className="text-sm text-white/60 mt-0.5">{linkedinData.headline}</p>
+            <div className="flex items-center gap-2 mt-1.5 text-xs text-white/40">
+              <MapPin size={12} />
+              <span>{linkedinData.location}</span>
+              <span>·</span>
+              <span>{linkedinData.connections} connections</span>
+            </div>
+          </div>
+          
+          <a 
+            href={`https://linkedin.com/in/${linkedinUsername}`} 
+            target="_blank" 
+            rel="noreferrer"
+            className="flex-shrink-0 p-2 rounded-lg bg-[#0077b5] text-white hover:bg-[#008de4] transition-all"
+          >
+            <LinkedinIcon size={18} />
           </a>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-colors">
-            <Users size={12} className="text-[#70b5f9]" />
-            <span className="text-xs font-black text-white">{linkedinData.connections}</span>
-            <span className="text-[7px] font-bold text-white/20 uppercase tracking-widest">Connections</span>
-          </div>
-          <div className="p-3 bg-white/5 rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1 hover:bg-white/10 transition-colors">
-            <Briefcase size={12} className="text-orange-400" />
-            <span className="text-xs font-black text-white">5+ Years</span>
-            <span className="text-[7px] font-bold text-white/20 uppercase tracking-widest">Experience</span>
+        {/* Skills */}
+        <div className="py-4 border-b border-white/5">
+          <h3 className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Top Skills</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {linkedinData.skills?.map((skill, i) => (
+              <span key={i} className="px-2 py-1 bg-white/5 rounded-md text-xs text-white/70">
+                {skill}
+              </span>
+            ))}
           </div>
         </div>
 
-        <div className="p-4 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden group/post">
-           <div className="absolute top-0 right-0 p-2 opacity-20">
-              <MessageSquare size={12} className="text-white" />
-           </div>
-           <span className="text-[8px] font-black text-[#70b5f9] uppercase tracking-widest mb-2 block tracking-[0.2em]">Latest Update</span>
-           <p className="text-[10px] text-white/70 italic leading-relaxed line-clamp-2">
-              "{linkedinData.recentPost}"
-           </p>
-        </div>
-
-        <div className="flex items-center justify-between px-1">
-          <div className="flex flex-col">
-            <span className="text-[7px] font-bold text-white/20 uppercase">Current Role</span>
-            <div className="flex items-center gap-2 mt-1">
-              <Award size={10} className="text-yellow-500" />
-              <span className="text-[9px] font-black text-[#70b5f9] tracking-widest uppercase">{linkedinData.company}</span>
+        {/* Current Role */}
+        <div className="py-4">
+          <h3 className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Current</h3>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0077b5]/20 to-[#0077b5]/5 flex items-center justify-center border border-[#0077b5]/20">
+              <Briefcase size={18} className="text-[#70b5f9]" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">{linkedinData.title}</p>
+              <p className="text-xs text-[#70b5f9]">{linkedinData.company}</p>
             </div>
           </div>
-          <button className="px-4 py-2 bg-[#0077b5] text-white text-[9px] font-black uppercase tracking-widest rounded-xl shadow-lg shadow-[#0077b5]/20 hover:bg-[#008de4] transition-all active:scale-95">
-            Connect
-          </button>
         </div>
       </motion.div>
     );
   };
 
   return (
-    <div className="flex flex-col h-full p-4 md:p-5 bg-gradient-to-br from-[#121212] to-[#080808] rounded-3xl border border-white/5 overflow-hidden relative group">
-      <div className={`absolute top-0 right-0 w-32 h-32 blur-3xl rounded-full transition-all duration-500 ${activeTab === 'github' ? 'bg-os-primary/5' : 'bg-[#0077b5]/10'}`} />
+    <div className="flex flex-col h-full p-5 md:p-6 bg-gradient-to-br from-[#121212] to-[#080808] rounded-3xl border border-white/5 overflow-hidden relative group">
+      <div className={`absolute top-0 right-0 w-40 h-40 blur-3xl rounded-full transition-all duration-500 ${activeTab === 'github' ? 'bg-os-primary/5' : 'bg-[#0077b5]/10'}`} />
       
       {/* Tab Switcher */}
-      <div className="flex items-center gap-2 p-1 bg-white/[0.03] rounded-2xl border border-white/5 mb-4 relative z-10 w-fit mx-auto">
+      <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] rounded-2xl border border-white/5 mb-5 relative z-10 w-fit mx-auto">
         <button
           onClick={() => setActiveTab('github')}
-          className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+          className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
             activeTab === 'github' 
               ? 'bg-os-primary text-black shadow-lg shadow-os-primary/20' 
               : 'text-white/40 hover:text-white/60'
           }`}
         >
-          <GithubIcon size={12} />
+          <GithubIcon size={16} />
           GitHub
         </button>
         <button
           onClick={() => setActiveTab('linkedin')}
-          className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+          className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
             activeTab === 'linkedin' 
               ? 'bg-[#0077b5] text-white shadow-lg shadow-[#0077b5]/20' 
               : 'text-white/40 hover:text-white/60'
           }`}
         >
-          <LinkedinIcon size={12} />
+          <LinkedinIcon size={16} />
           LinkedIn
         </button>
       </div>
@@ -341,7 +369,7 @@ const SocialWidget = () => {
       </div>
 
       {/* Footer Branding */}
-      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[7px] font-black text-white/10 uppercase tracking-[0.3em]">
+      <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-black text-white/20 uppercase tracking-[0.2em]">
         <span>Networking Hub</span>
         <span>v1.2.0</span>
       </div>

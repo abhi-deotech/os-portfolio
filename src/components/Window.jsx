@@ -5,8 +5,29 @@ import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
+/**
+ * Window container component for Lumina OS applications.
+ * Provides a draggable, resizable window frame with title bar and traffic light controls.
+ *
+ * Features:
+ * - Drag functionality with snap-to-maximize (drag to top edge)
+ * - Traffic light buttons (close, minimize, maximize)
+ * - Active/inactive visual states
+ * - Mobile-responsive (always maximized on mobile)
+ * - Spring animations via Framer Motion
+ *
+ * @component
+ * @param {Object} props - Component properties
+ * @param {string} props.id - Unique window identifier
+ * @param {string} props.title - Window title displayed in title bar
+ * @param {React.ReactNode} props.children - Window content
+ * @param {number} [props.width=900] - Default window width
+ * @param {number} [props.height=650] - Default window height
+ * @param {number} [props.minWidth=400] - Minimum resize width
+ * @param {number} [props.minHeight=300] - Minimum resize height
+ */
 const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
-  const { closeWindow, focusWindow, activeWindow, activeAccent, setIsDragging, isDragging } = useOSStore();
+  const { closeWindow, focusWindow, activeWindow, activeAccent, setIsDragging, isDragging, transparencyEffects } = useOSStore();
   const isMobile = useIsMobile();
   const isActive = activeWindow === id;
   const [isMaximized, setIsMaximized] = useState(isMobile);
@@ -106,7 +127,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
         isActive 
           ? 'z-50 border' 
           : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgba(0,0,0,0.3)] z-10'
-      } ${!isMaximized ? 'bg-os-surfaceContainerHighest/50 backdrop-blur-2xl rounded-3xl' : 'bg-os-surface/95 backdrop-blur-3xl'}`}
+      } ${!isMaximized ? `bg-os-surfaceContainerHighest/50 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl` : `bg-os-surface/95 ${transparencyEffects ? 'backdrop-blur-3xl' : ''}`}`}
     >
       {/* Title Bar - Glassmorphic Strip */}
       <div 
