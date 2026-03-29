@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Gamepad2, MousePointer2, Home, Trophy, Settings, Ghost, Sparkles, ChevronRight, Play, LayoutGrid, ChevronLeft, Brain, Hash } from 'lucide-react';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';

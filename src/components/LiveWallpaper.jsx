@@ -73,7 +73,7 @@ const LiveWallpaper = () => {
       }}
     >
       <div className="absolute inset-0 pointer-events-none">
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
           {activeConfig.type === 'live' && activeConfig.elements.map((el, index) => (
             <motion.div
               key={`${wallpaper}-${index}`}

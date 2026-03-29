@@ -3,8 +3,8 @@ import { Globe, ArrowLeft, ArrowRight, RotateCw, ExternalLink, Bookmark, ShieldA
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Browser = () => {
-  const [url, setUrl] = useState('https://github.com/abhi-deotech');
-  const [iframeUrl, setIframeUrl] = useState('https://github.com/abhi-deotech');
+  const [url, setUrl] = useState('https://www.google.com/search?q=Search&igu=1');
+  const [iframeUrl, setIframeUrl] = useState('https://www.google.com/search?q=Search&igu=1');
   const [isBlocked, setIsBlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -20,9 +20,14 @@ const Browser = () => {
   ];
 
   const bookmarks = [
-    { title: 'GitHub Portfolio', url: 'https://github.com/abhi-deotech' },
-    { title: 'LinkedIn', url: 'https://linkedin.com/in/abhimanyu-saxena-b656a4183' },
-    { title: 'Personal Website', url: 'https://abhimanyu.dev' },
+    // { title: 'Google', url: 'https://www.google.com/search?q=Search&igu=1' },
+    // { title: 'YouTube', url: 'https://www.youtube.com/embed/jfKfP3yIBBQ' },
+    { title: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
+    { title: 'Excalidraw', url: 'https://excalidraw.com/' },
+    { title: 'Can I Use', url: 'https://caniuse.com/' },
+
+    
+    // { title: 'DuckDuckGo', url: 'https://duckduckgo.com/lite' },
   ];
 
   const checkBlocked = (targetUrl) => {

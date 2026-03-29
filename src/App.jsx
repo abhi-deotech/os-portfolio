@@ -601,13 +601,13 @@ function App() {
 
             {openWindows.includes('media') && (
               <Window key="media" id="media" title="Lumina Media Player" width={850} height={600}>
-                <MediaPlayer file={useOSStore.getState().fileSystem.find(f => f.id === 'root-media')?.children?.find(m => m.type === 'video')} />
+                <MediaPlayer file={useOSStore.getState().findNodeById(useOSStore.getState().activeMediaFile)} />
               </Window>
             )}
 
             {openWindows.includes('photos') && (
               <Window key="photos" id="photos" title="Lumina Photos" width={900} height={650}>
-                <PhotoViewer file={useOSStore.getState().fileSystem.find(f => f.id === 'root-media')?.children?.find(m => m.type === 'image')} />
+                <PhotoViewer file={useOSStore.getState().findNodeById(useOSStore.getState().activePhotoFile)} />
               </Window>
             )}
 

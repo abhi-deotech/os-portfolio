@@ -187,7 +187,7 @@ const TriviaGame = ({ onBack }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {currentQuestion.answers.map((answer, i) => {
               const isSelected = selectedAnswer === answer;
               const isCorrectAnswer = answer === currentQuestion.correct_answer;

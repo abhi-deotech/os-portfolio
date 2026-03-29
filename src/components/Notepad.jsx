@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Save, FileText, ChevronRight, Eye, Edit3 } from 'lucide-react';
 import useOSStore from '../store/osStore';
 
+import MarkdownRenderer from './common/MarkdownRenderer';
+
 const Notepad = () => {
   const { activeNotepadFile, fileSystem, updateFileContent, unlockAchievement } = useOSStore();
   const [content, setContent] = useState('');
@@ -82,14 +84,8 @@ const Notepad = () => {
       {/* Editor/Preview Area */}
       <div className="flex-grow relative overflow-hidden">
         {isPreview ? (
-          <div className="absolute inset-0 overflow-auto p-10 scrollbar-os prose prose-invert max-w-none">
-             {/* Simple Markdown-ish Rendering */}
-             {content.split('\n').map((line, i) => {
-               if (line.startsWith('# ')) return <h1 key={i} className="text-4xl font-black mb-6 text-os-primary">{line.replace('# ', '')}</h1>;
-               if (line.startsWith('## ')) return <h2 key={i} className="text-2xl font-bold mb-4 border-b border-white/10 pb-2">{line.replace('## ', '')}</h2>;
-               if (line.startsWith('- ')) return <div key={i} className="flex gap-3 mb-2"><ChevronRight size={16} className="text-os-primary shrink-0 mt-1" /><span>{line.replace('- ', '')}</span></div>;
-               return <p key={i} className="mb-4 text-white/60 leading-relaxed font-medium">{line}</p>;
-             })}
+          <div className="absolute inset-0 overflow-auto p-10 scrollbar-os">
+             <MarkdownRenderer content={content} />
              {!content && <p className="text-white/20 italic">No content to preview.</p>}
           </div>
         ) : (

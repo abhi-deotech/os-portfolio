@@ -190,7 +190,13 @@ const SystemMetricsWidget = () => {
       {/* Expanded Popup - Fixed animation and z-index */}
       <AnimatePresence mode="wait">
         {isExpanded && !isClosing && (
-          <>
+          <motion.div
+            key="expanded-metrics-wrapper"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200]"
+          >
             {/* Backdrop */}
             <motion.div
               key="backdrop"
@@ -199,11 +205,11 @@ const SystemMetricsWidget = () => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               onClick={handleClose}
-              className="fixed inset-0 bg-black/70 backdrop-blur-md z-[200]"
+              className="absolute inset-0 bg-black/70 backdrop-blur-md"
             />
 
             {/* Card Container */}
-            <div className="fixed inset-0 z-[201] pointer-events-none flex items-center justify-center">
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
               <motion.div
                 key="card"
                 initial={{ scale: 0.7, opacity: 0, y: 40 }}
@@ -370,7 +376,7 @@ const SystemMetricsWidget = () => {
                 </div>
               </motion.div>
             </div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
     </>

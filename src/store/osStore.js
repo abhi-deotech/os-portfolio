@@ -162,6 +162,12 @@ const useOSStore = create(
       achievementQueue: [],
       terminalTheme: 'default',
       installedApps: [],
+      recentFiles: [],
+      activeNotepadFile: null,
+      activeDocFile: null,
+      activeMediaFile: null,
+      activePhotoFile: null,
+      activeMusicFile: null,
       terminalHistory: [
         { type: 'input', text: 'neofetch' },
         { type: 'output', text: 'OS: Lumina Desktop v1.0.0\nKernel: 6.8.0-lumina-os\nUptime: 3 years, 2 months\nPackages: 1337 (npm)\nShell: zsh 5.9\nResolution: 2560x1440\nDE: Lumina\nWM: Framer-Motion\nTerminal: Lumina-Term\nCPU: M3 Max (8) @ 4.06GHz\nMemory: 64GB' }
@@ -247,13 +253,82 @@ const useOSStore = create(
       // Virtual file system
       fileSystem: DEFAULT_FILE_SYSTEM,
       setFileSystem: (tree) => set({ fileSystem: tree }),
-      createFolder: (name) =>
-        set((state) => ({
-          fileSystem: [
-            ...state.fileSystem,
-            { id: `folder-${Date.now()}`, name, children: [] },
-          ],
-        })),
+      createFolder: (name, parentId = null) =>
+        set((state) => {
+          const newFolder = { id: `folder-${Date.now()}`, name, children: [] };
+          if (!parentId) return { fileSystem: [...state.fileSystem, newFolder] };
+          
+          const addToParent = (nodes) =>
+            nodes.map((n) => {
+              if (n.id === parentId) return { ...n, children: [...(n.children || []), newFolder] };
+              if (n.children) return { ...n, children: addToParent(n.children) };
+              return n;
+            });
+          return { fileSystem: addToParent(state.fileSystem) };
+        }),
+
+      createFile: (name, content = '', parentId = null) =>
+        set((state) => {
+          const newFile = { id: `file-${Date.now()}`, name, content };
+          if (!parentId) return { fileSystem: [...state.fileSystem, newFile] };
+          
+          const addToParent = (nodes) =>
+            nodes.map((n) => {
+              if (n.id === parentId) return { ...n, children: [...(n.children || []), newFile] };
+              if (n.children) return { ...n, children: addToParent(n.children) };
+              return n;
+            });
+          return { fileSystem: addToParent(state.fileSystem) };
+        }),
+
+      moveNode: (id, parentId, index = 0) =>
+        set((state) => {
+          let movedNode = null;
+          
+          // 1. Remove node from its current position
+          const removeFromTree = (nodes) => {
+            const filtered = [];
+            for (const node of nodes) {
+              if (node.id === id) {
+                movedNode = node;
+                continue;
+              }
+              if (node.children) {
+                filtered.push({ ...node, children: removeFromTree(node.children) });
+              } else {
+                filtered.push(node);
+              }
+            }
+            return filtered;
+          };
+
+          const treeWithoutNode = removeFromTree(state.fileSystem);
+          if (!movedNode) return state;
+
+          // 2. Add node to its new position
+          const addToTree = (nodes) => {
+            // Adding to root
+            if (!parentId) {
+              const newRoot = [...nodes];
+              newRoot.splice(index, 0, movedNode);
+              return newRoot;
+            }
+
+            return nodes.map((node) => {
+              if (node.id === parentId) {
+                const newChildren = [...(node.children || [])];
+                newChildren.splice(index, 0, movedNode);
+                return { ...node, children: newChildren };
+              }
+              if (node.children) {
+                return { ...node, children: addToTree(node.children) };
+              }
+              return node;
+            });
+          };
+
+          return { fileSystem: addToTree(treeWithoutNode) };
+        }),
       deleteNode: (id) =>
         set((state) => {
           const removeNode = (nodes) =>
@@ -306,17 +381,40 @@ const useOSStore = create(
           isSpotlightOpen: isOpen !== undefined ? isOpen : !state.isSpotlightOpen,
         })),
 
-      openWindow: (id) =>
+      openWindow: (id, fileId = null) =>
         set((state) => {
-          if (state.openWindows.includes(id)) {
-            return { activeWindow: id, isControlCenterOpen: false, isAppLauncherOpen: false };
-          }
-          return {
-            openWindows: [...state.openWindows, id],
+          const windows = state.openWindows.includes(id)
+            ? state.openWindows
+            : [...state.openWindows, id];
+          
+          const newState = {
+            openWindows: windows,
             activeWindow: id,
             isControlCenterOpen: false,
             isAppLauncherOpen: false,
           };
+
+          // If a fileId is provided, track it for the specific app
+          if (fileId) {
+            if (id === 'notepad') newState.activeNotepadFile = fileId;
+            if (id === 'documentation') newState.activeDocFile = fileId;
+            if (id === 'media') newState.activeMediaFile = fileId;
+            if (id === 'photos') newState.activePhotoFile = fileId;
+            if (id === 'music') {
+              // Opening music might need more logic but let's just track the ID for now
+              newState.activeMusicFile = fileId;
+            }
+            // Track in recent files
+            state.trackRecentFile(fileId);
+          }
+
+          return newState;
+        }),
+
+      trackRecentFile: (fileId) => 
+        set((state) => {
+          const filtered = (state.recentFiles || []).filter(id => id !== fileId);
+          return { recentFiles: [fileId, ...filtered].slice(0, 10) };
         }),
 
       closeWindow: (id) =>
@@ -421,7 +519,7 @@ const useOSStore = create(
 
       // Filtered filesystem for UI
       getFilteredFileSystem: () => {
-        const state = useOSStore.getState();
+        const state = get();
         if (state.userRole === 'admin') return state.fileSystem;
         // Guest mode: Hide sensitive folders or files if needed
         return state.fileSystem.map(node => {
@@ -430,6 +528,55 @@ const useOSStore = create(
           }
           return node;
         });
+      },
+
+      // Helper to find a node by ID recursively
+      findNodeById: (id, nodes = null) => {
+        const state = get();
+        const tree = nodes || state.fileSystem;
+        for (const node of tree) {
+          if (node.id === id) return node;
+          if (node.children) {
+            const found = state.findNodeById(id, node.children);
+            if (found) return found;
+          }
+        }
+        return null;
+      },
+
+      // Helper to get the full path to a node
+      getPathFromId: (id) => {
+        const state = get();
+        const findPath = (targetId, nodes, path = []) => {
+          for (const node of nodes) {
+            const currentPath = [...path, node.name];
+            if (node.id === targetId) return currentPath;
+            if (node.children) {
+              const subPath = findPath(targetId, node.children, currentPath);
+              if (subPath) return subPath;
+            }
+          }
+          return null;
+        };
+        return findPath(id, state.fileSystem);
+      },
+
+      // Global search for files
+      searchFiles: (query) => {
+        if (!query || query.length < 2) return [];
+        const state = get();
+        const results = [];
+        const search = (nodes, path = []) => {
+          nodes.forEach(node => {
+            const currentPath = [...path, node.name];
+            if (node.name.toLowerCase().includes(query.toLowerCase())) {
+              results.push({ ...node, path: currentPath });
+            }
+            if (node.children) search(node.children, currentPath);
+          });
+        };
+        search(state.fileSystem);
+        return results;
       }
     }),
     {
@@ -452,6 +599,11 @@ const useOSStore = create(
         isAuthenticated: state.isAuthenticated,
         userRole: state.userRole,
         activeNotepadFile: state.activeNotepadFile,
+        activeDocFile: state.activeDocFile,
+        activeMediaFile: state.activeMediaFile,
+        activePhotoFile: state.activePhotoFile,
+        activeMusicFile: state.activeMusicFile,
+        recentFiles: state.recentFiles,
         terminalTheme: state.terminalTheme,
         installedApps: state.installedApps,
         achievements: state.achievements,

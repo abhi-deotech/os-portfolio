@@ -14,9 +14,9 @@ export default {
         os: {
           background: "var(--os-background)",
           surface: "var(--os-surface)",
-          surfaceContainerLow: "var(--os-surface-container-low)",
-          surfaceContainerHigh: "var(--os-surface-container-high)",
-          surfaceContainerHighest: "var(--os-surface-container-highest)",
+          surfaceContainerLow: "rgb(var(--os-surface-container-low-rgb) / <alpha-value>)",
+          surfaceContainerHigh: "rgb(var(--os-surface-container-high-rgb) / <alpha-value>)",
+          surfaceContainerHighest: "rgb(var(--os-surface-container-highest-rgb) / <alpha-value>)",
           primary: "rgb(var(--os-primary-rgb) / <alpha-value>)",
           primaryDim: "var(--os-primary-dim)",
           secondary: "rgb(var(--os-secondary-rgb) / <alpha-value>)",

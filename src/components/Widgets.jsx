@@ -58,9 +58,9 @@ const Widgets = () => {
         <div className="w-full max-w-[380px]">
           <SocialWidget />
         </div>
-        <div className="w-full max-w-[340px]">
+        {/* <div className="w-full max-w-[340px]">
           <SystemMetricsWidget />
-        </div>
+        </div> */}
       </div>
     );
   }
@@ -77,13 +77,13 @@ const Widgets = () => {
           <SocialWidget />
         </DraggableWidget>
 
-        <DraggableWidget 
+        {/* <DraggableWidget 
           initialPos={metricsPos} 
           setPos={setMetricsPos} 
           width={300}
         >
           <SystemMetricsWidget />
-        </DraggableWidget>
+        </DraggableWidget> */}
       </div>
     </div>
   );

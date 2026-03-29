@@ -8,8 +8,11 @@
   --os-background: #060e20;
   --os-surface: #060e20;
   --os-surface-container-low: #091328;
+  --os-surface-container-low-rgb: 9, 19, 40;
   --os-surface-container-high: #141f38;
+  --os-surface-container-high-rgb: 20, 31, 56;
   --os-surface-container-highest: #192540;
+  --os-surface-container-highest-rgb: 25, 37, 64;
   
   /* RGB components for opacity support */
   --os-primary-rgb: 204, 151, 255;
@@ -35,8 +38,11 @@
   --os-background: #f8fafc;
   --os-surface: #ffffff;
   --os-surface-container-low: #f1f5f9;
+  --os-surface-container-low-rgb: 241, 245, 249;
   --os-surface-container-high: #e2e8f0;
+  --os-surface-container-high-rgb: 226, 232, 240;
   --os-surface-container-highest: #cbd5e1;
+  --os-surface-container-highest-rgb: 203, 213, 225;
   
   /* Light mode RGB components */
   --os-primary-rgb: 124, 58, 237;
