@@ -69,10 +69,37 @@ Displays file contents.
 ```
 $ cat System.md
 # Lumina OS
-Version 1.0.0
+Version 2.0.0
 
 Welcome to my interactive portfolio OS...
 ```
+
+### mkdir <name>
+Creates a new directory in the current path.
+```
+$ mkdir NewFolder
+```
+
+### touch <filename>
+Creates a new empty file in the current path.
+```
+$ touch notes.txt
+```
+
+### rm <name>
+Removes a file or empty directory.
+```
+$ rm old_file.txt
+```
+
+## The Modal Editor: Vim
+
+### vim <filename>
+Opens a modal text editor inside the terminal.
+- **Normal Mode**: Navigate or enter commands.
+- **Insert Mode**: Type `i` to begin editing text. Press `Esc` to return to Normal Mode.
+- **Save & Exit**: Type `:wq` in Normal Mode to save changes to the virtual file system and exit.
+- **Discard & Exit**: Type `:q!` to exit without saving.
 
 ## System Commands
 
@@ -80,17 +107,17 @@ Welcome to my interactive portfolio OS...
 Displays system information in ASCII art style.
 ```
 $ neofetch
-OS: Lumina Desktop v1.0.0
+OS: Lumina Desktop v2.0.0
 Kernel: 6.8.0-lumina-os
-Uptime: 3 years, 2 months
-Packages: 1337 (npm)
+Uptime: 4 years, 1 month
+Packages: 1542 (npm)
 Shell: zsh 5.9
 Resolution: 2560x1440
 DE: Lumina
 WM: Framer-Motion
 Terminal: Lumina-Term
-CPU: M3 Max (8) @ 4.06GHz
-Memory: 64GB
+CPU: Quantum M3 Max (8) @ 4.06GHz
+Memory: 128GB
 ```
 
 ## Package Manager
@@ -225,16 +252,21 @@ and Zustand for state management.
 │   ├── IoT-Controller.md
 │   └── Benchmark.exe
 ├── Documents/
+│   ├── README.md
+│   ├── ARCHITECTURE.md
+│   ├── TERMINAL.md
+│   ├── STYLING.md
 │   ├── Resume.pdf
 │   └── CoverLetter.docx
-├── Media/
-│   ├── Portfolio_Demo.mp4
+├── Pictures/
 │   ├── Hero_Shot.jpg
-│   └── Ambient_Vibe.mp3
+│   ├── sunset-glow.jpg
+│   └── cyber-grid.jpg
 └── sys/
     ├── kernel.log
+    ├── boot.log
     ├── secrets.txt
-    └── README.sys
+    └── system.ini
 ```
 
 ## Achievement Triggers

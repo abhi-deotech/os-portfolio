@@ -75,6 +75,18 @@ const Settings = () => {
     }, 2000);
   };
 
+  const handleWallpaperUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setWallpaper(reader.result);
+        unlockAchievement('decorator');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const wallpapers = [
     { id: 'neon-nebula', name: 'Neon Nebula', type: 'live', color: 'from-[#cc97ff] to-[#00d2fd]' },
     { id: 'cyber-grid', name: 'Cyber Grid', type: 'live', color: 'from-[#00f5a0] to-[#00d2fd]' },
@@ -125,12 +137,14 @@ const Settings = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-[#cc97ff]/5 to-[#00d2fd]/5 opacity-50"></div>
         <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8 items-center">
 <div 
-              className={`w-full md:w-1/2 h-40 md:h-48 rounded-2xl shadow-2xl overflow-hidden relative border border-white/10 transition-all duration-700 ${wallpapers.find(w => w.id === wallpaper)?.type === 'live' ? `bg-gradient-to-br ${wallpapers.find(w => w.id === wallpaper)?.color}` : ''}`}
-              style={wallpapers.find(w => w.id === wallpaper)?.type === 'image' ? {
-                backgroundImage: `url(${wallpapers.find(w => w.id === wallpaper)?.url})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-              } : {}}
+              className={`w-full md:w-1/2 h-40 md:h-48 rounded-2xl shadow-2xl overflow-hidden relative border border-white/10 transition-all duration-700 ${!wallpaper.startsWith('data:image') && wallpapers.find(w => w.id === wallpaper)?.type === 'live' ? `bg-gradient-to-br ${wallpapers.find(w => w.id === wallpaper)?.color}` : ''}`}
+              style={
+                wallpaper.startsWith('data:image') 
+                  ? { backgroundImage: `url(${wallpaper})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : wallpapers.find(w => w.id === wallpaper)?.type === 'image' 
+                    ? { backgroundImage: `url(${wallpapers.find(w => w.id === wallpaper)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                    : {}
+              }
             >
                 <div className="absolute top-4 left-4 right-4 flex gap-2">
                     <div className="w-16 h-4 bg-white/20 backdrop-blur-md rounded-full"></div>
@@ -142,10 +156,16 @@ const Settings = () => {
                 </div>
             </div>
             <div className="w-full md:w-1/2 space-y-4">
-                <h3 className="text-lg md:text-xl font-bold flex items-center space-x-2">
-                    <CustomIcon icon={ImageIcon} size={20} color="text-[#cc97ff]" glow="#cc97ff" />
-                    <span>Live Wallpaper</span>
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg md:text-xl font-bold flex items-center space-x-2">
+                      <CustomIcon icon={ImageIcon} size={20} color="text-[#cc97ff]" glow="#cc97ff" />
+                      <span>Live Wallpaper</span>
+                  </h3>
+                  <label className="cursor-pointer p-2 rounded-xl bg-os-surfaceContainerHighest/50 hover:bg-os-primary/20 hover:text-os-primary transition-all border border-os-outline/10">
+                    <Upload size={16} />
+                    <input type="file" className="hidden" accept="image/*" onChange={handleWallpaperUpload} />
+                  </label>
+                </div>
                 <div className="grid grid-cols-4 gap-2">
                   {wallpapers.map((wp) => (
                     <div 

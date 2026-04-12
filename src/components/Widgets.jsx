@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import SocialWidget from './SocialWidget';
 import SystemMetricsWidget from './SystemMetricsWidget';
+import ClockWidget from './ClockWidget';
+import SystemDashboard from './SystemDashboard';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
 const DraggableWidget = ({ children, initialPos, setPos, width, className = "" }) => (
@@ -33,34 +35,34 @@ const Widgets = () => {
   // Initial positions based on device
   const getInitialPos = (type) => {
     if (isMobile) {
-      return { x: 0, y: 0 }; // Positions don't matter as much in flex/grid
+      return { x: 0, y: 0 };
     } else {
       switch (type) {
-        case 'social':   return { x: window.innerWidth - 480, y: 40 };
-        case 'metrics':  return { x: Math.floor((window.innerWidth - 300) / 2), y: Math.floor((window.innerHeight - 450) / 2) };
-        default:         return { x: 40, y: 40 };
+        case 'clock':     return { x: Math.floor(window.innerWidth / 2) - 170, y: 40 };
+        case 'dashboard': return { x: window.innerWidth - 460, y: 40 };
+        default:          return { x: 40, y: 40 };
       }
     }
   };
 
-  const [socialPos, setSocialPos] = useState(() => getInitialPos('social'));
-  const [metricsPos, setMetricsPos] = useState(() => getInitialPos('metrics'));
+  const [clockPos, setClockPos] = useState(() => getInitialPos('clock'));
+  const [dashPos, setDashPos] = useState(() => getInitialPos('dashboard'));
 
   // Reset positions on resize/mode change
   useEffect(() => {
-    setSocialPos(getInitialPos('social'));
-    setMetricsPos(getInitialPos('metrics'));
+    setClockPos(getInitialPos('clock'));
+    setDashPos(getInitialPos('dashboard'));
   }, [isMobile]);
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-6 items-center w-full">
+      <div className="flex flex-col gap-6 items-center w-full p-6">
         <div className="w-full max-w-[380px]">
-          <SocialWidget />
+          <ClockWidget />
         </div>
-        {/* <div className="w-full max-w-[340px]">
-          <SystemMetricsWidget />
-        </div> */}
+        <div className="w-full max-w-[420px]">
+          <SystemDashboard />
+        </div>
       </div>
     );
   }
@@ -70,20 +72,20 @@ const Widgets = () => {
     <div className="fixed inset-0 pointer-events-none z-[5] overflow-hidden">
       <div className="h-full w-full pointer-events-none relative">
         <DraggableWidget 
-          initialPos={socialPos} 
-          setPos={setSocialPos} 
-          width={440}
+          initialPos={clockPos} 
+          setPos={setClockPos} 
+          width={340}
         >
-          <SocialWidget />
+          <ClockWidget />
         </DraggableWidget>
 
-        {/* <DraggableWidget 
-          initialPos={metricsPos} 
-          setPos={setMetricsPos} 
-          width={300}
+        <DraggableWidget 
+          initialPos={dashPos} 
+          setPos={setDashPos} 
+          width={420}
         >
-          <SystemMetricsWidget />
-        </DraggableWidget> */}
+          <SystemDashboard />
+        </DraggableWidget>
       </div>
     </div>
   );

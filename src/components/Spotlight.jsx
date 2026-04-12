@@ -20,6 +20,10 @@ const Spotlight = () => {
     { id: 'settings', name: 'Settings', type: 'app', icon: AppWindow },
     { id: 'music', name: 'Music', type: 'app', icon: AppWindow },
     { id: 'benchmark', name: 'Benchmark', type: 'app', icon: AppWindow },
+    { id: 'mail', name: 'Mail', type: 'app', icon: AppWindow },
+    { id: 'chat', name: 'Guestbook', type: 'app', icon: AppWindow },
+    { id: 'files', name: 'File Explorer', type: 'app', icon: AppWindow },
+    { id: 'notepad', name: 'Notepad', type: 'app', icon: AppWindow },
   ];
 
   useEffect(() => {

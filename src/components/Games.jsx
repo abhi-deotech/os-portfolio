@@ -12,6 +12,9 @@ const Games = () => {
   const [hasTriggeredAchievement, setHasTriggeredAchievement] = useState(false);
 
   const launchGame = (gameId) => {
+    if (gameId === 'retroarcade') {
+      useOSStore.getState().setRetroGame(null);
+    }
     openWindow(gameId);
     unlockAchievement('gamer');
   };
@@ -134,6 +137,18 @@ const Games = () => {
               </div>
 
               <div className="flex space-x-4 md:space-x-6 overflow-x-auto pb-6 scrollbar-hide">
+                {/* Retro Arcade */}
+                <div onClick={() => launchGame('retroarcade')} className="min-w-[260px] md:min-w-[300px] h-40 md:h-48 rounded-3xl bg-gradient-to-br from-os-primary/20 to-os-secondary/20 border border-os-primary/30 hover:border-os-primary/60 transition-all p-5 md:p-6 relative overflow-hidden cursor-pointer group shadow-xl flex flex-col justify-between">
+                  <div className="absolute -right-10 -top-10 w-32 h-32 bg-os-primary/20 blur-2xl rounded-full group-hover:bg-os-primary/40 transition-all" />
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-os-primary/20 flex items-center justify-center border border-os-primary/30 shadow-[0_0_15px_rgba(204,151,255,0.3)]">
+                    <Gamepad2 size={isMobile ? 20 : 24} className="text-os-primary" />
+                  </div>
+                  <div className="relative z-10">
+                    <h3 className="font-display font-black text-lg md:text-xl mb-1 text-white group-hover:text-os-primary transition-colors">Retro Arcade</h3>
+                    <p className="text-xs md:text-sm text-white/60 font-medium">Classic NES/GB Emulation Hub.</p>
+                  </div>
+                </div>
+
                 {/* Memory Match */}
                 <div onClick={() => launchGame('memory')} className="min-w-[260px] md:min-w-[300px] h-40 md:h-48 rounded-3xl bg-[#131313] border border-os-outline/10 hover:border-[#00d2fd]/50 transition-all p-5 md:p-6 relative overflow-hidden cursor-pointer group shadow-lg flex flex-col justify-between">
                   <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#00d2fd]/10 blur-2xl rounded-full group-hover:bg-[#00d2fd]/20 transition-all" />

@@ -17,8 +17,11 @@ const Achievements = () => {
     { id: 'audiophile', title: 'Music Lover', desc: 'Played a track in the Music app.', icon: <Music className="w-5 h-5" />, color: 'from-pink-400 to-rose-600' },
     { id: 'decorator', title: 'Interior Designer', desc: 'Customized your desktop theme in Settings.', icon: <Palette className="w-5 h-5" />, color: 'from-indigo-400 to-violet-600' },
     { id: 'speed_demon', title: 'Speed Demon', desc: 'Personalized your system performance with a benchmark.', icon: <Gauge className="w-5 h-5" />, color: 'from-yellow-400 to-amber-600' },
-    { id: 'architect', title: 'Deep Diver', desc: 'Explored the system architecture documentation.', icon: <Book className="w-5 h-5" />, color: 'from-emerald-400 to-teal-600' },
+    { id: 'architect', title: 'System Architect', desc: 'Created a new folder or file in the filesystem.', icon: <Book className="w-5 h-5" />, color: 'from-emerald-400 to-teal-600' },
+    { id: 'deep_thinker', title: 'Deep Thinker', desc: 'Engaged in a detailed conversation with Lumina AI.', icon: <Brain className="w-5 h-5" />, color: 'from-blue-500 to-indigo-600' },
     { id: 'socialite', title: 'Well Connected', desc: 'Visited my LinkedIn or GitHub profile.', icon: <Share2 className="w-5 h-5" />, color: 'from-sky-400 to-blue-500' },
+    { id: 'system_pro', title: 'Power User', desc: 'Managed advanced system processes in Task Manager.', icon: <Activity className="w-5 h-5" />, color: 'from-orange-500 to-red-600' },
+    { id: 'devops_escape', title: 'DevOps Escape Artist', desc: 'Successfully escaped the simulated Vim trap.', icon: <TermIcon className="w-5 h-5" />, color: 'from-purple-500 to-pink-600' },
     { id: 'easter_egg', title: 'Rabbit Hole', desc: 'Found the secret matrix mode.', icon: <Trophy className="w-5 h-5" />, color: 'from-yellow-400 to-orange-500' },
   ];
 

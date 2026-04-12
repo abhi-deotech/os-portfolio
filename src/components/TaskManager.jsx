@@ -4,10 +4,11 @@ import { Activity, X, Shield, Cpu, Database, Zap, HardDrive } from 'lucide-react
 import useOSStore from '../store/osStore';
 
 const TaskManager = () => {
-  const { openWindows, closeWindow, unlockAchievement, systemMetrics } = useOSStore();
+  const { openWindows, closeWindow, unlockAchievement, systemMetrics, triggerBSOD } = useOSStore();
 
   useEffect(() => {
     unlockAchievement('monitor');
+    unlockAchievement('system_pro');
   }, [unlockAchievement]);
 
   const appMeta = {
@@ -16,7 +17,18 @@ const TaskManager = () => {
     music: { name: 'Music Player', icon: HardDrive, color: 'text-purple-400' },
     benchmark: { name: 'Stress Test Tool', icon: Zap, color: 'text-red-400' },
     notepad: { name: 'Notepad Text Editor', icon: Activity, color: 'text-cyan-400' },
+    files: { name: 'File Explorer', icon: HardDrive, color: 'text-yellow-400' },
+    browser: { name: 'Flow-Net Browser', icon: Database, color: 'text-blue-400' },
+    aichat: { name: 'Lumina Neural Link', icon: Cpu, color: 'text-os-primary' },
   };
+
+  const systemProcesses = [
+    { id: 'kernel', name: 'Lumina Kernel', icon: Cpu, color: 'text-os-primary', cpu: 1.2, ram: 0.8 },
+    { id: 'window-server', name: 'Window Server', icon: Activity, color: 'text-os-secondary', cpu: 2.4, ram: 1.2 },
+    { id: 'system-ui', name: 'System UI Shell', icon: Shield, color: 'text-os-tertiary', cpu: 0.8, ram: 0.5 },
+    { id: 'network-mgr', name: 'Network Manager', icon: Zap, color: 'text-blue-400', cpu: 0.2, ram: 0.2 },
+    { id: 'audio-daemon', name: 'Audio Daemon', icon: HardDrive, color: 'text-purple-400', cpu: 0.1, ram: 0.1 },
+  ];
 
   return (
     <div className="flex flex-col h-full bg-[#050505] text-white font-sans overflow-hidden">
@@ -55,13 +67,41 @@ const TaskManager = () => {
             </tr>
           </thead>
           <tbody>
+            {/* System Processes */}
+            {systemProcesses.map((p) => (
+              <tr key={p.id} className="border-b border-white/[0.02] bg-white/[0.01]">
+                <td className="px-8 py-4">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-2 rounded-xl bg-white/5 ${p.color}`}>
+                      <p.icon size={16} />
+                    </div>
+                    <div className="flex flex-col">
+                       <span className="text-sm font-bold text-white/60 italic">{p.name}</span>
+                       <span className="text-[9px] font-black text-white/10 uppercase tracking-widest">SYSTEM</span>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-4 text-center font-mono text-xs text-os-primary/50">{(p.cpu + Math.random() * 0.5).toFixed(1)}%</td>
+                <td className="px-4 py-4 text-center font-mono text-xs text-os-secondary/50">{p.ram} GB</td>
+                <td className="px-8 py-4 text-right">
+                  <button 
+                    onClick={() => ['kernel', 'window-server', 'system-ui'].includes(p.id) ? triggerBSOD() : null}
+                    className="text-[9px] font-black text-white/10 hover:text-red-500 uppercase tracking-widest transition-colors"
+                  >
+                    KILL
+                  </button>
+                </td>
+              </tr>
+            ))}
+
+            {/* User Processes */}
             <AnimatePresence mode="popLayout">
               {openWindows.map((appId) => {
                 const meta = appMeta[appId] || { name: appId, icon: Activity, color: 'text-white' };
                 // Scale process CPU by global load
                 const cpuBase = appId === 'benchmark' && systemMetrics.isOverridden ? 80 : 2;
-                const cpu = Math.floor(Math.random() * 5) + cpuBase;
-                const ram = (Math.random() * 1.5 + 0.5).toFixed(1);
+                const cpu = (Math.random() * 5 + cpuBase).toFixed(1);
+                const ram = (Math.random() * 0.5 + 0.5).toFixed(1);
 
                 return (
                   <motion.tr

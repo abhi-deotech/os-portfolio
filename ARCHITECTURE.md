@@ -44,7 +44,8 @@ The application uses Zustand with persistence middleware. The store is defined i
   activeWindow: 'terminal',                 // Currently focused window
   isControlCenterOpen: false,             // Control center visibility
   isAppLauncherOpen: false,               // App launcher visibility
-  isSpotlightOpen: false                  // Spotlight search visibility
+  isSpotlightOpen: false,                 // Spotlight search visibility
+  isBSOD: false                           // System crash state
 }
 ```
 
@@ -165,24 +166,43 @@ The `Window.jsx` component provides:
 
 Desktop windows are centered by default with fixed sizes. Mobile windows are always maximized.
 
+## Deep Simulation Features
+
+### Boot Sequence & BSOD
+The system implements a realistic **Boot Sequence** that validates system components before login. A fatal system crash (**BSOD**) can be triggered by killing critical processes like `kernel` or `window-server` in the Task Manager, necessitating a cold reboot.
+
+### Terminal & Vim Emulator
+The terminal includes a **Vim emulator** trap. When a user runs `vim <filename>`, the terminal enters a modal editing state. Persistence is achieved through the `:wq` command, which updates the Zustand file system store.
+
+### Tab-Synchronization (LuminaChat)
+The **Global Guestbook (LuminaChat)** uses a hybrid synchronization strategy:
+1. **localStorage**: Persistent storage for message history.
+2. **Window Storage Event**: A global event listener that triggers a re-render across all open browser tabs whenever a new message is posted, simulating a real-time network broadcast.
+
 ## Component Hierarchy
 
 ```
 App.jsx
+├── BootSequence (pre-auth)
+├── BSOD (crash layer)
+├── LoginScreen (auth gate)
 ├── LiveWallpaper (background layer)
+├── Widgets & SystemDashboard
+│   └── Clock, Social, and Metrics widgets
 ├── Desktop Icons Layer
 │   └── Draggable icon components
 ├── Windows Layer
 │   └── Window components (conditionally rendered)
-│       ├── Terminal
-│       ├── MusicApp
-│       ├── Settings
+│       ├── MailApp (Neural Mail)
+│       ├── LuminaChat (Guestbook)
+│       ├── Benchmark (Stress Tester)
+│       ├── Terminal (with Vim trap)
 │       └── ... (other apps)
 ├── Taskbar (bottom dock)
 ├── ControlCenter (flyout panel)
 ├── AppLauncher (flyout grid)
 ├── Spotlight (search overlay)
-└── LoginScreen (auth gate)
+└── Screensaver
 ```
 
 ## Data Flow

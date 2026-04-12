@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   User, Code, FileText, LayoutGrid, Gamepad2, MousePointer2,
   Settings as SettingsIcon, ChevronUp, ChevronDown, HardDrive,
-  Wallpaper, FolderPlus, RefreshCw, Home, SlidersHorizontal, Cpu, X, Monitor, Music, Power, Brain, Hash, Activity, Trophy, Globe, RotateCcw, Book
+  Wallpaper, FolderPlus, RefreshCw, Home, SlidersHorizontal, Cpu, X, Monitor, Music, Power, Brain, Hash, Activity, Trophy, Globe, RotateCcw, Book, Mail, MessageSquare
 } from 'lucide-react';
 import CustomIcon from './components/common/CustomIcon';
 import {
@@ -38,9 +38,14 @@ import TaskManager from './components/TaskManager';
 import Achievements from './components/Achievements';
 import Browser from './components/Browser';
 import AIChat from './components/AIChat';
+import MailApp from './components/MailApp';
+import LuminaChat from './components/LuminaChat';
+import RetroArcade from './components/RetroArcade';
 import DocumentationApp from './components/DocumentationApp';
 import AchievementToast from './components/AchievementToast';
 import Screensaver from './components/Screensaver';
+import BootSequence from './components/BootSequence';
+import BSOD from './components/BSOD';
 import useSoundEffects from './hooks/useSoundEffects';
 import useOSStore from './store/osStore';
 import { useIsMobile } from './hooks/useMediaQuery';
@@ -106,11 +111,13 @@ function App() {
     createFolder, setIsDragging, closeWindow,
     isAuthenticated, logout, toggleSpotlight, isSpotlightOpen, openNotepad,
     achievementQueue, removeAchievementToast,
-    transparencyEffects, brightness, accentIntensity, resetSettingsToDefault
+    transparencyEffects, brightness, accentIntensity, resetSettingsToDefault,
+    isBSOD
   } = useOSStore();
 
   const { playSound } = useSoundEffects();
   const [isIdle, setIsIdle] = useState(false);
+  const [bootComplete, setBootComplete] = useState(false);
   const idleTimer = useRef(null);
 
   const isMobile = useIsMobile();
@@ -149,6 +156,9 @@ function App() {
     { id: 'music',    title: 'Music',        icon: <CustomIcon icon={Music} size={isMobile ? 32 : 28}        color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
     { id: 'photos',   title: 'Photos',       icon: <CustomIcon icon={Wallpaper} size={isMobile ? 32 : 28}    color="text-[#ff86c3]" glow="rgba(255,134,195,0.3)" strokeWidth={2.5} /> },
     { id: 'benchmark', title: 'Benchmark',    icon: <CustomIcon icon={Activity} size={isMobile ? 32 : 28}     color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
+    { id: 'mail',     title: 'Mail',         icon: <CustomIcon icon={Mail} size={isMobile ? 32 : 28}         color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
+    { id: 'chat',     title: 'Guestbook',    icon: <CustomIcon icon={MessageSquare} size={isMobile ? 32 : 28} color="text-[#cc97ff]" glow="rgba(204,151,255,0.3)" strokeWidth={2.5} /> },
+    { id: 'retroarcade', title: 'Retro Arcade', icon: <CustomIcon icon={Gamepad2} size={isMobile ? 32 : 28} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
     { id: 'settings', title: 'Settings',     icon: <CustomIcon icon={SettingsIcon} size={isMobile ? 32 : 28}   color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} /> },
     { id: 'notepad',  title: 'Notepad',      icon: <CustomIcon icon={FileText} size={isMobile ? 32 : 28}      color="text-cyan-400" glow="rgba(34,211,238,0.3)" strokeWidth={2.5} /> },
     { id: 'taskmanager', title: 'Monitor',   icon: <CustomIcon icon={Activity} size={isMobile ? 32 : 28}      color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
@@ -211,6 +221,14 @@ function App() {
     contextMenuIconRef.current = iconId;
     showIconMenu({ event: e });
   };
+
+  if (isBSOD) {
+    return <BSOD />;
+  }
+
+  if (!bootComplete) {
+    return <BootSequence onComplete={() => setBootComplete(true)} />;
+  }
 
   if (!isAuthenticated) {
     return <LoginScreen />;
@@ -682,6 +700,24 @@ function App() {
             {openWindows.includes('browser') && (
               <Window key="browser" id="browser" title="Flow-Net Browser" width={1000} height={700}>
                 <Browser />
+              </Window>
+            )}
+
+            {openWindows.includes('mail') && (
+              <Window key="mail" id="mail" title="Lumina Mail" width={900} height={650}>
+                <MailApp />
+              </Window>
+            )}
+
+            {openWindows.includes('chat') && (
+              <Window key="chat" id="chat" title="Global Guestbook" width={450} height={650}>
+                <LuminaChat />
+              </Window>
+            )}
+
+            {openWindows.includes('retroarcade') && (
+              <Window key="retroarcade" id="retroarcade" title="Quantum Retro Arcade" width={1000} height={750}>
+                <RetroArcade />
               </Window>
             )}
 

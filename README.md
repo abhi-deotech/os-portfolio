@@ -23,11 +23,12 @@ Default login password: `guest`
 
 ## Features
 
-- **Desktop Environment**: Draggable icons, window management, context menus
-- **Terminal**: 8 themes, virtual filesystem, package manager
-- **Applications**: File Explorer, Music App, Browser, Settings, Task Manager
-- **Games**: Snake, Memory Match, Trivia, 2048, Sudoku
-- **Personalization**: 4 accent colors, live wallpapers, glassmorphism
+- **Desktop Environment**: Draggable icons, window management, context menus, and a unified **System Dashboard**.
+- **Deep Simulation**: Realistic **Boot Sequence**, **BSOD** crash triggers, and a persistent virtual file system.
+- **Terminal**: 8 themes, virtual filesystem, package manager, and a built-in **Vim** emulator.
+- **Applications**: File Explorer, Music App, **Neural Mail**, **Global Guestbook**, Browser, Settings, Task Manager, and **Quantum Benchmark**.
+- **Games**: Snake, Memory Match, Trivia, 2048, Sudoku.
+- **Personalization**: 4 accent colors, live wallpapers, glassmorphism, and custom desktop widgets.
 
 ## Project Structure
 

@@ -18,6 +18,16 @@ const DEFAULT_FILE_SYSTEM = [
       { id: 'file-styling', name: 'STYLING.md', type: 'text', content: '# Styling and Theming Guide\n\nLumina OS uses a comprehensive theming system built on CSS custom properties and Tailwind CSS.\n\n## Color System\n\n### CSS Custom Properties\n\nThe OS uses RGB format for colors to enable opacity support via `rgba()`:\n\n```css\n:root {\n  /* Primary accent colors (RGB for alpha support) */\n  --os-primary-rgb: 204, 151, 255;    /* Purple - main accent */\n  --os-secondary-rgb: 0, 210, 253;    /* Cyan - secondary accent */\n  --os-tertiary-rgb: 0, 245, 160;     /* Green - tertiary accent */\n  \n  /* Utility colors */\n  --blue-500-rgb: 59, 130, 246;\n  --red-500-rgb: 239, 68, 68;\n  --yellow-500-rgb: 234, 179, 8;\n  \n  /* Surfaces */\n  --os-background: #060e20;\n  --os-surface: #060e20;\n  --os-surface-container-low: #091328;\n  --os-surface-container-high: #141f38;\n  --os-surface-container-highest: #192540;\n  \n  /* Text colors */\n  --os-on-surface: #dee5ff;\n  --os-on-surface-variant: #a3aac4;\n  --os-outline-rgb: 109, 117, 140;\n  \n  /* Dimmed accent variants */\n  --os-primary-dim: #9c48ea;\n  --os-secondary-dim: #00c3eb;\n  \n  /* Background gradient */\n  --desktop-gradient: radial-gradient(circle at 50% -20%, #1a103c 0%, #060e20 60%, #030712 100%);\n}\n```\n\n### Accent Color Schemes\n\nThe application supports 4 accent color presets:\n\n| Theme | Primary | Secondary | Tertiary |\n|-------|---------|-----------|----------|\n| `purple` (default) | `204, 151, 255` | `0, 210, 253` | `0, 245, 160` |\n| `cyan` | `0, 210, 253` | `204, 151, 255` | `255, 104, 240` |\n| `magenta` | `255, 104, 240` | `204, 151, 255` | `0, 210, 253` |\n| `green` | `0, 245, 160` | `0, 210, 253` | `204, 151, 255` |\n\n## Tailwind Configuration\n\n### Custom Colors\n\nThe Tailwind config extends the default theme with OS-specific colors:\n\n```javascript\n// tailwind.config.js\ncolors: {\n  os: {\n    background: "var(--os-background)",\n    surface: "var(--os-surface)",\n    surfaceContainerLow: "var(--os-surface-container-low)",\n    surfaceContainerHigh: "var(--os-surface-container-high)",\n    surfaceContainerHighest: "var(--os-surface-container-highest)",\n    \n    // RGB colors support opacity via / modifier\n    primary: "rgb(var(--os-primary-rgb) / <alpha-value>)",\n    secondary: "rgb(var(--os-secondary-rgb) / <alpha-value>)",\n    tertiary: "rgb(var(--os-tertiary-rgb) / <alpha-value>)",\n    \n    // Dimmer variants\n    primaryDim: "var(--os-primary-dim)",\n    secondaryDim: "var(--os-secondary-dim)",\n    \n    // Text colors\n    onSurface: "var(--os-on-surface)",\n    onSurfaceVariant: "var(--os-on-surface-variant)",\n    outline: "rgb(var(--os-outline-rgb) / <alpha-value>)",\n  }\n}\n```\n\n## Usage Examples\n\n### Basic Colors\n\n```jsx\n// Solid colors\n<div className="text-os-primary">Primary text</div>\n<div className="bg-os-surface">Surface background</div>\n\n// With opacity (using Tailwind\'s / modifier)\n<div className="bg-os-primary/20">20% opacity primary</div>\n<div className="text-os-secondary/80">80% opacity secondary text</div>\n<div className="border-os-outline/50">50% opacity border</div>\n```\n\n### Dynamic Theming\n\n```jsx\n// App.jsx injects CSS variables based on active accent\n<div style={{\n  \'--os-primary-rgb\': currentAccent.primary,\n  \'--os-secondary-rgb\': currentAccent.secondary,\n  \'--os-tertiary-rgb\': currentAccent.tertiary,\n  \'--os-accent-intensity\': accentIntensity / 100,\n  filter: `brightness(${brightness}%)`,\n}}>\n```\n\n## Best Practices\n\n1. **Always use RGB format** for colors that need opacity support\n2. **Use Tailwind\'s `/` modifier** for opacity: `bg-os-primary/20`\n3. **Prefer utility classes** over inline styles for consistency\n4. **Use CSS variables** for values that change dynamically (themes)\n5. **Use `backdrop-blur`** sparingly - it impacts performance' },
       { id: 'file-resume', name: 'Resume.pdf', type: 'pdf', url: '/Abhimanyu.pdf' },
       { id: 'file-cover', name: 'CoverLetter.docx', type: 'text', content: 'Dear Hiring Manager,\n\nI am writing to express my interest in the Software Engineer position. With my experience in full-stack development and team leadership, I believe I would be a valuable addition to your team.\n\nBest regards,\nAbhimanyu Saxena' },
+      {
+        id: 'folder-private',
+        name: 'Private',
+        type: 'folder',
+        children: [
+          { id: 'file-journal', name: 'Journal.txt', type: 'text', content: '2024-03-28: Today I finally finished the window manager for Lumina OS. It was a challenge to get the z-index management right, but Framer Motion made the animations a breeze.\n\n2024-03-29: Added the terminal system. It feels so satisfying to type "ls" and see the virtual filesystem react.' },
+          { id: 'file-ideas', name: 'Project_Ideas.md', type: 'text', content: '# Future Project Ideas\n\n- AI-driven code architect\n- Decentalized social graph\n- Real-time collaborative IDE\n- Neural-link interface simulation' },
+          { id: 'file-passwords', name: 'passwords.txt', type: 'text', content: 'Nice try! I don\'t keep real passwords in a public portfolio. But the password to this OS was "guest" anyway.' },
+        ]
+      },
     ]
   },
   {
@@ -101,9 +111,12 @@ const DEFAULT_FILE_SYSTEM = [
     name: 'System',
     children: [
       { id: 'sys-kernel', name: 'kernel.log', type: 'text', content: '[INFO] Lumina Kernel v1.0.0 starting...\n[OK] Neural Link established.\n[OK] Quantum Particles initialized.\n[OK] Desktop Environment loaded\n[OK] Window System initialized\n[WARNING] Unauthorized SSH attempt detected from 127.0.0.1\n[INFO] All systems operational' },
+      { id: 'sys-boot', name: 'boot.log', type: 'text', content: '[0.000000] Linux version 6.8.0-lumina (build@os-portfolio) (gcc 12.3.0)\n[0.000000] Command line: initrd=\\initramfs-linux.img root=PARTUUID=os-root-123 rw\n[0.124512] x86/fpu: Supporting XSAVE feature 0x001: \'x87 floating point registers\'\n[1.542100] usb 1-1: New USB device found, idVendor=046d, idProduct=c52b\n[2.891200] EXT4-fs (vda2): mounted filesystem with ordered data mode.\n[3.210041] systemd[1]: Reached target Graphical Interface.' },
       { id: 'sys-registry', name: 'registry.sys', type: 'text', content: 'Lumina OS Registry\n===================\n\n[HKEY_CURRENT_USER\\Software\\LuminaOS]\n"Theme"="purple"\n"Wallpaper"="sunset-glow"\n"Transparency"=dword:00000001\n\n[HKEY_LOCAL_MACHINE\\System\\CurrentControlSet]\n"KernelVersion"="1.0.0"\n"BootTime"="2024-01-15 10:30:00"\n"Uptime"=dword:01234567' },
-      { id: 'sys-secrets', name: 'secrets.txt', type: 'text', content: 'Lumina OS Secrets\n================\n\nThe Konami code unlocked more than just a game.\nTry "matrix" after installing the package.\n\nEaster eggs:\n- Type "neofetch" in terminal\n- Try installing hackertools\n- Double-click the desktop rapidly\n- Hold Shift while opening apps' },
+      { id: 'sys-audit', name: 'security.audit', type: 'text', content: '=== LUMINA SECURITY AUDIT ===\nDATE: 2024-03-29\nSTATUS: SECURE\n\nVulnerabilities detected: 0\nActive firewalls: 3 (Neural, Quantum, Packet)\nEncryption: AES-256-GCM\nIdentity: Verified Guest Session' },
+      { id: 'sys-secrets', name: 'secrets.txt', type: 'text', content: 'Lumina OS Secrets\n================\n\nThe Konami code unlocked more than just a game.\nTry "matrix" after installing the package.\n\nEaster eggs:\n- Type "neofetch" in terminal\n- Try installing hackertools\n- Double-click the desktop rapidly\n- Hold Shift while opening apps\n- Use "magic" command in terminal' },
       { id: 'sys-config', name: 'system.ini', type: 'text', content: '[system]\nkernel_version=1.0.0\ndebug_mode=false\nboot_animation=true\n\n[display]\nresolution=2560x1440\nrefresh_rate=60\ndpi_scale=1.0\n\n[audio]\nenabled=true\nvolume=0.7\necho_cancellation=true' },
+      { id: 'sys-env', name: 'environment.sh', type: 'text', content: 'export PATH=$PATH:/usr/local/bin:/opt/lumina/bin\nexport EDITOR=notepad\nexport THEME=purple\nexport USER=guest\nexport HOST=lumina-os' },
       {
         id: 'sys-drivers', name: 'drivers', type: 'folder', children: [
           { id: 'driver-display', name: 'display.sys', type: 'text', content: 'Display Driver v2.1.0\nGPU: Virtual Renderer\nResolution: Adaptive\nRefresh Rate: 60Hz' },
@@ -158,6 +171,7 @@ const useOSStore = create(
       isAuthenticated: false,
       userRole: 'admin', // 'admin' | 'guest'
       isSpotlightOpen: false,
+      isBSOD: false,
       achievements: [],
       achievementQueue: [],
       terminalTheme: 'default',
@@ -168,6 +182,8 @@ const useOSStore = create(
       activeMediaFile: null,
       activePhotoFile: null,
       activeMusicFile: null,
+      activeRetroGame: null,
+      setRetroGame: (game) => set({ activeRetroGame: game }),
       terminalHistory: [
         { type: 'input', text: 'neofetch' },
         { type: 'output', text: 'OS: Lumina Desktop v1.0.0\nKernel: 6.8.0-lumina-os\nUptime: 3 years, 2 months\nPackages: 1337 (npm)\nShell: zsh 5.9\nResolution: 2560x1440\nDE: Lumina\nWM: Framer-Motion\nTerminal: Lumina-Term\nCPU: M3 Max (8) @ 4.06GHz\nMemory: 64GB' }
@@ -381,6 +397,8 @@ const useOSStore = create(
           isSpotlightOpen: isOpen !== undefined ? isOpen : !state.isSpotlightOpen,
         })),
 
+      triggerBSOD: () => set({ isBSOD: true }),
+
       openWindow: (id, fileId = null) =>
         set((state) => {
           const windows = state.openWindows.includes(id)
@@ -400,6 +418,7 @@ const useOSStore = create(
             if (id === 'documentation') newState.activeDocFile = fileId;
             if (id === 'media') newState.activeMediaFile = fileId;
             if (id === 'photos') newState.activePhotoFile = fileId;
+            if (id === 'mail') newState.activeMailId = fileId;
             if (id === 'music') {
               // Opening music might need more logic but let's just track the ID for now
               newState.activeMusicFile = fileId;

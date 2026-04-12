@@ -18,13 +18,15 @@ const AIChat = () => {
   }, [messages, isTyping]);
 
   const responses = {
-    stack: "This portfolio is built with React, Vite, Tailwind CSS, Framer Motion for animations, and Zustand for state management.",
-    author: "Abhimanyu Saxena is a Senior Full-Stack Developer specializing in high-performance web applications and creative UI/UX.",
-    contact: "You can reach Abhimanyu via LinkedIn, GitHub, or the Mail app on the desktop.",
-    projects: "Check out the 'Projects' folder on the desktop to see live demos and source code for various works.",
-    os: "Lumina OS is a simulated desktop environment designed to showcase front-end engineering and interactive system design.",
-    hire: "Abhimanyu is open to high-impact projects and senior roles. Reach out via the contact info in the 'About' section!",
-    default: "That's an interesting question! I'm still in demo mode, but feel free to ask about my 'stack', 'author', or 'projects'."
+    stack: "This portfolio is a high-performance MERN-style simulation built with React 19, Vite, Tailwind CSS 3.4, Framer Motion for fluid 60fps animations, and Zustand with persistent storage for the virtual OS state.",
+    author: "Abhimanyu Saxena is a Senior Software Engineer and Team Lead with expertise in architecting scalable platforms, FinTech, and IoT. He currently leads development at Deotechsolutions.",
+    experience: "Abhimanyu has over 4 years of professional experience, including roles at LendFoundry (FinTech) and currently Deotechsolutions. He has a strong background in both full-stack web and systems/embedded development.",
+    contact: "You can find Abhimanyu on LinkedIn or GitHub. For professional inquiries, his email is available in the 'About' section, or you can use the 'Mail' app on this desktop.",
+    projects: "Key projects include Lumina OS, an enterprise MERN Dashboard, and various IoT controllers. Check the 'Projects' app on the desktop for interactive demos and technical deep-dives.",
+    os: "Lumina OS is a custom-built desktop environment simulation designed to showcase React state management, complex windowing systems, and interactive UI/UX patterns in a portfolio context.",
+    hire: "Abhimanyu is currently open to senior engineering roles and high-impact freelance projects. He specializes in React, Node.js, and System Architecture.",
+    skills: "His technical arsenal includes JavaScript/TypeScript, React, Node.js, Python, C++, AWS, Docker, and CI/CD. He is also experienced in IoT and Embedded systems.",
+    default: "I'm Lumina AI, your guide to Abhimanyu's work. Ask me about his 'experience', 'skills', 'stack', or 'hire' status!"
   };
 
   const handleSend = (e) => {
@@ -32,9 +34,16 @@ const AIChat = () => {
     if (!input.trim()) return;
 
     const userMsg = input.trim();
-    setMessages(prev => [...prev, { role: 'user', text: userMsg, timestamp: new Date() }]);
+    const newMessages = [...messages, { role: 'user', text: userMsg, timestamp: new Date() }];
+    setMessages(newMessages);
     setInput('');
     setIsTyping(true);
+
+    // Achievement: Deep Thinker
+    const userMessageCount = newMessages.filter(m => m.role === 'user').length;
+    if (userMessageCount >= 3) {
+      useOSStore.getState().unlockAchievement('deep_thinker');
+    }
 
     // Simulate AI thinking
     setTimeout(() => {
@@ -43,10 +52,12 @@ const AIChat = () => {
 
       if (q.includes('stack') || q.includes('tech') || q.includes('built')) reply = responses.stack;
       else if (q.includes('who') || q.includes('author') || q.includes('abhi')) reply = responses.author;
-      else if (q.includes('contact') || q.includes('reach') || q.includes('mail')) reply = responses.contact;
-      else if (q.includes('project') || q.includes('work')) reply = responses.projects;
+      else if (q.includes('experience') || q.includes('work') || q.includes('career') || q.includes('history')) reply = responses.experience;
+      else if (q.includes('contact') || q.includes('reach') || q.includes('mail') || q.includes('email') || q.includes('link')) reply = responses.contact;
+      else if (q.includes('project') || q.includes('work') || q.includes('portfolio')) reply = responses.projects;
       else if (q.includes('os') || q.includes('lumina')) reply = responses.os;
-      else if (q.includes('hire') || q.includes('job')) reply = responses.hire;
+      else if (q.includes('hire') || q.includes('job') || q.includes('opportunity') || q.includes('available')) reply = responses.hire;
+      else if (q.includes('skill') || q.includes('language') || q.includes('know') || q.includes('expert')) reply = responses.skills;
 
       setMessages(prev => [...prev, { role: 'assistant', text: reply, timestamp: new Date() }]);
       setIsTyping(false);

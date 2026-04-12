@@ -60,7 +60,10 @@ const wallpaperConfigs = {
 
 const LiveWallpaper = () => {
   const { wallpaper } = useOSStore();
-  const activeConfig = wallpaperConfigs[wallpaper] || wallpaperConfigs['neon-nebula'];
+  const isCustom = wallpaper.startsWith('data:image');
+  const activeConfig = isCustom 
+    ? { type: 'image', url: wallpaper, background: '#000' }
+    : (wallpaperConfigs[wallpaper] || wallpaperConfigs['neon-nebula']);
 
   return (
     <div 

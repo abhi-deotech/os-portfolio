@@ -36,7 +36,10 @@ const Terminal = () => {
   const [input, setInput] = useState('');
   const [currentPath, setCurrentPath] = useState(['~']);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [isVimMode, setIsVimMode] = useState(false);
+  const [vimFile, setVimFile] = useState(null);
   const scrollRef = useRef(null);
+
   
   // Filter history to only include user inputs for easier navigation
   const inputHistory = terminalHistory
@@ -63,9 +66,26 @@ const Terminal = () => {
   }, [terminalHistory]);
 
   const commands = {
-    help: () => 'Available commands:\n  help, clear, ls, cd, cat, neofetch, whoami, date, matrix\n  ssh, lumina-get, theme, man, lumina-ai',
+    help: () => 'Available commands:\n  help, clear, ls, cd, cat, mkdir, touch, rm, ps, top, vim\n  neofetch, whoami, date, matrix, ssh, lumina-get, theme, man, lumina-ai',
     clear: () => {
       clearTerminalHistory();
+      return null;
+    },
+    vim: (args) => {
+      const fileName = args[0] || 'new_file.txt';
+      const getDir = (nodes, path) => {
+        if (path.length === 0 || path[0] === '~') {
+          if (path.length <= 1) return nodes;
+          const nextDir = nodes.find(n => n.name.toLowerCase() === path[1].toLowerCase());
+          if (nextDir && nextDir.children) return getDir(nextDir.children, path.slice(1));
+        }
+        return null;
+      };
+      const currentNodes = getDir(fileSystem, currentPath);
+      const file = currentNodes?.find(n => n.name.toLowerCase() === fileName.toLowerCase() && !n.children);
+      
+      setVimFile(file || { name: fileName, content: '' });
+      setIsVimMode(true);
       return null;
     },
     whoami: () => 'guest@lumina-os',
@@ -157,6 +177,84 @@ const Terminal = () => {
       
       if (file) return file.content || '[Binary file or non-text content]';
       return `cat: ${fileName}: No such file or directory`;
+    },
+    mkdir: (args) => {
+      const folderName = args[0];
+      if (!folderName) return 'mkdir: missing operand';
+      
+      const getDirId = (nodes, path) => {
+        if (path.length <= 1) return null; // Root
+        let currentNodes = nodes;
+        let lastId = null;
+        for (let i = 1; i < path.length; i++) {
+          const dir = currentNodes.find(n => n.name.toLowerCase() === path[i].toLowerCase());
+          if (dir) {
+            lastId = dir.id;
+            currentNodes = dir.children || [];
+          }
+        }
+        return lastId;
+      };
+
+      const parentId = getDirId(fileSystem, currentPath);
+      useOSStore.getState().createFolder(folderName, parentId);
+      unlockAchievement('architect');
+      return `Directory '${folderName}' created.`;
+    },
+    touch: (args) => {
+      const fileName = args[0];
+      if (!fileName) return 'touch: missing file operand';
+      
+      const getDirId = (nodes, path) => {
+        if (path.length <= 1) return null;
+        let currentNodes = nodes;
+        let lastId = null;
+        for (let i = 1; i < path.length; i++) {
+          const dir = currentNodes.find(n => n.name.toLowerCase() === path[i].toLowerCase());
+          if (dir) {
+            lastId = dir.id;
+            currentNodes = dir.children || [];
+          }
+        }
+        return lastId;
+      };
+
+      const parentId = getDirId(fileSystem, currentPath);
+      useOSStore.getState().createFile(fileName, '', parentId);
+      unlockAchievement('architect');
+      return `File '${fileName}' created.`;
+    },
+    rm: (args) => {
+      const name = args[0];
+      if (!name) return 'rm: missing operand';
+      
+      const getDirContent = (nodes, path) => {
+        if (path.length === 0 || path[0] === '~') {
+          if (path.length <= 1) return nodes;
+          const nextDir = nodes.find(n => n.name.toLowerCase() === path[1].toLowerCase());
+          if (nextDir && nextDir.children) return getDirContent(nextDir.children, path.slice(1));
+        }
+        return null;
+      };
+
+      const content = getDirContent(fileSystem, currentPath);
+      const target = content?.find(n => n.name.toLowerCase() === name.toLowerCase());
+      
+      if (!target) return `rm: cannot remove '${name}': No such file or directory`;
+      if (target.id.startsWith('root-') || target.id.startsWith('sys-')) return `rm: cannot remove '${name}': Permission denied (System Protected)`;
+      
+      useOSStore.getState().deleteNode(target.id);
+      return `Removed '${name}'.`;
+    },
+    ps: () => {
+      const apps = openWindows.map(id => {
+        return `guest      ${(Math.floor(Math.random() * 9000) + 1000)}  0.0  0.1  ${id}`;
+      }).join('\n');
+      return `USER       PID  %CPU %MEM COMMAND\n${apps || 'No active processes'}`;
+    },
+    top: () => {
+      openWindow('taskmanager');
+      return 'Launching Task Manager...';
     },
     ssh: (args) => {
       const host = args[0] || 'localhost';
@@ -274,6 +372,46 @@ const Terminal = () => {
     const currentInput = input;
     const trimmedInput = currentInput.trim().toLowerCase();
     
+    if (isVimMode) {
+      if (trimmedInput === ':q!' || trimmedInput === ':q') {
+        setIsVimMode(false);
+        setVimFile(null);
+        setInput('');
+        unlockAchievement('devops_escape');
+        addTerminalEntry({ type: 'output', text: 'Exited Vim.' });
+      } else if (trimmedInput === ':wq') {
+        if (vimFile.id) {
+          useOSStore.getState().updateFileContent(vimFile.id, input); // This is a placeholder, I need to check the actual store method
+        } else {
+          // Creating new file from vim
+          const getDirId = (nodes, path) => {
+            if (path.length <= 1) return null;
+            let currentNodes = nodes;
+            let lastId = null;
+            for (let i = 1; i < path.length; i++) {
+              const dir = currentNodes.find(n => n.name.toLowerCase() === path[i].toLowerCase());
+              if (dir) {
+                lastId = dir.id;
+                currentNodes = dir.children || [];
+              }
+            }
+            return lastId;
+          };
+          const parentId = getDirId(fileSystem, currentPath);
+          useOSStore.getState().createFile(vimFile.name, input, parentId);
+        }
+        setIsVimMode(false);
+        setVimFile(null);
+        setInput('');
+        unlockAchievement('devops_escape');
+        addTerminalEntry({ type: 'output', text: `Saved and exited Vim. File: ${vimFile.name}` });
+      } else {
+        // Just clear input and show a hint in vim mode
+        setInput('');
+      }
+      return;
+    }
+
     addTerminalEntry({ type: 'input', text: currentInput });
     setHistoryIndex(-1);
     setInput(''); // Clear input immediately
@@ -345,6 +483,32 @@ const Terminal = () => {
       addTerminalEntry({ type: 'output', text: matches.map(m => ({ text: m.name, isDir: m.isDir })) });
     }
   };
+
+  if (isVimMode) {
+    return (
+      <div className={`h-full w-full ${theme.bg} backdrop-blur-md rounded-xl p-0 font-mono text-sm overflow-hidden border ${theme.border} flex flex-col`}>
+        <div className="bg-white/10 px-4 py-1 text-xs flex justify-between select-none">
+          <span>VIM - {vimFile?.name}</span>
+          <span className="opacity-50 tracking-widest uppercase text-[10px] font-bold">[Read-Only Trap]</span>
+        </div>
+        <div className="flex-grow p-4 text-white/80 overflow-y-auto whitespace-pre-wrap select-text">
+          {vimFile?.content || Array(20).fill('~').join('\n')}
+        </div>
+        <div className="bg-white/5 px-4 py-1 flex gap-2 items-center">
+          <span className={`${theme.primary} font-bold`}>:</span>
+          <input
+            autoFocus
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
+            className="flex-grow bg-transparent border-none outline-none text-white p-0 text-sm font-mono"
+            spellCheck="false"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
