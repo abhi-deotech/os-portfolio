@@ -41,7 +41,7 @@ export default defineConfig({
       },
     },
     target: 'esnext',
-    minify: 'esbuild',
+    minify: 'oxc',
     sourcemap: false,
     assetsInlineLimit: 4096,
   },
