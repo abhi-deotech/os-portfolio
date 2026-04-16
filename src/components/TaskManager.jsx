@@ -4,7 +4,11 @@ import { Activity, X, Shield, Cpu, Database, Zap, HardDrive } from 'lucide-react
 import useOSStore from '../store/osStore';
 
 const TaskManager = () => {
-  const { openWindows, closeWindow, unlockAchievement, systemMetrics, triggerBSOD } = useOSStore();
+  const openWindows = useOSStore(state => state.openWindows);
+  const closeWindow = useOSStore(state => state.closeWindow);
+  const unlockAchievement = useOSStore(state => state.unlockAchievement);
+  const systemMetrics = useOSStore(state => state.systemMetrics);
+  const triggerBSOD = useOSStore(state => state.triggerBSOD);
 
   useEffect(() => {
     unlockAchievement('monitor');
