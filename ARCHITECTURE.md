@@ -4,7 +4,7 @@ This document describes the system architecture, state management, and data flow
 
 ## Overview
 
-Lumina OS is a single-page application (SPA) that simulates a desktop operating system in the browser. It uses a centralized state management approach with Zustand and implements a windowing system, virtual file system, and multiple interactive applications.
+Lumina OS is a single-page application (SPA) that simulates a desktop operating system in the browser. It uses a centralized state management approach with Zustand, a modular layout system (Desktop/Taskbar), and implements a windowing system, virtual file system, and multiple interactive applications.
 
 ## Architecture Diagram
 
@@ -12,18 +12,25 @@ Lumina OS is a single-page application (SPA) that simulates a desktop operating 
 ┌─────────────────────────────────────────────────────────────┐
 │                         App.jsx                              │
 │  ┌─────────────────────────────────────────────────────────┐ │
-│  │                  Window Manager Layer                    │ │
-│  │              (Zustand: openWindows[])                  │ │
-│  ├─────────────────────────────────────────────────────────┤ │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │ │
-│  │  │ Terminal │ │  Music   │ │ Settings│ │  Games  │   │ │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘   │ │
+│  │                     Desktop.jsx                         │ │
+│  │  ┌───────────────────────────────────────────────────┐  │ │
+│  │  │              Window Manager Layer                 │  │ │
+│  │  │            (Zustand: openWindows[])               │  │ │
+│  │  ├───────────────────────────────────────────────────┤  │ │
+│  │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐           │  │ │
+│  │  │  │ Terminal │ │  Games   │ │  ...     │           │  │ │
+│  │  │  └──────────┘ └──────────┘ └──────────┘           │  │ │
+│  │  └───────────────────────────────────────────────────┘  │ │
+│  │                     Taskbar.jsx                         │ │
 │  └─────────────────────────────────────────────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
 │                    Zustand Store Layer                       │
 │  ┌──────────────┐ ┌──────────────┐ ┌─────────────────────┐ │
 │  │ Window State │ │  File System │ │   User Preferences  │ │
 │  └──────────────┘ └──────────────┘ └─────────────────────┘ │
+├─────────────────────────────────────────────────────────────┤
+│                   Worker Layer (Off-thread)                  │
+│              Benchmark Worker / System Polling               │
 ├─────────────────────────────────────────────────────────────┤
 │                   Persistence Layer                          │
 │              localStorage (via Zustand)                      │
@@ -186,23 +193,24 @@ App.jsx
 ├── BootSequence (pre-auth)
 ├── BSOD (crash layer)
 ├── LoginScreen (auth gate)
-├── LiveWallpaper (background layer)
-├── Widgets & SystemDashboard
-│   └── Clock, Social, and Metrics widgets
-├── Desktop Icons Layer
-│   └── Draggable icon components
-├── Windows Layer
-│   └── Window components (conditionally rendered)
-│       ├── MailApp (Neural Mail)
-│       ├── LuminaChat (Guestbook)
-│       ├── Benchmark (Stress Tester)
-│       ├── Terminal (with Vim trap)
-│       └── ... (other apps)
-├── Taskbar (bottom dock)
-├── ControlCenter (flyout panel)
-├── AppLauncher (flyout grid)
-├── Spotlight (search overlay)
-└── Screensaver
+├── Desktop (Main OS Shell)
+│   ├── LiveWallpaper (background layer)
+│   ├── Widgets & SystemDashboard
+│   │   └── Clock, Social, and Metrics widgets
+│   ├── Desktop Icons Layer
+│   │   └── Draggable icon components
+│   └── Windows Layer
+│       └── WindowContentRenderer (Lazy Loading)
+│           ├── WindowContainer
+│           │   ├── MailApp (Lazy)
+│           │   ├── LuminaChat (Lazy)
+│           │   ├── Benchmark (Web Worker)
+│           │   ├── Terminal
+│           │   └── ...
+└── Taskbar (bottom dock)
+    ├── ControlCenter (flyout panel)
+    ├── AppLauncher (flyout grid)
+    ├── Spotlight (search overlay)
 ```
 
 ## Data Flow
@@ -260,18 +268,20 @@ App.jsx
 
 ## Performance Optimizations
 
-1. **State Selectors**: Components use granular selectors to minimize re-renders
-2. **Memoization**: Hardware info in useSystemMetrics is memoized
-3. **Lazy Evaluation**: Achievement checks only run on relevant actions
-4. **Animation Optimization**: Framer Motion uses GPU-accelerated transforms
-5. **Local Storage**: Debounced persistence via Zustand middleware
+1. **Code Splitting & Lazy Loading**: Heavy components (Games, Mail, AI Chat) are loaded on-demand using `React.lazy()` and `Suspense`, reducing the initial bundle size by ~170KB.
+2. **Web Workers**: Computationally intensive tasks like the Benchmark engine are offloaded to Background Workers to keep the UI thread responsive.
+3. **State Selectors**: Components use granular selectors to minimize re-renders.
+4. **Asset Optimization**: Game previews and large images are optimized and lazily loaded.
+5. **Animation Optimization**: Framer Motion uses GPU-accelerated transforms.
+6. **Local Storage**: Debounced persistence via Zustand middleware.
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
 | `src/store/osStore.js` | Central state management |
-| `src/App.jsx` | Main application shell |
+| `src/App.jsx` | Main system entry point |
+| `src/components/Desktop.jsx` | Core OS shell & window manager |
 | `src/components/Window.jsx` | Window container component |
 | `src/hooks/useSystemMetrics.js` | Performance monitoring |
 | `src/hooks/useSoundEffects.js` | Audio feedback |
@@ -280,14 +290,9 @@ App.jsx
 
 To add a new application:
 
-1. Create component in `src/components/MyApp.jsx`
-2. Add window rendering case in `App.jsx`:
-   ```jsx
-   {openWindows.includes('myapp') && (
-     <Window key="myapp" id="myapp" title="My App">
-       <MyApp />
-     </Window>
-   )}
-   ```
-3. Add icon to `desktopIcons` array in `App.jsx`
-4. (Optional) Add terminal command in `Terminal.jsx`
+1. Create component in `src/components/apps/MyApp.jsx`
+2. Update `src/components/WindowContentRenderer.jsx` to include the app:
+   - Add a `React.lazy()` import for the component.
+   - Add a case in the renderer switch/mapping.
+3. Add icon metadata to `desktopIcons` in `src/store/osStore.js`.
+4. (Optional) Add terminal command in `Terminal.jsx`.

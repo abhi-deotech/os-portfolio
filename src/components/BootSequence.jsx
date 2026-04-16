@@ -39,12 +39,12 @@ const BootSequence = ({ onComplete }) => {
       const timer = setTimeout(() => {
         setLogs((prev) => [...prev, BOOT_LOGS[currentIndex]]);
         setCurrentPathIndex((prev) => prev + 1);
-      }, Math.random() * 150 + 50);
+      }, Math.random() * 20 + 10);
       return () => clearTimeout(timer);
     } else {
       const finishTimer = setTimeout(() => {
         onComplete();
-      }, 1000);
+      }, 300);
       return () => clearTimeout(finishTimer);
     }
   }, [currentIndex, onComplete]);

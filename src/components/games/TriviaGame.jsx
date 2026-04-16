@@ -54,20 +54,9 @@ const TriviaGame = ({ onBack }) => {
     fetchQuestions();
   }, [fetchQuestions]);
 
-  useEffect(() => {
-    if (status === 'playing' && selectedAnswer === null && timeLeft > 0) {
-      const timer = setInterval(() => {
-        setLeftTime(prev => prev - 1);
-      }, 1000);
-      return () => clearInterval(timer);
-    } else if (timeLeft === 0 && selectedAnswer === null && status === 'playing') {
-      handleAnswer(null);
-    }
-  }, [status, selectedAnswer, timeLeft]);
-
-  const handleAnswer = (answer) => {
+  const handleAnswer = useCallback((answer) => {
     if (selectedAnswer !== null) return;
-    
+
     setSelectedAnswer(answer);
     const correct = answer === questions[currentIndex].correct_answer;
     setIsCorrect(correct);
@@ -84,7 +73,18 @@ const TriviaGame = ({ onBack }) => {
         if (score + (correct ? 1 : 0) >= 8) unlockAchievement('trivia_expert');
       }
     }, 1500);
-  };
+  }, [questions, currentIndex, selectedAnswer, score, unlockAchievement]);
+
+  useEffect(() => {
+    if (status === 'playing' && selectedAnswer === null && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setLeftTime(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    } else if (timeLeft === 0 && selectedAnswer === null && status === 'playing') {
+      handleAnswer(null);
+    }
+  }, [status, selectedAnswer, timeLeft, handleAnswer]);
 
   if (status === 'loading') {
     return (

@@ -16,7 +16,7 @@ const RETRO_GAMES = [
     genre: 'Platformer',
     developer: 'Morphcat Games',
     description: 'A high-speed simultaneous co-op platformer. Use your wings to fly and navigate dangerous environments.',
-    thumbnail: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&h=300&auto=format&fit=crop',
+    thumbnail: '/assets/games/spacegulls.png',
     romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/NES/Spacegulls/Spacegulls.nes'
   },
   {
@@ -27,7 +27,7 @@ const RETRO_GAMES = [
     genre: 'Action',
     developer: 'The New 8-bit Heroes',
     description: 'A high-octane action game where you must navigate complex levels using your grappling hook.',
-    thumbnail: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=400&h=300&auto=format&fit=crop',
+    thumbnail: '/assets/games/streemerz.png',
     romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/NES/Streemerz/Streemerz.nes'
   },
   {
@@ -38,7 +38,7 @@ const RETRO_GAMES = [
     genre: 'Arcade',
     developer: 'Tangram Games',
     description: 'A high-energy arcade platformer. Help Tobu Tobu Girl save her cat by bouncing on enemies!',
-    thumbnail: 'https://images.unsplash.com/photo-1526509867162-5b0c0023493e?q=80&w=400&h=300&auto=format&fit=crop',
+    thumbnail: '/assets/games/tobutobugirl.png',
     romUrl: 'https://cdn.jsdelivr.net/gh/linoscope/CAMLBOY@master/resource/games/tobu.gb'
   },
   {
@@ -49,7 +49,7 @@ const RETRO_GAMES = [
     genre: 'Puzzle Platformer',
     developer: 'Denis Grachev',
     description: 'Switch between your physical and phantom self to navigate complex levels in this cult classic.',
-    thumbnail: 'https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=400&h=300&auto=format&fit=crop',
+    thumbnail: '/assets/games/alterego.png',
     romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/NES/Alter%20Ego/Alter_Ego.nes'
   },
   {
@@ -60,7 +60,7 @@ const RETRO_GAMES = [
     genre: 'Arcade',
     developer: 'Vectre',
     description: 'A polished Arkanoid-style brick breaker for the Game Boy. Smooth action and classic gameplay.',
-    thumbnail: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=400&h=300&auto=format&fit=crop',
+    thumbnail: '/assets/games/retroid.png',
     romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/Game%20Boy/Retroid/Retroid.gb'
   },
   {
@@ -71,7 +71,7 @@ const RETRO_GAMES = [
     genre: 'FPS',
     developer: 'id Software',
     description: 'The legendary first-person shooter that defined the genre. Fight your way through the Phobos moon base.',
-    thumbnail: 'https://images.unsplash.com/photo-1627389955611-70c92a5d2e2f?q=80&w=400&h=300&auto=format&fit=crop',
+    thumbnail: '/assets/games/doom.png',
     romUrl: 'https://cdn.jsdelivr.net/gh/nneonneo/universal-doom@main/DOOM1.WAD'
   },
   {
@@ -82,7 +82,7 @@ const RETRO_GAMES = [
     genre: 'Shmup',
     developer: 'HL',
     description: 'A stunning high-speed caravan-style shooter. One of the most technically impressive NES homebrews ever made.',
-    thumbnail: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=400&h=300&auto=format&fit=crop',
+    thumbnail: '/assets/games/bladebuster.jpg',
     romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/NES/BladeBuster/BladeBuster.nes'
   }
 ];

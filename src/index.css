@@ -134,10 +134,36 @@
   }
 }
 
-#root {
-  width: 100vw;
-  height: 100vh;
-}
+  #root {
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* Premium Sci-Fi Utilities */
+  .scanline {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(var(--os-primary-rgb), 0.2), transparent);
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: none;
+    z-index: 10;
+    animation: scanline 4s linear infinite;
+  }
+
+  @keyframes scanline {
+    0% { top: -10px; }
+    100% { top: 100%; }
+  }
+
+  .text-glow {
+    text-shadow: 0 0 10px rgba(var(--os-primary-rgb), 0.5), 0 0 20px rgba(var(--os-primary-rgb), 0.2);
+  }
+
+  .text-glow-secondary {
+    text-shadow: 0 0 10px rgba(var(--os-secondary-rgb), 0.5), 0 0 20px rgba(var(--os-secondary-rgb), 0.2);
+  }
 
 /* ===========================
    react-contexify OS Theme

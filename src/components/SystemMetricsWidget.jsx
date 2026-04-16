@@ -115,7 +115,9 @@ const CompactMetric = ({ icon: Icon, label, value, unit, color }) => (
 );
 
 const SystemMetricsWidget = () => {
-  const { systemMetrics, updateMetrics, transparencyEffects } = useOSStore();
+  const systemMetrics = useOSStore(state => state.systemMetrics);
+  const updateMetrics = useOSStore(state => state.updateMetrics);
+  const transparencyEffects = useOSStore(state => state.transparencyEffects);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
 

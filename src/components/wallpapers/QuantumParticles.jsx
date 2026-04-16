@@ -1,5 +1,58 @@
 import React, { useEffect, useRef } from 'react';
 
+// Particle class moved outside component to comply with React hooks rules
+class Particle {
+  constructor(canvas, mouseRef, accentColor) {
+    this.canvas = canvas;
+    this.mouseRef = mouseRef;
+    this.accentColor = accentColor;
+    this.reset();
+  }
+
+  reset() {
+    this.x = Math.random() * this.canvas.width;
+    this.y = Math.random() * this.canvas.height;
+    this.vx = (Math.random() - 0.5) * 0.5;
+    this.vy = (Math.random() - 0.5) * 0.5;
+    this.size = Math.random() * 1.5 + 0.5;
+    this.alpha = Math.random() * 0.5 + 0.1;
+  }
+
+  update() {
+    // Apply velocity
+    this.x += this.vx;
+    this.y += this.vy;
+
+    // Mouse attraction
+    if (this.mouseRef.current.active) {
+      const dx = this.mouseRef.current.x - this.x;
+      const dy = this.mouseRef.current.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 300) {
+        const force = (300 - dist) / 3000;
+        this.vx += (dx / dist) * force;
+        this.vy += (dy / dist) * force;
+      }
+    }
+
+    // Friction
+    this.vx *= 0.99;
+    this.vy *= 0.99;
+
+    // Boundary check
+    if (this.x < 0 || this.x > this.canvas.width || this.y < 0 || this.y > this.canvas.height) {
+      this.reset();
+    }
+  }
+
+  draw(ctx) {
+    ctx.fillStyle = `${this.accentColor}${Math.floor(this.alpha * 255).toString(16).padStart(2, '0')}`;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 const QuantumParticles = ({ accentColor = '#a855f7' }) => {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0, active: false });
@@ -19,69 +72,28 @@ const QuantumParticles = ({ accentColor = '#a855f7' }) => {
     resize();
 
     // Particle settings
-    const PARTICLE_COUNT = 2500;
+    const PARTICLE_COUNT = isMobile ? 50 : 150; // Drastically reduced for performance, but increased size to keep visual impact
     const particles = [];
-    
-    class Particle {
-      constructor() {
-        this.reset();
-      }
-
-      reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
-        this.size = Math.random() * 1.5 + 0.5;
-        this.alpha = Math.random() * 0.5 + 0.1;
-      }
-
-      update() {
-        // Apply velocity
-        this.x += this.vx;
-        this.y += this.vy;
-
-        // Mouse attraction
-        if (mouseRef.current.active) {
-          const dx = mouseRef.current.x - this.x;
-          const dy = mouseRef.current.y - this.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 300) {
-            const force = (300 - dist) / 3000;
-            this.vx += (dx / dist) * force;
-            this.vy += (dy / dist) * force;
-          }
-        }
-
-        // Friction
-        this.vx *= 0.99;
-        this.vy *= 0.99;
-
-        // Boundary check
-        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
-          this.reset();
-        }
-      }
-
-      draw() {
-        ctx.fillStyle = `${accentColor}${Math.floor(this.alpha * 255).toString(16).padStart(2, '0')}`;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push(new Particle());
+      particles.push(new Particle(canvas, mouseRef, accentColor));
     }
 
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Group by alpha to reduce context switching (optional, simpler to just batch all if same color)
+      ctx.fillStyle = accentColor;
+      ctx.beginPath();
       
       particles.forEach(p => {
         p.update();
-        p.draw();
+        // High performance path batching
+        ctx.moveTo(p.x, p.y);
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       });
+      
+      ctx.fill();
 
       animationFrameId = requestAnimationFrame(render);
     };
