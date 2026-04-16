@@ -77,7 +77,6 @@ function App() {
   const { playSound } = useSoundEffects();
   const [isIdle, setIsIdle] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
-  const [bootComplete, setBootComplete] = useState(false);
   const idleTimer = useRef(null);
 
   const isMobile = useIsMobile();
