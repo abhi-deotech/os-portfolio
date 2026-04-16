@@ -17,12 +17,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Window from './components/Window';
 import Terminal from './components/Terminal';
 import ControlCenter from './components/ControlCenter';
-import Games from './components/Games';
-import Snake from './components/games/Snake';
-import MemoryGame from './components/games/MemoryGame';
-import TriviaGame from './components/games/TriviaGame';
-import Game2048 from './components/games/Game2048';
-import Sudoku from './components/games/Sudoku';
+
+/**
+ * ⚡ Bolt Optimization: Lazy-load game components to reduce initial bundle size.
+ * These are heavy components not needed during the critical boot/login path.
+ */
+const Games = React.lazy(() => import('./components/Games'));
+const Snake = React.lazy(() => import('./components/games/Snake'));
+const MemoryGame = React.lazy(() => import('./components/games/MemoryGame'));
+const TriviaGame = React.lazy(() => import('./components/games/TriviaGame'));
+const Game2048 = React.lazy(() => import('./components/games/Game2048'));
+const Sudoku = React.lazy(() => import('./components/games/Sudoku'));
+const RetroArcade = React.lazy(() => import('./components/RetroArcade'));
+
 import Settings from './components/Settings';
 import LiveWallpaper from './components/LiveWallpaper';
 import FileExplorer from './components/FileExplorer';
@@ -40,7 +47,6 @@ import Browser from './components/Browser';
 import AIChat from './components/AIChat';
 import MailApp from './components/MailApp';
 import LuminaChat from './components/LuminaChat';
-import RetroArcade from './components/RetroArcade';
 import DocumentationApp from './components/DocumentationApp';
 import AchievementToast from './components/AchievementToast';
 import Screensaver from './components/Screensaver';
@@ -479,14 +485,20 @@ function App() {
 
             {openWindows.includes('games') && (
               <Window key="games" id="games" title="Game Center" width={1200} height={800}>
-                <div className="h-full w-full overflow-y-auto"><Games /></div>
+                <div className="h-full w-full overflow-y-auto">
+                  <React.Suspense fallback={null}>
+                    <Games />
+                  </React.Suspense>
+                </div>
               </Window>
             )}
 
             {openWindows.includes('snake') && (
               <Window key="snake" id="snake" title="Snake Retro" width={750} height={750}>
                 <div className="h-full w-full">
-                  <Snake onBack={() => useOSStore.getState().closeWindow('snake')} />
+                  <React.Suspense fallback={null}>
+                    <Snake onBack={() => useOSStore.getState().closeWindow('snake')} />
+                  </React.Suspense>
                 </div>
               </Window>
             )}
@@ -494,7 +506,9 @@ function App() {
             {openWindows.includes('memory') && (
               <Window key="memory" id="memory" title="Memory Match" width={950} height={700}>
                 <div className="h-full w-full overflow-y-auto">
-                  <MemoryGame onBack={() => useOSStore.getState().closeWindow('memory')} />
+                  <React.Suspense fallback={null}>
+                    <MemoryGame onBack={() => useOSStore.getState().closeWindow('memory')} />
+                  </React.Suspense>
                 </div>
               </Window>
             )}
@@ -502,7 +516,9 @@ function App() {
             {openWindows.includes('trivia') && (
               <Window key="trivia" id="trivia" title="Trivia Quest" width={900} height={750}>
                 <div className="h-full w-full overflow-hidden">
-                  <TriviaGame onBack={() => useOSStore.getState().closeWindow('trivia')} />
+                  <React.Suspense fallback={null}>
+                    <TriviaGame onBack={() => useOSStore.getState().closeWindow('trivia')} />
+                  </React.Suspense>
                 </div>
               </Window>
             )}
@@ -510,7 +526,9 @@ function App() {
             {openWindows.includes('2048') && (
               <Window key="2048" id="2048" title="2048 Retro" width={750} height={750}>
                 <div className="h-full w-full">
-                  <Game2048 onBack={() => useOSStore.getState().closeWindow('2048')} />
+                  <React.Suspense fallback={null}>
+                    <Game2048 onBack={() => useOSStore.getState().closeWindow('2048')} />
+                  </React.Suspense>
                 </div>
               </Window>
             )}
@@ -518,7 +536,9 @@ function App() {
             {openWindows.includes('sudoku') && (
               <Window key="sudoku" id="sudoku" title="Sudoku Master" width={800} height={800}>
                 <div className="h-full w-full">
-                  <Sudoku onBack={() => useOSStore.getState().closeWindow('sudoku')} />
+                  <React.Suspense fallback={null}>
+                    <Sudoku onBack={() => useOSStore.getState().closeWindow('sudoku')} />
+                  </React.Suspense>
                 </div>
               </Window>
             )}
@@ -717,7 +737,9 @@ function App() {
 
             {openWindows.includes('retroarcade') && (
               <Window key="retroarcade" id="retroarcade" title="Quantum Retro Arcade" width={1000} height={750}>
-                <RetroArcade />
+                <React.Suspense fallback={null}>
+                  <RetroArcade />
+                </React.Suspense>
               </Window>
             )}
 

@@ -1,0 +1,3 @@
+## 2025-04-16 - Lazy-loading Game Components in Lumina OS
+**Learning:** In a window-based OS architecture where components are rendered based on an `openWindows` state, eagerly importing all possible application components (Games, Terminal, etc.) in the main `App.jsx` creates a massive initial bundle. Applying `React.lazy()` at the window-content level allows the OS to boot rapidly while still maintaining the "immediate" window opening feel. Individual `React.Suspense` boundaries with `fallback={null}` are necessary within the window mapping logic to prevent the entire desktop from suspending when a single app is loading.
+**Action:** Always prefer `React.lazy()` for discrete applications/tools that are not required for the initial Boot -> Login flow.
