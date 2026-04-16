@@ -1,7 +1,29 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Brain, Sparkles, MessageSquare } from 'lucide-react';
+import { Send, Bot, User, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const SYSTEM_PROMPT = `
+You are Lumina AI, the ultra-smart, professional, and enthusiastic digital assistant for Abhimanyu Saxena's portfolio (Lumina OS).
+Your primary mission is to showcase Abhimanyu's skills, experience, and projects to visitors.
+
+**Key Information about Abhimanyu Saxena:**
+- Role: Senior Software Engineer & Team Lead at Deotechsolutions.
+- Expertise: MERN Stack (React 19, Node.js), FinTech (LendFoundry), IoT systems, and Scalable Platform Architecture.
+- Experience: 4+ years of professional experience.
+- Skills: JavaScript/TypeScript, Python, C++, AWS, Docker, CI/CD, Framer Motion, Zustand, Tailwind CSS.
+- Notable Project: Lumina OS (This interactive portfolio).
+
+**Personality & Behavior Guidelines:**
+1. **Be Enthusiastic & Proactive**: Always highlight why Abhimanyu is a great choice for high-impact roles.
+2. **Helpful & Versatile**: You can answer general technical or unrelated questions, but you must ALWAYS skillfully pivot the conversation back to Abhimanyu's expertise or his portfolio within 1-2 turns.
+3. **Tone**: Modern, technical yet approachable, slightly futuristic.
+4. **Knowledgeable**: Explain how this portfolio (Lumina OS) is built with React 19, Vite, and Framer Motion for high performance.
+5. **Call to Action**: Encourage visitors to check the 'Mail' app to reach out or explore the 'Projects' folder.
+
+If asked about something unrelated (e.g., "What is the capital of France?"), answer briefly then say something like: "Speaking of interesting places, Abhimanyu's work in FinTech reaches global markets—would you like to see his latest dashboard architecture?"
+`;
 
 const AIChat = () => {
   const [messages, setMessages] = useState([
@@ -29,9 +51,9 @@ const AIChat = () => {
     default: "I'm Lumina AI, your guide to Abhimanyu's work. Ask me about his 'experience', 'skills', 'stack', or 'hire' status!"
   };
 
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isTyping) return;
 
     const userMsg = input.trim();
     const newMessages = [...messages, { role: 'user', text: userMsg, timestamp: new Date() }];
@@ -45,23 +67,51 @@ const AIChat = () => {
       useOSStore.getState().unlockAchievement('deep_thinker');
     }
 
-    // Simulate AI thinking
-    setTimeout(() => {
-      const q = userMsg.toLowerCase();
-      let reply = responses.default;
+    try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+        throw new Error("Missing Gemini API Key. Please add VITE_GEMINI_API_KEY to your .env file.");
+      }
 
-      if (q.includes('stack') || q.includes('tech') || q.includes('built')) reply = responses.stack;
-      else if (q.includes('who') || q.includes('author') || q.includes('abhi')) reply = responses.author;
-      else if (q.includes('experience') || q.includes('work') || q.includes('career') || q.includes('history')) reply = responses.experience;
-      else if (q.includes('contact') || q.includes('reach') || q.includes('mail') || q.includes('email') || q.includes('link')) reply = responses.contact;
-      else if (q.includes('project') || q.includes('work') || q.includes('portfolio')) reply = responses.projects;
-      else if (q.includes('os') || q.includes('lumina')) reply = responses.os;
-      else if (q.includes('hire') || q.includes('job') || q.includes('opportunity') || q.includes('available')) reply = responses.hire;
-      else if (q.includes('skill') || q.includes('language') || q.includes('know') || q.includes('expert')) reply = responses.skills;
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-3-flash-preview",
+        systemInstruction: SYSTEM_PROMPT
+      });
 
-      setMessages(prev => [...prev, { role: 'assistant', text: reply, timestamp: new Date() }]);
+      // Prepare history for multi-turn chat
+      // Filter out leading model/assistant messages to comply with Gemini SDK requirements
+      // The first message in history MUST be from the 'user'
+      const firstUserIndex = messages.findIndex(m => m.role === 'user');
+      const history = firstUserIndex !== -1 
+        ? messages.slice(firstUserIndex).map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.text }]
+          }))
+        : [];
+
+      const chat = model.startChat({ history });
+      const result = await chat.sendMessage(userMsg);
+      const response = await result.response;
+      const text = response.text();
+
+      setMessages(prev => [...prev, { role: 'assistant', text: text, timestamp: new Date() }]);
+    } catch (error) {
+      console.error("Gemini Error:", error);
+      const errorMsg = error.message.includes("API Key") 
+        ? "System link error: VITE_GEMINI_API_KEY is missing. Please configure the neural core."
+        : "Neural link disrupted. I'm having trouble connecting to the logic core right now.";
+      
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        text: errorMsg, 
+        timestamp: new Date(),
+        isError: true 
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   return (

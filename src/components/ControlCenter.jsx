@@ -8,17 +8,15 @@ import useSystemMetrics from '../hooks/useSystemMetrics';
 import useNetworkInfo from '../hooks/useNetworkInfo';
 
 const ControlCenter = () => {
-  const { 
-    isControlCenterOpen, 
-    toggleControlCenter, 
-    music, 
-    setMusicIsPlaying, 
-    openWindow, 
-    transparencyEffects,
-    brightness,
-    setBrightness,
-    setMusicVolume
-  } = useOSStore();
+  const isControlCenterOpen = useOSStore(state => state.isControlCenterOpen);
+  const toggleControlCenter = useOSStore(state => state.toggleControlCenter);
+  const music = useOSStore(state => state.music);
+  const setMusicIsPlaying = useOSStore(state => state.setMusicIsPlaying);
+  const openWindow = useOSStore(state => state.openWindow);
+  const transparencyEffects = useOSStore(state => state.transparencyEffects);
+  const brightness = useOSStore(state => state.brightness);
+  const setBrightness = useOSStore(state => state.setBrightness);
+  const setMusicVolume = useOSStore(state => state.setMusicVolume);
   
   const isMobile = useIsMobile();
   const metrics = useSystemMetrics();

@@ -21,7 +21,9 @@ import useOSStore from '../store/osStore';
 
 // --- Individual Node Renderer ---
 const Node = ({ node, style, dragHandle }) => {
-  const { deleteNode, renameNode, openWindow } = useOSStore();
+  const deleteNode = useOSStore(state => state.deleteNode);
+  const renameNode = useOSStore(state => state.renameNode);
+  const openWindow = useOSStore(state => state.openWindow);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(node.data.name);
   const inputRef = useRef(null);
@@ -125,11 +127,15 @@ const Node = ({ node, style, dragHandle }) => {
 
 // --- Main File Explorer Component ---
 const FileExplorer = () => {
-  const { 
-    fileSystem, createFolder, createFile, moveNode, 
-    resetFileSystem, getPathFromId, findNodeById,
-    recentFiles, openWindow
-  } = useOSStore();
+  const fileSystem = useOSStore(state => state.fileSystem);
+  const createFolder = useOSStore(state => state.createFolder);
+  const createFile = useOSStore(state => state.createFile);
+  const moveNode = useOSStore(state => state.moveNode);
+  const resetFileSystem = useOSStore(state => state.resetFileSystem);
+  const getPathFromId = useOSStore(state => state.getPathFromId);
+  const findNodeById = useOSStore(state => state.findNodeById);
+  const recentFiles = useOSStore(state => state.recentFiles);
+  const openWindow = useOSStore(state => state.openWindow);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNodeId, setSelectedNodeId] = useState(null);
