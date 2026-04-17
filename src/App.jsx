@@ -56,6 +56,7 @@ const ICON_MENU_ID = 'icon-context-menu';
  */
 function App() {
   const openWindows = useOSStore(state => state.openWindows);
+  const minimizedWindows = useOSStore(state => state.minimizedWindows || []);
   const activeWindow = useOSStore(state => state.activeWindow);
   const openWindow = useOSStore(state => state.openWindow);
   const focusWindow = useOSStore(state => state.focusWindow);
@@ -264,7 +265,7 @@ function App() {
         <div className="relative w-full h-full pointer-events-none flex items-center justify-center">
           <Suspense fallback={null}>
             <AnimatePresence>
-              {openWindows.map((id) => (
+              {openWindows.filter(id => !minimizedWindows.includes(id)).map((id) => (
                 <Window
                   key={id}
                   id={id}

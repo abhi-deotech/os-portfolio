@@ -27,15 +27,17 @@ import { useIsMobile } from '../hooks/useMediaQuery';
  * @param {number} [props.minHeight=300] - Minimum resize height
  */
 const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
-  const { closeWindow, focusWindow, activeWindow, activeAccent, setIsDragging, isDragging, transparencyEffects } = useOSStore();
+  const { closeWindow, toggleMinimizeWindow, toggleMaximizeWindow, focusWindow, activeWindow, maximizedWindows, activeAccent, setIsDragging, isDragging, transparencyEffects } = useOSStore();
   const isMobile = useIsMobile();
   const isActive = activeWindow === id;
-  const [isMaximized, setIsMaximized] = useState(isMobile);
+  const isMaximized = maximizedWindows?.includes(id) || isMobile;
   const dragControls = useDragControls();
 
   useEffect(() => {
-    setIsMaximized(isMobile);
-  }, [isMobile]);
+    if (isMobile && !maximizedWindows?.includes(id)) {
+      toggleMaximizeWindow(id);
+    }
+  }, [isMobile, id, maximizedWindows, toggleMaximizeWindow]);
 
   const accentHexMap = {
     purple: '#cc97ff',
@@ -73,7 +75,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
 
   const handleDragEnd = (e, info) => {
     setIsDragging(false);
-    if (snapTarget === 'top') setIsMaximized(true);
+    if (snapTarget === 'top') toggleMaximizeWindow(id);
     // Add logic for left/right split if desired, but for now just top = maximize
     setSnapTarget(null);
   };
@@ -135,7 +137,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
         onPointerDown={(e) => {
           if (!isMaximized && !isMobile) dragControls.start(e);
         }}
-        onDoubleClick={() => !isMobile && setIsMaximized(!isMaximized)}
+        onDoubleClick={() => !isMobile && toggleMaximizeWindow(id)}
         style={{ 
           touchAction: "none", 
           cursor: (isMaximized || isMobile) ? 'default' : 'grab',
@@ -151,14 +153,13 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
           </button>
           {!isMobile && (
             <>
-              <button 
-                onClick={() => closeWindow(id)}
-                className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123]"
-              >
-                <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
+              <button
+               onClick={() => toggleMinimizeWindow(id)}
+               className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123]"
+              >                <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
               </button>
-              <button 
-                onClick={() => setIsMaximized(!isMaximized)} 
+              <button
+                onClick={() => toggleMaximizeWindow(id)}
                 className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#1aab29]"
               >
                 {isMaximized ? (

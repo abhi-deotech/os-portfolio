@@ -25,6 +25,8 @@ const useOSStore = create(
      */
     (set, get) => ({
       openWindows: [],
+      minimizedWindows: [],
+      maximizedWindows: [],
       activeWindow: null,
       isControlCenterOpen: false,
       isAppLauncherOpen: false,
@@ -320,11 +322,43 @@ const useOSStore = create(
       closeWindow: (id) =>
         set((state) => ({
           openWindows: state.openWindows.filter((w) => w !== id),
+          minimizedWindows: (state.minimizedWindows || []).filter((w) => w !== id),
           activeWindow: state.activeWindow === id ? null : state.activeWindow,
         })),
 
+      toggleMinimizeWindow: (id) =>
+        set((state) => {
+          const isMinimized = (state.minimizedWindows || []).includes(id);
+          const newMinimized = isMinimized
+            ? state.minimizedWindows.filter((w) => w !== id)
+            : [...(state.minimizedWindows || []), id];
+
+          return {
+            minimizedWindows: newMinimized,
+            activeWindow: isMinimized ? id : (state.activeWindow === id ? null : state.activeWindow),
+          };
+        }),
+
+      toggleMaximizeWindow: (id) =>
+        set((state) => {
+          const isMaximized = (state.maximizedWindows || []).includes(id);
+          const newMaximized = isMaximized
+            ? state.maximizedWindows.filter((w) => w !== id)
+            : [...(state.maximizedWindows || []), id];
+
+          return {
+            maximizedWindows: newMaximized,
+            activeWindow: id,
+          };
+        }),
+
       focusWindow: (id) =>
-        set({ activeWindow: id, isControlCenterOpen: false, isAppLauncherOpen: false }),
+        set((state) => ({
+          activeWindow: id,
+          minimizedWindows: (state.minimizedWindows || []).filter((w) => w !== id),
+          isControlCenterOpen: false,
+          isAppLauncherOpen: false
+        })),
 
       toggleControlCenter: () =>
         set((state) => ({
@@ -506,6 +540,8 @@ const useOSStore = create(
         accentIntensity: state.accentIntensity,
         terminalHistory: state.terminalHistory,
         openWindows: state.openWindows,
+        minimizedWindows: state.minimizedWindows,
+        maximizedWindows: state.maximizedWindows,
         activeWindow: state.activeWindow,
         iconPositions: state.iconPositions,
         fileSystem: state.fileSystem,

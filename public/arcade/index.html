@@ -88,6 +88,17 @@
         window.EJS_pathtodata = 'https://cdn.emulatorjs.org/stable/data/';
         window.EJS_startOnLoaded = true;
         window.EJS_color = '#cc97ff';
+        
+        // Performance & Audio Optimizations
+        window.EJS_threads = true;
+        window.EJS_sampleRate = 44100;
+        window.EJS_volume = 1.0;
+        
+        // Advanced 2024/2025 Caching & WASM flags
+        window.EJS_cache = {
+            enabled: true,
+            cacheMaxSizeMB: 512
+        };
 
         // Input Settings
         window.EJS_mouse = true;
@@ -95,11 +106,31 @@
         window.EJS_touch = true;
         window.EJS_gamePad = true;
         
-        // Doom Specific
+        // Core Specific Tweaks (Modern RetroArch config mapping)
+        window.EJS_coreConfig = {
+            'video_vsync': 'false',
+            'video_threaded': 'true',
+            'audio_latency': '64', // Reduced for better response since threads are on
+            'audio_resampler': 'sinc',
+            'audio_out_rate': '44100',
+            'run_ahead_enabled': 'true', // Reduce input lag
+            'run_ahead_frames': '1',
+            'run_ahead_secondary_instance': 'false'
+        };
+
         if (system === 'doom') {
             window.EJS_lockMouse = true;
             window.EJS_coreConfig = {
-                'prboom-mouse_on': 'enabled'
+                ...window.EJS_coreConfig,
+                'prboom-mouse_on': 'enabled',
+                'prboom-resolution': '640x400',
+                'prboom-analog_deadzone': '15'
+            };
+        } else if (system === 'nes') {
+            window.EJS_coreConfig = {
+                ...window.EJS_coreConfig,
+                'fceumm_palette': 'asqrealc', // Better colors
+                'fceumm_overscan_h': 'enabled'
             };
         }
 

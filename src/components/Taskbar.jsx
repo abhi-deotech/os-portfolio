@@ -39,8 +39,13 @@ const Taskbar = ({ desktopIcons }) => {
   const [time, setTime] = useState(new Date());
 
   const openWindows = useOSStore(state => state.openWindows);
+  const minimizedWindows = useOSStore(state => state.minimizedWindows || []);
+  const maximizedWindows = useOSStore(state => state.maximizedWindows || []);
   const activeWindow = useOSStore(state => state.activeWindow);
+  const hasMaximizedWindow = maximizedWindows.length > 0;
   const openWindow = useOSStore(state => state.openWindow);
+  const focusWindow = useOSStore(state => state.focusWindow);
+  const toggleMinimizeWindow = useOSStore(state => state.toggleMinimizeWindow);
   const toggleControlCenter = useOSStore(state => state.toggleControlCenter);
   const isControlCenterOpen = useOSStore(state => state.isControlCenterOpen);
   const toggleAppLauncher = useOSStore(state => state.toggleAppLauncher);
@@ -107,8 +112,8 @@ const Taskbar = ({ desktopIcons }) => {
 
   return (
     <>
-      <div 
-        className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-white/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 flex items-center px-4 justify-between z-50 shadow-2xl transition-all duration-500`}
+      <div
+        className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-white/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 flex items-center px-4 justify-between z-50 shadow-2xl transition-all duration-500 ${hasMaximizedWindow ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
       >
         <div className="flex items-center bg-black/20 rounded-2xl p-1 gap-1 border border-white/5 md:mr-4">
           <div
@@ -151,11 +156,20 @@ const Taskbar = ({ desktopIcons }) => {
             return (
               <div
                 key={id}
-                onClick={() => openWindow(id)}
+                onClick={() => {
+                  if (isOpen) {
+                    if (isActive) {
+                      toggleMinimizeWindow(id);
+                    } else {
+                      focusWindow(id);
+                    }
+                  } else {
+                    openWindow(id);
+                  }
+                }}
                 className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl ${isActive ? 'bg-white/10 shadow-[inset_0_0_12px_rgba(255,255,255,0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
               >
-                <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105 group-active:scale-95'}`}>
-                  {IconComponent ? (
+                <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105 group-active:scale-95'} ${minimizedWindows.includes(id) ? 'opacity-60 scale-90' : 'opacity-100'}`}>                  {IconComponent ? (
                     <CustomIcon 
                       icon={IconComponent} 
                       size={isMobile ? 18 : 22} 
