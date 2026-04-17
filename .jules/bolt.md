@@ -72,8 +72,12 @@ Vite successfully created separate chunks for each lazy-loaded component:
 
 ## Impact
 - **Initial bundle reduction**: ~171 KB (gzipped) moved to on-demand chunks
-- **Faster Time to Interactive**: Less JS to parse/execute on initial load
-- **Better caching**: Individual chunks can be cached independently
+- **Optimized dynamic imports**: Fixed `INEFFECTIVE_DYNAMIC_IMPORT` by removing duplicate static imports for `Settings` and `FileExplorer`.
+- **Faster Time to Interactive**: Less JS to parse/execute on initial load, and reduced `App.jsx` render overhead.
+- **Better caching**: Individual chunks can be cached independently.
+- **Reduced memory footprint**: Moving `accentColorsMap` outside `App` prevents object re-creation on every render.
+- **Improved LCP**: Added `preconnect` for Google Fonts in `index.html`.
+- **Zustand Health**: Capped `terminalHistory` at 500 entries to prevent `localStorage` bloat over time.
 
 ## Lint Fixes Applied
 

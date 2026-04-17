@@ -373,9 +373,13 @@ const useOSStore = create(
         }),
 
       addTerminalEntry: (entry) =>
-        set((state) => ({
-          terminalHistory: [...state.terminalHistory, entry],
-        })),
+        set((state) => {
+          const newHistory = [...state.terminalHistory, entry];
+          // Cap history at 500 entries to prevent localStorage bloat
+          return {
+            terminalHistory: newHistory.slice(-500),
+          };
+        }),
 
       setTerminalTheme: (theme) => set({ terminalTheme: theme }),
 
