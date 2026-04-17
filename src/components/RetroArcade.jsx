@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Gamepad2, Play, ChevronLeft, 
   Monitor, Cpu, History, X,
-  Gamepad, Loader2, AlertCircle
+  Gamepad, Loader2, AlertCircle, MessageSquare
 } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import ArcadeAI from './ArcadeAI';
 
 const RETRO_GAMES = [
   {
@@ -91,6 +92,7 @@ const RetroArcade = () => {
   const { activeRetroGame, setRetroGame } = useOSStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showAI, setShowAI] = useState(true);
   
   const handleLaunchGame = (game) => {
     setRetroGame(game);
@@ -232,19 +234,36 @@ const RetroArcade = () => {
                  <button onClick={handleBackToLibrary} className="px-8 py-3 bg-white text-black font-black uppercase tracking-widest rounded-xl">Return to Library</button>
               </div>
             ) : (
-              <div className="flex-grow flex flex-col relative">
-                <iframe
-                  src={getEmulatorUrl(activeRetroGame)}
-                  className="w-full h-full border-0"
-                  allow="fullscreen; gamepad"
-                  onLoad={() => setLoading(false)}
-                  onError={() => setError(true)}
-                  title={`Playing ${activeRetroGame.title}`}
-                />
-                
-                {/* Control Hints Overlay */}
-                <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2 pointer-events-none opacity-0 hover:opacity-100 transition-opacity">
-                   <div className="px-4 py-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-right">
+              <div className="flex-grow flex relative overflow-hidden">
+                <div className="flex-grow flex flex-col relative">
+                  <iframe
+                    src={getEmulatorUrl(activeRetroGame)}
+                    className="w-full h-full border-0"
+                    allow="fullscreen; gamepad"
+                    onLoad={() => setLoading(false)}
+                    onError={() => setError(true)}
+                    title={`Playing ${activeRetroGame.title}`}
+                  />
+                  
+                  {/* AI Toggle Button */}
+                  <div className="absolute top-4 left-4 z-40">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowAI(!showAI)}
+                      className={`p-3 rounded-2xl backdrop-blur-xl border transition-all ${
+                        showAI 
+                          ? 'bg-os-primary text-black border-os-primary' 
+                          : 'bg-black/60 text-os-primary border-white/10'
+                      }`}
+                    >
+                      <MessageSquare size={20} />
+                    </motion.button>
+                  </div>
+                  
+                  {/* Control Hints Overlay - Always visible and interactive */}
+                  <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2 opacity-90 hover:opacity-100 transition-opacity">
+                    <div className="px-4 py-3 rounded-2xl bg-black/60 backdrop-blur-xl border border-white/10 text-right">
                       <p className="text-[9px] font-black uppercase tracking-widest text-os-primary mb-2">Interface Map</p>
                       <div className="space-y-1">
                          <div className="flex justify-end items-center gap-2">
@@ -276,10 +295,19 @@ const RetroArcade = () => {
                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-tighter">Hover for instructions</p>
                 </div>
               </div>
+
+              {/* AI Side Panel */}
+              <AnimatePresence>
+                {showAI && (
+                  <ArcadeAI game={activeRetroGame} />
+                )}
+              </AnimatePresence>
+            </div>
             )}
             
-            <motion.div 
-              className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent flex justify-center opacity-0 hover:opacity-100 transition-opacity z-30"
+            {/* Bottom Control Bar - Always visible */}
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent flex justify-center opacity-100 z-30"
             >
                <div className="px-6 py-2 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 flex items-center gap-6">
                   <div className="flex items-center gap-2">
