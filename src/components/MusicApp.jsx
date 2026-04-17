@@ -47,11 +47,14 @@ const MusicApp = () => {
   }, [isMobile]);
 
   useEffect(() => {
+    // Load YouTube IFrame API
     if (!window.YT) {
-      const tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      if (!document.getElementById('youtube-iframe-api')) {
+        const tag = document.createElement('script');
+        tag.id = 'youtube-iframe-api';
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+      }
     }
 
     const createPlayer = () => {
@@ -59,7 +62,7 @@ const MusicApp = () => {
       
       try {
         playerRef.current = new window.YT.Player(containerRef.current, {
-          host: 'https://www.youtube.com',
+          host: 'https://www.youtube-nocookie.com',
           height: '1',
           width: '1',
           videoId: music.currentTrack.youtubeId,
@@ -70,7 +73,6 @@ const MusicApp = () => {
             fs: 0,
             rel: 0,
             modestbranding: 1,
-            origin: window.location.origin,
             enablejsapi: 1,
             playsinline: 1
           },
@@ -150,7 +152,7 @@ const MusicApp = () => {
       return;
     }
 
-    const list = displayPlaylist.length > 0 ? displayPlaylist : PLAYLIST;
+    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
     let nextTrack;
 
     if (music.shuffle) {
@@ -175,7 +177,7 @@ const MusicApp = () => {
       return;
     }
 
-    const list = displayPlaylist.length > 0 ? displayPlaylist : PLAYLIST;
+    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
     const idx = list.findIndex(t => t.id === music.currentTrack.id);
     const prevTrack = idx > 0 ? list[idx - 1] : list[list.length - 1];
     setMusicTrack(prevTrack);
@@ -312,7 +314,7 @@ const MusicApp = () => {
                       <TrendingUp className="text-os-primary" /> Trending Now
                    </h3>
                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {MUSIC_DATA.slice(1, 6).map(track => (
+                      {MUSIC_DATA.slice(1, 11).map(track => (
                         <motion.div 
                           key={track.id}
                           whileHover={{ y: -5 }}
@@ -323,6 +325,33 @@ const MusicApp = () => {
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                  <div className="w-12 h-12 rounded-full bg-os-primary flex items-center justify-center text-black">
+                                    <Play size={24} fill="currentColor" />
+                                 </div>
+                              </div>
+                           </div>
+                           <h4 className="font-bold text-sm truncate">{track.title}</h4>
+                           <p className="text-xs text-os-onSurfaceVariant truncate">{track.artist}</p>
+                        </motion.div>
+                      ))}
+                   </div>
+                </div>
+
+                <div>
+                   <h3 className="text-2xl font-black tracking-tight mb-6 flex items-center gap-3">
+                      <Radio className="text-os-secondary" /> New Releases
+                   </h3>
+                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                      {MUSIC_DATA.slice(11, 21).map(track => (
+                        <motion.div 
+                          key={track.id}
+                          whileHover={{ y: -5 }}
+                          className="group relative bg-white/5 border border-white/5 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all"
+                          onClick={() => setMusicTrack(track)}
+                        >
+                           <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                              <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                 <div className="w-12 h-12 rounded-full bg-os-secondary flex items-center justify-center text-black">
                                     <Play size={24} fill="currentColor" />
                                  </div>
                               </div>
@@ -385,13 +414,59 @@ const MusicApp = () => {
 
                 {searchQuery && (
                   <div>
-                    <h3 className="text-xl font-bold mb-4">Search results for "{searchQuery}"</h3>
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
+                      <Search className="text-os-primary" /> Search results for "{searchQuery}"
+                    </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {displayPlaylist.map(track => (
-                        <div key={track.id} onClick={() => setMusicTrack(track)} className="cursor-pointer group">
-                           <img src={track.cover} className="aspect-square rounded-xl border border-white/10 mb-2 group-hover:scale-105 transition-transform" />
+                        <motion.div 
+                          key={track.id} 
+                          whileHover={{ scale: 1.05 }}
+                          onClick={() => setMusicTrack(track)} 
+                          className="cursor-pointer group bg-white/5 p-3 rounded-xl hover:bg-white/10 transition-all border border-white/5"
+                        >
+                           <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-white/10">
+                              <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                 <Play size={20} fill="currentColor" />
+                              </div>
+                           </div>
                            <p className="text-xs font-bold truncate">{track.title}</p>
+                           <p className="text-[10px] text-os-onSurfaceVariant truncate">{track.artist}</p>
+                        </motion.div>
+                      ))}
+                      {displayPlaylist.length === 0 && (
+                        <div className="col-span-full py-20 text-center">
+                          <Music size={48} className="mx-auto mb-4 opacity-20" />
+                          <p className="text-os-onSurfaceVariant font-bold">No results found for your search.</p>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!searchQuery && (
+                  <div>
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
+                      <Music className="text-os-primary" /> Browse All Tracks
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                      {MUSIC_DATA.map(track => (
+                        <motion.div 
+                          key={track.id} 
+                          whileHover={{ scale: 1.05 }}
+                          onClick={() => setMusicTrack(track)} 
+                          className="cursor-pointer group bg-white/5 p-3 rounded-xl hover:bg-white/10 transition-all border border-white/5"
+                        >
+                           <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-white/10">
+                              <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                 <Play size={20} fill="currentColor" />
+                              </div>
+                           </div>
+                           <p className="text-xs font-bold truncate">{track.title}</p>
+                           <p className="text-[10px] text-os-onSurfaceVariant truncate">{track.artist}</p>
+                        </motion.div>
                       ))}
                     </div>
                   </div>
@@ -416,7 +491,7 @@ const MusicApp = () => {
                       <p className="text-os-onSurfaceVariant font-bold">{music.likedSongs?.length || 0} tracks in your library</p>
                       <button 
                         onClick={() => {
-                          const firstLiked = PLAYLIST.find(t => music.likedSongs?.includes(t.id));
+                          const firstLiked = MUSIC_DATA.find(t => music.likedSongs?.includes(t.id));
                           if (firstLiked) setMusicTrack(firstLiked);
                         }}
                         className="mt-4 px-10 py-4 rounded-full bg-os-primary text-black font-black hover:scale-105 active:scale-95 transition-all w-fit"
