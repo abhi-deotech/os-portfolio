@@ -84,3 +84,7 @@ Vite successfully created separate chunks for each lazy-loaded component:
 ### `src/components/wallpapers/QuantumParticles.jsx`
 - **Issue**: Inline `class` declaration inside useEffect not supported by React hooks rules
 - **Fix**: Moved `Particle` class outside component with constructor accepting canvas, mouseRef, and accentColor parameters
+
+## 2025-04-18 - App Render Optimization & Import Cleanup
+**Learning:** Hoisting static configuration objects (like 'accentColorsMap') outside of functional components prevents unnecessary object re-creation. Additionally, removing a redundant 1-second timer state in App.jsx that was already handled by the Taskbar component eliminates unnecessary global re-renders.
+**Action:** Always check for global timers that don't drive UI in the root component. Ensure lazy-loaded components are not also statically imported to avoid 'INEFFECTIVE_DYNAMIC_IMPORT' warnings.
