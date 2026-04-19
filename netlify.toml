@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Set your Render signaling server URL here after deploying
+  # VITE_SIGNALING_SERVER = "wss://y-webrtc-signaling-xxx.onrender.com"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Opener-Policy = "same-origin"
+    Cross-Origin-Embedder-Policy = "credentialless"
+    Cross-Origin-Resource-Policy = "cross-origin"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
