@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Terminal as TermIcon, Edit3, Search, Activity, Zap, Gamepad2, Music, Palette, Gauge, Book, Share2 } from 'lucide-react';
+import { Trophy, Star, Terminal as TermIcon, Edit3, Search, Activity, Zap, Gamepad2, Music, Palette, Gauge, Book, Share2, Brain } from 'lucide-react';
 import useOSStore from '../store/osStore';
 
 const Achievements = () => {

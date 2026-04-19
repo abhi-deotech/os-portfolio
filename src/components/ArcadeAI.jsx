@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Brain, X, MessageSquare, Sparkles, Terminal, Gamepad2, MousePointer2 } from 'lucide-react';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import useOSStore from '../store/osStore';
+import { sendMessageWithFallback } from '../utils/aiHandler';
 
 const GAME_HELP_PROMPT = `
 You are Arcade AI, a specialized gaming assistant within Lumina OS. 
@@ -81,21 +81,19 @@ const ArcadeAI = ({ game }) => {
         throw new Error("Missing API Key");
       }
 
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        systemInstruction: GAME_HELP_PROMPT.replace('{gameTitle}', game?.title || 'Unknown Game').replace('{system}', game?.system || 'Unknown System')
+      const systemInstruction = GAME_HELP_PROMPT
+        .replace('{gameTitle}', game?.title || 'Unknown Game')
+        .replace('{system}', game?.system || 'Unknown System');
+
+      const text = await sendMessageWithFallback({
+        apiKey,
+        userMsg,
+        history: messages,
+        systemInstruction,
+        modelName: "gemini-1.5-flash"
       });
 
-      const history = messages.map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.text }]
-      }));
-
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(userMsg);
-      const response = await result.response;
-      setMessages(prev => [...prev, { role: 'assistant', text: response.text(), timestamp: new Date() }]);
+      setMessages(prev => [...prev, { role: 'assistant', text, timestamp: new Date() }]);
     } catch (error) {
       console.error("Arcade AI Error:", error);
       setMessages(prev => [...prev, { 

@@ -240,13 +240,12 @@ const SocialWidget = () => {
            </div>
            <div className="p-4 sm:p-5 bg-white rounded-2xl border border-white/10 overflow-hidden shadow-lg">
               <div className="relative w-full overflow-hidden" style={{ aspectRatio: '3/1' }}>
-                 <img 
-                    src={`https://ghchart.rshah.org/22c55e/${githubUsername}`} 
-                    alt="GitHub Contributions" 
+                  <img
+                    src={`https://ghchart.rshah.org/22c55e/${githubUsername}`}
+                    alt="GitHub Contributions"
                     className="absolute inset-0 h-full w-auto max-w-none object-cover object-right"
                     style={{ width: '200%', marginLeft: '-100%' }}
-                 />
-              </div>
+                  />              </div>
            </div>
         </div>
 

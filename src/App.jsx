@@ -13,7 +13,7 @@ import {
   useContextMenu,
 } from 'react-contexify';
 import 'react-contexify/ReactContexify.css';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 import Window from './components/Window';
 import ControlCenter from './components/ControlCenter';
@@ -30,6 +30,7 @@ import BSOD from './components/BSOD';
 import WindowContentRenderer from './components/WindowContentRenderer';
 import Desktop from './components/Desktop';
 import Taskbar from './components/Taskbar';
+import PresenceLayer from './components/PresenceLayer';
 
 import useSoundEffects from './hooks/useSoundEffects';
 import useOSStore from './store/osStore';
@@ -66,8 +67,6 @@ function App() {
   const createFolder = useOSStore(state => state.createFolder);
   const isAuthenticated = useOSStore(state => state.isAuthenticated);
   const toggleSpotlight = useOSStore(state => state.toggleSpotlight);
-  const isSpotlightOpen = useOSStore(state => state.isSpotlightOpen);
-  const openNotepad = useOSStore(state => state.openNotepad);
   const achievementQueue = useOSStore(state => state.achievementQueue);
   const removeAchievementToast = useOSStore(state => state.removeAchievementToast);
   const brightness = useOSStore(state => state.brightness);
@@ -81,16 +80,10 @@ function App() {
   const idleTimer = useRef(null);
 
   const isMobile = useIsMobile();
-  const [time, setTime] = useState(new Date());
   const contextMenuIconRef = useRef(null);
 
   const { show: showDesktopMenu } = useContextMenu({ id: DESKTOP_MENU_ID });
   const { show: showIconMenu } = useContextMenu({ id: ICON_MENU_ID });
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -130,13 +123,9 @@ function App() {
     { id: 'aichat',     title: 'Lumina AI',  icon: <CustomIcon icon={Brain} size={isMobile ? 32 : 28}        color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
     { id: 'documentation', title: 'Documentation', icon: <CustomIcon icon={Book} size={isMobile ? 32 : 28}     color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} /> },
     { id: 'skills',     title: 'Skills',      icon: <CustomIcon icon={SlidersHorizontal} size={isMobile ? 32 : 28} color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
-  ];
+    ];
 
-  const featuredApps = desktopIcons.filter(app => ['about', 'cv', 'projects', 'terminal'].includes(app.id));
-  const otherApps = desktopIcons.filter(app => !['about', 'cv', 'projects', 'terminal'].includes(app.id));
-
-  useEffect(() => {
-    const handleActivity = () => {
+    useEffect(() => {    const handleActivity = () => {
       setIsIdle(false);
       if (idleTimer.current) clearTimeout(idleTimer.current);
       idleTimer.current = setTimeout(() => {
@@ -218,6 +207,7 @@ function App() {
       onContextMenu={handleDesktopContextMenu}
     >
       <LiveWallpaper />
+      <PresenceLayer />
       {!isMobile && <Widgets />}
 
       {/* Context Menus — Desktop */}

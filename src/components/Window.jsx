@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
 import { X, Minus, Maximize2, Minimize2 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import WindowGlass from './WindowGlass';
 
 /**
  * Window container component for Lumina OS applications.
@@ -32,6 +33,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
   const isActive = activeWindow === id;
   const isMaximized = maximizedWindows?.includes(id) || isMobile;
   const dragControls = useDragControls();
+  const windowRef = useRef(null);
 
   useEffect(() => {
     if (isMobile && !maximizedWindows?.includes(id)) {
@@ -73,7 +75,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
     else setSnapTarget(null);
   };
 
-  const handleDragEnd = (e, info) => {
+  const handleDragEnd = () => {
     setIsDragging(false);
     if (snapTarget === 'top') toggleMaximizeWindow(id);
     // Add logic for left/right split if desired, but for now just top = maximize
@@ -98,6 +100,7 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
       </AnimatePresence>
 
       <motion.div
+        ref={windowRef}
         drag={!isMaximized && !isMobile}
         dragListener={false}
         dragControls={dragControls}
@@ -176,6 +179,13 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
           <span className="text-os-onSurfaceVariant text-sm font-semibold tracking-wide font-sans">{title}</span>
         </div>
       </div>
+
+      {/* Real-time Glass Refraction Layer */}
+      <WindowGlass 
+        width={windowRef.current?.offsetWidth || width} 
+        height={windowRef.current?.offsetHeight || height} 
+        isActive={isActive} 
+      />
 
       {/* Content Area */}
       <div className="flex-grow overflow-auto text-os-onSurface relative scrollbar-os pb-10">
