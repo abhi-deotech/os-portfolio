@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-globals */
+ 
 
 self.onmessage = (e) => {
   const { stage, duration = 16 } = e.data;

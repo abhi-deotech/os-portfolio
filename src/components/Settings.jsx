@@ -45,6 +45,8 @@ const Settings = () => {
     setBrightness,
     accentIntensity,
     setAccentIntensity,
+    lowPerformance,
+    setLowPerformance,
     resetSettingsToDefault,
     unlockAchievement
   } = useOSStore();
@@ -219,6 +221,22 @@ const Settings = () => {
                         onClick={() => setTransparencyEffects(!transparencyEffects)}
                     >
                         <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${transparencyEffects ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50 transition-colors border border-os-outline/5">
+                    <div className="flex items-center gap-3">
+                        <CustomIcon icon={Zap} size={16} color="text-os-secondary" glow="rgba(var(--os-secondary-rgb), 0.3)" />
+                        <div>
+                            <span className="block font-semibold text-sm">Performance Mode</span>
+                            <span className="block text-xs text-os-onSurfaceVariant">Disable 3D wallpaper & effects</span>
+                        </div>
+                    </div>
+                    <div 
+                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${lowPerformance ? 'bg-os-secondary' : 'bg-os-surfaceContainerHighest'}`}
+                        onClick={() => setLowPerformance(!lowPerformance)}
+                    >
+                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${lowPerformance ? 'translate-x-6' : 'translate-x-0'}`}></div>
                     </div>
                 </div>
             </div>

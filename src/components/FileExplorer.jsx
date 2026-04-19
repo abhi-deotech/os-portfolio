@@ -174,6 +174,19 @@ const FileExplorer = () => {
     }
   };
 
+  const handleMountFolder = async () => {
+    try {
+      if (!window.showDirectoryPicker) {
+        alert('File System Access API not supported in this browser.');
+        return;
+      }
+      const handle = await window.showDirectoryPicker();
+      await useOSStore.getState().mountPhysicalFolder(handle);
+    } catch (err) {
+      console.error('Mount failed:', err);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-os-surface font-sans overflow-hidden">
       {/* Header Area */}
@@ -200,6 +213,13 @@ const FileExplorer = () => {
               title="New File"
             >
               <FilePlus size={16} />
+            </button>
+            <button 
+              onClick={handleMountFolder}
+              className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-os-secondary/10 hover:border-os-secondary/20 text-os-onSurfaceVariant hover:text-os-secondary transition-all"
+              title="Mount Physical Folder"
+            >
+              <FolderPlus size={16} />
             </button>
             <div className="w-px h-6 bg-os-outline/10 mx-1" />
             <button 

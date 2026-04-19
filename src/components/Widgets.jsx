@@ -4,6 +4,7 @@ import SocialWidget from './SocialWidget';
 import SystemMetricsWidget from './SystemMetricsWidget';
 import ClockWidget from './ClockWidget';
 import SystemDashboard from './SystemDashboard';
+import QuantumWidget from './widgets/QuantumWidget';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
 const DraggableWidget = ({ children, initialPos, setPos, width, className = "" }) => (
@@ -40,6 +41,7 @@ const Widgets = () => {
       switch (type) {
         case 'clock':     return { x: Math.floor(window.innerWidth / 2) - 170, y: 40 };
         case 'dashboard': return { x: window.innerWidth - 460, y: 40 };
+        case 'quantum':   return { x: 40, y: window.innerHeight - 240 };
         default:          return { x: 40, y: 40 };
       }
     }
@@ -47,11 +49,13 @@ const Widgets = () => {
 
   const [clockPos, setClockPos] = useState(() => getInitialPos('clock'));
   const [dashPos, setDashPos] = useState(() => getInitialPos('dashboard'));
+  const [quantumPos, setQuantumPos] = useState(() => getInitialPos('quantum'));
 
   // Reset positions on resize/mode change
   useEffect(() => {
     setClockPos(getInitialPos('clock'));
     setDashPos(getInitialPos('dashboard'));
+    setQuantumPos(getInitialPos('quantum'));
   }, [isMobile]);
 
   if (isMobile) {
@@ -62,6 +66,9 @@ const Widgets = () => {
         </div>
         <div className="w-full max-w-[420px]">
           <SystemDashboard />
+        </div>
+        <div className="w-full max-w-[320px]">
+          <QuantumWidget />
         </div>
       </div>
     );
@@ -85,6 +92,14 @@ const Widgets = () => {
           width={420}
         >
           <SystemDashboard />
+        </DraggableWidget>
+
+        <DraggableWidget 
+          initialPos={quantumPos} 
+          setPos={setQuantumPos} 
+          width={320}
+        >
+          <QuantumWidget />
         </DraggableWidget>
       </div>
     </div>

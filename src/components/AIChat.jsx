@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';
 import useOSStore from '../store/osStore';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { sendMessageWithFallback } from '../utils/aiHandler';
 
 const SYSTEM_PROMPT = `
 You are Lumina AI, the ultra-smart, professional, and enthusiastic digital assistant for Abhimanyu Saxena's portfolio (Lumina OS).
@@ -74,27 +74,13 @@ const AIChat = () => {
         throw new Error("Missing Gemini API Key. Please add VITE_GEMINI_API_KEY to your .env file.");
       }
 
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ 
-        model: "gemini-3-flash-preview",
-        systemInstruction: SYSTEM_PROMPT
+      const text = await sendMessageWithFallback({
+        apiKey,
+        userMsg,
+        history: messages,
+        systemInstruction: SYSTEM_PROMPT,
+        modelName: "gemini-3-flash-preview"
       });
-
-      // Prepare history for multi-turn chat
-      // Filter out leading model/assistant messages to comply with Gemini SDK requirements
-      // The first message in history MUST be from the 'user'
-      const firstUserIndex = messages.findIndex(m => m.role === 'user');
-      const history = firstUserIndex !== -1 
-        ? messages.slice(firstUserIndex).map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.text }]
-          }))
-        : [];
-
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(userMsg);
-      const response = await result.response;
-      const text = response.text();
 
       setMessages(prev => [...prev, { role: 'assistant', text: text, timestamp: new Date() }]);
     } catch (error) {
