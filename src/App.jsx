@@ -13,13 +13,11 @@ import {
   useContextMenu,
 } from 'react-contexify';
 import 'react-contexify/ReactContexify.css';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 import Window from './components/Window';
 import ControlCenter from './components/ControlCenter';
-import Settings from './components/Settings';
 import LiveWallpaper from './components/LiveWallpaper';
-import FileExplorer from './components/FileExplorer';
 import Widgets from './components/Widgets';
 import LoginScreen from './components/LoginScreen';
 import Spotlight from './components/Spotlight';
@@ -39,6 +37,14 @@ import './index.css';
 // Context menu IDs for desktop and icon menus
 const DESKTOP_MENU_ID = 'desktop-context-menu';
 const ICON_MENU_ID = 'icon-context-menu';
+
+// Hoisted static configuration to prevent re-creation on every render
+const accentColorsMap = {
+  purple:  { primary: '204, 151, 255', secondary: '0, 210, 253',   tertiary: '0, 245, 160'   },
+  cyan:    { primary: '0, 210, 253',   secondary: '204, 151, 255', tertiary: '255, 104, 240' },
+  magenta: { primary: '255, 104, 240', secondary: '204, 151, 255', tertiary: '0, 210, 253'   },
+  green:   { primary: '0, 245, 160',   secondary: '0, 210, 253',   tertiary: '204, 151, 255' },
+};
 
 /**
  * Main application component for Lumina OS.
@@ -66,8 +72,6 @@ function App() {
   const createFolder = useOSStore(state => state.createFolder);
   const isAuthenticated = useOSStore(state => state.isAuthenticated);
   const toggleSpotlight = useOSStore(state => state.toggleSpotlight);
-  const isSpotlightOpen = useOSStore(state => state.isSpotlightOpen);
-  const openNotepad = useOSStore(state => state.openNotepad);
   const achievementQueue = useOSStore(state => state.achievementQueue);
   const removeAchievementToast = useOSStore(state => state.removeAchievementToast);
   const brightness = useOSStore(state => state.brightness);
@@ -81,16 +85,10 @@ function App() {
   const idleTimer = useRef(null);
 
   const isMobile = useIsMobile();
-  const [time, setTime] = useState(new Date());
   const contextMenuIconRef = useRef(null);
 
   const { show: showDesktopMenu } = useContextMenu({ id: DESKTOP_MENU_ID });
   const { show: showIconMenu } = useContextMenu({ id: ICON_MENU_ID });
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -119,9 +117,6 @@ function App() {
     { id: 'mail',     title: 'Mail',         icon: <CustomIcon icon={Mail} size={isMobile ? 32 : 28}         color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
     { id: 'chat',     title: 'Guestbook',    icon: <CustomIcon icon={MessageSquare} size={isMobile ? 32 : 28} color="text-[#cc97ff]" glow="rgba(204,151,255,0.3)" strokeWidth={2.5} /> },
     { id: 'retroarcade', title: 'Retro Arcade', icon: <CustomIcon icon={Gamepad2} size={isMobile ? 32 : 28} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
-    { id: 'mail',     title: 'Mail',         icon: <CustomIcon icon={Mail} size={isMobile ? 32 : 28}         color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
-    { id: 'chat',     title: 'Guestbook',    icon: <CustomIcon icon={MessageSquare} size={isMobile ? 32 : 28} color="text-[#cc97ff]" glow="rgba(204,151,255,0.3)" strokeWidth={2.5} /> },
-    { id: 'retroarcade', title: 'Retro Arcade', icon: <CustomIcon icon={Gamepad2} size={isMobile ? 32 : 28} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
     { id: 'settings', title: 'Settings',     icon: <CustomIcon icon={SettingsIcon} size={isMobile ? 32 : 28}   color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} /> },
     { id: 'notepad',  title: 'Notepad',      icon: <CustomIcon icon={FileText} size={isMobile ? 32 : 28}      color="text-cyan-400" glow="rgba(34,211,238,0.3)" strokeWidth={2.5} /> },
     { id: 'taskmanager', title: 'Monitor',   icon: <CustomIcon icon={Activity} size={isMobile ? 32 : 28}      color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
@@ -131,9 +126,6 @@ function App() {
     { id: 'documentation', title: 'Documentation', icon: <CustomIcon icon={Book} size={isMobile ? 32 : 28}     color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} /> },
     { id: 'skills',     title: 'Skills',      icon: <CustomIcon icon={SlidersHorizontal} size={isMobile ? 32 : 28} color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
   ];
-
-  const featuredApps = desktopIcons.filter(app => ['about', 'cv', 'projects', 'terminal'].includes(app.id));
-  const otherApps = desktopIcons.filter(app => !['about', 'cv', 'projects', 'terminal'].includes(app.id));
 
   useEffect(() => {
     const handleActivity = () => {
@@ -162,12 +154,6 @@ function App() {
   useEffect(() => {
     if (achievementQueue.length > 0) playSound('achievement');
   }, [achievementQueue.length, playSound]);
-  const accentColorsMap = {
-    purple:  { primary: '204, 151, 255', secondary: '0, 210, 253',   tertiary: '0, 245, 160'   },
-    cyan:    { primary: '0, 210, 253',   secondary: '204, 151, 255', tertiary: '255, 104, 240' },
-    magenta: { primary: '255, 104, 240', secondary: '204, 151, 255', tertiary: '0, 210, 253'   },
-    green:   { primary: '0, 245, 160',   secondary: '0, 210, 253',   tertiary: '204, 151, 255' },
-  };
 
   const currentAccent = accentColorsMap[activeAccent] || accentColorsMap.purple;
 
@@ -184,14 +170,6 @@ function App() {
     contextMenuIconRef.current = iconId;
     showIconMenu({ event: e });
   };
-
-  if (isBSOD) {
-    return <BSOD />;
-  }
-
-  if (!bootComplete) {
-    return <BootSequence onComplete={() => setBootComplete(true)} />;
-  }
 
   if (isBSOD) {
     return <BSOD />;

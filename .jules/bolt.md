@@ -84,3 +84,7 @@ Vite successfully created separate chunks for each lazy-loaded component:
 ### `src/components/wallpapers/QuantumParticles.jsx`
 - **Issue**: Inline `class` declaration inside useEffect not supported by React hooks rules
 - **Fix**: Moved `Particle` class outside component with constructor accepting canvas, mouseRef, and accentColor parameters
+
+## 2026-04-19 - App.jsx Render & Import Optimization
+**Learning:** Redundant state at the root level (like 'time') causes expensive full-tree re-renders every second. Additionally, static imports of lazy-loaded components in App.jsx negate code-splitting and trigger Vite warnings.
+**Action:** Always verify if global state is actually consumed by App.jsx or if it should be localized (e.g., to Taskbar). Remove static imports for any component that is already dynamically imported in WindowContentRenderer.
