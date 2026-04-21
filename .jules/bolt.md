@@ -84,3 +84,6 @@ Vite successfully created separate chunks for each lazy-loaded component:
 ### `src/components/wallpapers/QuantumParticles.jsx`
 - **Issue**: Inline `class` declaration inside useEffect not supported by React hooks rules
 - **Fix**: Moved `Particle` class outside component with constructor accepting canvas, mouseRef, and accentColor parameters
+## 2025-05-14 - Multi-Front Performance Optimization
+**Learning:** Redundant static imports of lazy-loaded components (Settings, FileExplorer) in the root App.jsx were causing "INEFFECTIVE_DYNAMIC_IMPORT" warnings and bloating the main bundle. Additionally, duplicate entries in the desktopIcons array and un-hoisted configuration objects (accentColorsMap) caused unnecessary memory usage and re-renders. Terminal history was also unbounded, risking localStorage performance degradation.
+**Action:** Always verify that components used in dynamic renderers (like WindowContentRenderer) are not also statically imported in App.jsx. Hoist static maps outside components and enforce array uniqueness for icons. Implement caps on history-based state early to prevent long-term bloat.
