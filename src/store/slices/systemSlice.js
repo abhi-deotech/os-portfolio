@@ -66,9 +66,13 @@ export const createSystemSlice = (set) => ({
   triggerBSOD: () => set({ isBSOD: true }),
 
   addTerminalEntry: (entry) =>
-    set((state) => ({
-      terminalHistory: [...state.terminalHistory, entry],
-    })),
+    set((state) => {
+      const newHistory = [...state.terminalHistory, entry];
+      // Cap terminal history at 500 entries to prevent localStorage bloat
+      return {
+        terminalHistory: newHistory.slice(-500),
+      };
+    }),
 
   setTerminalTheme: (theme) => set({ terminalTheme: theme }),
   incrementCommandCount: () => set((state) => ({ terminalCommandCount: state.terminalCommandCount + 1 })),
