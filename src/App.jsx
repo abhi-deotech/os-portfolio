@@ -39,7 +39,8 @@ import './index.css';
 const DESKTOP_MENU_ID = 'desktop-context-menu';
 const ICON_MENU_ID = 'icon-context-menu';
 
-const accentColorsMap = {
+// Accents map hoisted to prevent unnecessary re-creation on every render
+const ACCENT_COLORS_MAP = {
   purple:  { primary: '204, 151, 255', secondary: '0, 210, 253',   tertiary: '0, 245, 160'   },
   cyan:    { primary: '0, 210, 253',   secondary: '204, 151, 255', tertiary: '255, 104, 240' },
   magenta: { primary: '255, 104, 240', secondary: '204, 151, 255', tertiary: '0, 210, 253'   },
@@ -154,7 +155,7 @@ function App() {
     if (achievementQueue.length > 0) playSound('achievement');
   }, [achievementQueue.length, playSound]);
 
-  const currentAccent = accentColorsMap[activeAccent] || accentColorsMap.purple;
+  const currentAccent = ACCENT_COLORS_MAP[activeAccent] || ACCENT_COLORS_MAP.purple;
 
   const handleDesktopContextMenu = (e) => {
     if (isMobile) return;
