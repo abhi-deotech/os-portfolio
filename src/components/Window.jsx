@@ -109,33 +109,36 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
         onDrag={handleDrag}
         onDragEnd={handleDragEnd}
         {...windowMotionProps}
-      onMouseDown={() => focusWindow(id)}
-      style={{
-        ...(!isMaximized ? { width, height, minWidth, minHeight, top: '50%', left: '50%' } : { 
-          zIndex: isActive ? 60 : 10,
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: isMobile ? '80px' : 0, // Space for taskbar on mobile
-          width: '100vw',
-          height: isMobile ? 'calc(100vh - 80px)' : '100vh',
-          x: 0,
-          y: 0
-        }),
-        borderColor: isActive && !isMaximized ? accentHex : undefined,
-        boxShadow: isActive && !isMaximized ? `0 32px 64px rgba(0,0,0,0.5), 0 0 20px ${accentHex}33` : undefined,
-        resize: (isMaximized || isMobile) ? 'none' : 'both',
-        overflow: 'hidden'
-      }}
-      className={`absolute flex flex-col transition-all duration-500 pointer-events-auto group/window ${
-        isMinimized ? 'opacity-0 scale-90 pointer-events-none translate-y-20' : 'opacity-100 scale-100'
-      } ${
-        isActive 
-          ? 'z-50 border' 
-          : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgba(0,0,0,0.3)] z-10'
-      } ${!isMaximized ? `bg-os-surfaceContainerHighest/50 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl` : `bg-os-surface/95 ${transparencyEffects ? 'backdrop-blur-3xl' : ''}`}`}
-    >
+        animate={{
+          ...windowMotionProps.animate,
+          opacity: isMinimized ? 0 : 1,
+          scale: isMinimized ? 0.9 : 1,
+          y: isMinimized ? 40 : (isMaximized ? 0 : -height/2),
+          pointerEvents: isMinimized ? 'none' : 'auto',
+        }}
+        onMouseDown={() => focusWindow(id)}
+        style={{
+          ...(!isMaximized ? { width, height, minWidth, minHeight, top: '50%', left: '50%' } : { 
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: isMobile ? '80px' : 0,
+            width: '100vw',
+            height: isMobile ? 'calc(100vh - 80px)' : '100vh',
+            x: 0,
+            y: 0
+          }),
+          zIndex: isActive ? 50 : 10,
+          borderColor: isActive && !isMaximized ? accentHex : undefined,
+          boxShadow: isActive && !isMaximized ? `0 32px 64px rgba(0,0,0,0.5), 0 0 20px ${accentHex}33` : undefined,
+          resize: (isMaximized || isMobile) ? 'none' : 'both',
+          overflow: 'hidden'
+        }}
+        className={`absolute flex flex-col transition-shadow duration-300 pointer-events-auto group/window ${
+          isActive ? 'border' : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgba(0,0,0,0.3)]'
+        } ${!isMaximized ? `bg-os-surfaceContainerHighest/50 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl` : `bg-os-surface/95 ${transparencyEffects ? 'backdrop-blur-3xl' : ''}`}`}
+      >
       {/* Title Bar - Glassmorphic Strip */}
       <div 
         className={`${isMobile ? 'h-16' : 'h-14'} flex items-center px-6 border-b border-os-outline/5 relative shrink-0 transition-all duration-300`}
