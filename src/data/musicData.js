@@ -13,31 +13,31 @@ export const MUSIC_DATA = [
   // TRAP & HIP HOP
   {
     id: 'niagara-falls',
-    youtubeId: 'CvFU6ryiZnw',
+    youtubeId: 'Z8vDU6vUTj4',
     title: 'Niagara Falls (Foot or 2)',
     artist: 'Metro Boomin, Travis Scott, 21 Savage',
     album: 'HEROES & VILLAINS',
-    cover: 'https://img.youtube.com/vi/CvFU6ryiZnw/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/Z8vDU6vUTj4/hqdefault.jpg',
     duration: 207,
     genre: 'Trap'
   },
   {
     id: 'fein',
-    youtubeId: 'E6u7766a5oQ',
+    youtubeId: 'B9synWjqBn8',
     title: 'FE!N',
     artist: 'Travis Scott ft. Playboi Carti',
     album: 'UTOPIA',
-    cover: 'https://img.youtube.com/vi/E6u7766a5oQ/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/B9synWjqBn8/hqdefault.jpg',
     duration: 191,
     genre: 'Trap'
   },
   {
     id: 'not-like-us',
-    youtubeId: 'Hn4L231s74c',
+    youtubeId: 'H58vbez_m4E',
     title: 'Not Like Us',
     artist: 'Kendrick Lamar',
     album: 'Single',
-    cover: 'https://img.youtube.com/vi/Hn4L231s74c/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/H58vbez_m4E/hqdefault.jpg',
     duration: 274,
     genre: 'Hip Hop'
   },
@@ -53,31 +53,31 @@ export const MUSIC_DATA = [
   },
   {
     id: 'magnolia',
-    youtubeId: 'hW1o39w9Bkk',
+    youtubeId: 'RLYksQvr5zY',
     title: 'Magnolia',
     artist: 'Playboi Carti',
     album: 'Playboi Carti',
-    cover: 'https://img.youtube.com/vi/hW1o39w9Bkk/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/RLYksQvr5zY/hqdefault.jpg',
     duration: 181,
     genre: 'Trap'
   },
   {
     id: 'pushin-p',
-    youtubeId: 'fNqB2H0_w60',
+    youtubeId: '9g08kucPQtE',
     title: 'pushin P',
     artist: 'Gunna, Future, ft. Young Thug',
     album: 'DS4Ever',
-    cover: 'https://img.youtube.com/vi/fNqB2H0_w60/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/9g08kucPQtE/hqdefault.jpg',
     duration: 136,
     genre: 'Trap'
   },
   {
     id: 'too-many-nights',
-    youtubeId: 'o46y-H3c200',
+    youtubeId: '3q_ijl-aaTI',
     title: 'Too Many Nights',
     artist: 'Metro Boomin, Don Toliver, Future',
     album: 'HEROES & VILLAINS',
-    cover: 'https://img.youtube.com/vi/o46y-H3c200/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/3q_ijl-aaTI/hqdefault.jpg',
     duration: 199,
     genre: 'Trap'
   },
@@ -115,31 +115,31 @@ export const MUSIC_DATA = [
   // R&B & CHILL
   {
     id: 'tmbtla',
-    youtubeId: 'tJ5Y29Z7SIs',
+    youtubeId: 'tYvKLO0wOcU',
     title: 'Take Me Back To LA',
     artist: 'The Weeknd',
     album: 'Hurry Up Tomorrow',
-    cover: 'https://img.youtube.com/vi/tJ5Y29Z7SIs/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/tYvKLO0wOcU/hqdefault.jpg',
     duration: 240,
     genre: 'R&B'
   },
   {
     id: 'snooze',
-    youtubeId: 'y-nL9vL2_1M',
+    youtubeId: '2fP6_6EwEqY',
     title: 'Snooze',
     artist: 'SZA',
     album: 'SOS',
-    cover: 'https://img.youtube.com/vi/y-nL9vL2_1M/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/2fP6_6EwEqY/hqdefault.jpg',
     duration: 201,
     genre: 'R&B'
   },
   {
     id: 'passionfruit',
-    youtubeId: 'UqyT8IE_waM',
+    youtubeId: 'COz9lDCFHjw',
     title: 'Passionfruit',
     artist: 'Drake',
     album: 'More Life',
-    cover: 'https://img.youtube.com/vi/UqyT8IE_waM/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/COz9lDCFHjw/hqdefault.jpg',
     duration: 298,
     genre: 'R&B'
   },
@@ -165,31 +165,31 @@ export const MUSIC_DATA = [
   },
   {
     id: 'redbone',
-    youtubeId: 'Kp7eSUU9oy8',
+    youtubeId: 'nxuzYWcY2O0',
     title: 'Redbone',
     artist: 'Childish Gambino',
     album: '"Awaken, My Love!"',
-    cover: 'https://img.youtube.com/vi/Kp7eSUU9oy8/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/nxuzYWcY2O0/hqdefault.jpg',
     duration: 326,
     genre: 'R&B'
   },
   {
     id: 'best-part',
-    youtubeId: 'hxMInS7qC5w',
+    youtubeId: 'vBy7FaapGRo',
     title: 'Best Part',
     artist: 'Daniel Caesar ft. H.E.R.',
     album: 'Freudian',
-    cover: 'https://img.youtube.com/vi/hxMInS7qC5w/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/vBy7FaapGRo/hqdefault.jpg',
     duration: 209,
     genre: 'R&B'
   },
   {
     id: 'coffee',
-    youtubeId: 'sVPrr813WjY',
+    youtubeId: 'c3hPS6OdFbs',
     title: 'Coffee',
     artist: 'Miguel',
     album: 'Wildheart',
-    cover: 'https://img.youtube.com/vi/sVPrr813WjY/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/c3hPS6OdFbs/hqdefault.jpg',
     duration: 286,
     genre: 'R&B'
   },
@@ -207,21 +207,21 @@ export const MUSIC_DATA = [
   },
   {
     id: 'the-less-i-know',
-    youtubeId: 'S5pvBz0DGpc',
+    youtubeId: '2SUwOgmvzK4',
     title: 'The Less I Know The Better',
     artist: 'Tame Impala',
     album: 'Currents',
-    cover: 'https://img.youtube.com/vi/S5pvBz0DGpc/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/2SUwOgmvzK4/hqdefault.jpg',
     duration: 218,
     genre: 'Indie'
   },
   {
     id: 'borderline',
-    youtubeId: 'y1Uq18M0F68',
+    youtubeId: '2g5xkLqIElU',
     title: 'Borderline',
     artist: 'Tame Impala',
     album: 'The Slow Rush',
-    cover: 'https://img.youtube.com/vi/y1Uq18M0F68/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/2g5xkLqIElU/hqdefault.jpg',
     duration: 237,
     genre: 'Indie'
   },
@@ -289,11 +289,11 @@ export const MUSIC_DATA = [
   },
   {
     id: 'after-dark',
-    youtubeId: 'waAC9kgag4E',
+    youtubeId: 'sVx1mJDeUjY',
     title: 'After Dark',
     artist: 'Mr.Kitty',
     album: 'Time',
-    cover: 'https://img.youtube.com/vi/waAC9kgag4E/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/sVx1mJDeUjY/hqdefault.jpg',
     duration: 257,
     genre: 'Electronic'
   },

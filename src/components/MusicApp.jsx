@@ -118,14 +118,14 @@ const MusicApp = () => {
   }, []);
 
   useEffect(() => {
-    if (playerRef.current) {
+    if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
       const state = playerRef.current.getPlayerState?.();
       if (music.isPlaying) {
-        if (state !== window.YT.PlayerState.PLAYING) {
+        if (state !== window.YT?.PlayerState?.PLAYING) {
           playerRef.current.playVideo();
         }
       } else {
-        if (state !== window.YT.PlayerState.PAUSED) {
+        if (state !== window.YT?.PlayerState?.PAUSED) {
           playerRef.current.pauseVideo();
         }
       }
