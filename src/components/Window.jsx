@@ -27,7 +27,7 @@ import WindowGlass from './WindowGlass';
  * @param {number} [props.minWidth=400] - Minimum resize width
  * @param {number} [props.minHeight=300] - Minimum resize height
  */
-const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
+const Window = ({ id, title, children, isMinimized, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
   const { closeWindow, toggleMinimizeWindow, toggleMaximizeWindow, focusWindow, activeWindow, maximizedWindows, activeAccent, setIsDragging, isDragging, transparencyEffects } = useOSStore();
   const isMobile = useIsMobile();
   const isActive = activeWindow === id;
@@ -128,7 +128,9 @@ const Window = ({ id, title, children, width = 900, height = 650, minWidth = 400
         resize: (isMaximized || isMobile) ? 'none' : 'both',
         overflow: 'hidden'
       }}
-      className={`absolute flex flex-col transition-shadow duration-300 pointer-events-auto group/window ${
+      className={`absolute flex flex-col transition-all duration-500 pointer-events-auto group/window ${
+        isMinimized ? 'opacity-0 scale-90 pointer-events-none translate-y-20' : 'opacity-100 scale-100'
+      } ${
         isActive 
           ? 'z-50 border' 
           : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgba(0,0,0,0.3)] z-10'

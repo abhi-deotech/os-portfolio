@@ -118,11 +118,16 @@ const MusicApp = () => {
   }, []);
 
   useEffect(() => {
-    if (playerRef.current && playerRef.current.playVideo) {
+    if (playerRef.current) {
+      const state = playerRef.current.getPlayerState?.();
       if (music.isPlaying) {
-        playerRef.current.playVideo();
+        if (state !== window.YT.PlayerState.PLAYING) {
+          playerRef.current.playVideo();
+        }
       } else {
-        playerRef.current.pauseVideo();
+        if (state !== window.YT.PlayerState.PAUSED) {
+          playerRef.current.pauseVideo();
+        }
       }
     }
   }, [music.isPlaying]);
@@ -130,9 +135,8 @@ const MusicApp = () => {
   useEffect(() => {
     if (playerRef.current && playerRef.current.loadVideoById) {
       playerRef.current.loadVideoById(music.currentTrack.youtubeId);
-      if (music.isPlaying) {
-        playerRef.current.playVideo();
-      }
+      // Removed redundant playVideo call here as loadVideoById starts playing by default,
+      // and we handle play/pause synchronization in the other useEffect.
     }
   }, [music.currentTrack.id]);
 
@@ -319,7 +323,7 @@ const MusicApp = () => {
                           key={track.id}
                           whileHover={{ y: -5 }}
                           className="group relative bg-white/5 border border-white/5 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all"
-                          onClick={() => setMusicTrack(track)}
+                          onMouseDown={() => setMusicTrack(track)}
                         >
                            <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-white/10 shadow-lg">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -346,7 +350,7 @@ const MusicApp = () => {
                           key={track.id}
                           whileHover={{ y: -5 }}
                           className="group relative bg-white/5 border border-white/5 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all"
-                          onClick={() => setMusicTrack(track)}
+                          onMouseDown={() => setMusicTrack(track)}
                         >
                            <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-white/10 shadow-lg">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -422,7 +426,7 @@ const MusicApp = () => {
                         <motion.div 
                           key={track.id} 
                           whileHover={{ scale: 1.05 }}
-                          onClick={() => setMusicTrack(track)} 
+                          onMouseDown={() => setMusicTrack(track)} 
                           className="cursor-pointer group bg-white/5 p-3 rounded-xl hover:bg-white/10 transition-all border border-white/5"
                         >
                            <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-white/10">
@@ -455,7 +459,7 @@ const MusicApp = () => {
                         <motion.div 
                           key={track.id} 
                           whileHover={{ scale: 1.05 }}
-                          onClick={() => setMusicTrack(track)} 
+                          onMouseDown={() => setMusicTrack(track)} 
                           className="cursor-pointer group bg-white/5 p-3 rounded-xl hover:bg-white/10 transition-all border border-white/5"
                         >
                            <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-white/10">
@@ -511,7 +515,7 @@ const MusicApp = () => {
                   {displayPlaylist.map((track, i) => (
                     <div 
                       key={track.id}
-                      onClick={() => setMusicTrack(track)}
+                      onMouseDown={() => setMusicTrack(track)}
                       className={`grid ${isMobile ? 'grid-cols-[30px_1fr_60px]' : 'grid-cols-[30px_1fr_1fr_80px]'} px-4 py-3 rounded-xl cursor-pointer transition-all group ${music.currentTrack.id === track.id ? 'bg-os-primary/10' : 'hover:bg-white/5'}`}
                     >
                       <span className="text-xs flex items-center text-os-onSurfaceVariant">{i+1}</span>
