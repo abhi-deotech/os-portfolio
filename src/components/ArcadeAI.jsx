@@ -33,9 +33,9 @@ The user is playing: {gameTitle} ({system})
 - Be concise but helpful.
 
 **Troubleshooting Knowledge:**
-- If the user complains about **slow or distorted audio**, mention that you've enabled **Multi-Threading (SharedArrayBuffer)** and forced **44.1kHz Sync** for maximum stability.
-- Mention that **Run-Ahead (1 Frame)** is active to minimize input lag, making the controls feel snappier.
-- Suggest enabling **Hardware Acceleration** in their browser settings if lag persists.
+- If the user complains about **slow or distorted audio**, mention that you've optimized the **Audio Latency (128ms)** and forced **44.1kHz Sync** for stability.
+- Mention that **Multi-Threading** is active, but **Run-Ahead** has been disabled to prioritize consistent frame rates and "playability" over ultra-low input lag.
+- Suggest enabling **Hardware Acceleration** in their browser settings if performance is still suboptimal.
 - Explain that high-performance emulation requires a secure neural link (COOP/COEP headers).
 - If the game feels "choppy", suggest closing other intensive browser tabs to free up the WASM heap.
 
@@ -112,7 +112,7 @@ const ArcadeAI = ({ game }) => {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="flex flex-col h-full bg-[#080808]/90 backdrop-blur-xl border-l border-white/10 w-80 shadow-2xl overflow-hidden"
+      className="flex flex-col h-full bg-[#0c0c0c] border-l border-white/10 w-80 shadow-2xl overflow-hidden"
     >
       {/* Header */}
       <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">

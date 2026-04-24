@@ -108,13 +108,13 @@
         
         // Core Specific Tweaks (Modern RetroArch config mapping)
         window.EJS_coreConfig = {
-            'video_vsync': 'false',
+            'video_vsync': 'true',
             'video_threaded': 'true',
-            'audio_latency': '64', // Reduced for better response since threads are on
+            'audio_latency': '128', // Increased for better stability on lower-end CPUs
             'audio_resampler': 'sinc',
             'audio_out_rate': '44100',
-            'run_ahead_enabled': 'true', // Reduce input lag
-            'run_ahead_frames': '1',
+            'run_ahead_enabled': 'false', // DISABLED: Extremely CPU intensive, caused the "unplayable" lag
+            'run_ahead_frames': '0',
             'run_ahead_secondary_instance': 'false'
         };
 
