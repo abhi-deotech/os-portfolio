@@ -244,12 +244,13 @@ function App() {
         <div className="relative w-full h-full pointer-events-none flex items-center justify-center">
           <Suspense fallback={null}>
             <AnimatePresence>
-              {openWindows.filter(id => !minimizedWindows.includes(id)).map((id) => (
+              {openWindows.map((id) => (
                 <Window
                   key={id}
                   id={id}
                   title={id.charAt(0).toUpperCase() + id.slice(1)}
                   isActive={activeWindow === id}
+                  isMinimized={minimizedWindows.includes(id)}
                   onClose={() => closeWindow(id)}
                   onFocus={() => focusWindow(id)}
                 >
