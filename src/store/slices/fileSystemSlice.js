@@ -135,6 +135,7 @@ export const createFileSystemSlice = (set, get) => ({
   setIsSyncing: (isSyncing) => set({ isSyncing }),
   setLastSyncTime: (lastSyncTime) => set({ lastSyncTime }),
   setSyncError: (syncError) => set({ syncError }),
+  setRetroGame: (game) => set({ activeRetroGame: game }),
 
   syncDocumentation: (files) =>
     set((state) => {
