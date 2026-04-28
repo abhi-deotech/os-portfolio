@@ -2,39 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutGrid, User, ChevronUp, ChevronDown, 
-  Code, SlidersHorizontal, FileText, Monitor, Wallpaper, Music, 
-  Gamepad2, HardDrive, Settings as SettingsIcon, Home, Power
+  Home, Power, Settings as SettingsIcon
 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import { APPS } from '../config/apps';
 
-const renderLauncherAppIcon = (app, size = 20) => {
-  if (app.id === 'terminal') {
-    return <div className={`font-mono font-bold text-os-onSurfaceVariant ${size > 20 ? 'text-sm' : 'text-xs'}`}>{'>_'}</div>;
-  }
-  
-  const iconElement = app.icon;
-  if (!iconElement) return null;
-
-  // Case 1: Direct CustomIcon
-  if (iconElement.type === CustomIcon) {
-    return <CustomIcon icon={iconElement.props.icon} size={size} color={iconElement.props.color} />;
-  }
-
-  // Case 2: Wrapped in a div (e.g., Resume with badge)
-  if (iconElement.props && iconElement.props.children) {
-    const childrenArray = React.Children.toArray(iconElement.props.children);
-    const customIcon = childrenArray.find(child => child && child.type === CustomIcon);
-    if (customIcon) {
-      return <CustomIcon icon={customIcon.props.icon} size={size} color={customIcon.props.color} />;
-    }
-  }
-
-  return <div className="scale-75 origin-center">{iconElement}</div>;
-};
-
-const Taskbar = ({ desktopIcons }) => {
+const Taskbar = () => {
   const isMobile = useIsMobile();
   const [time, setTime] = useState(new Date());
 
@@ -58,57 +33,11 @@ const Taskbar = ({ desktopIcons }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const pinnedApps = [
-    { id: 'projects', icon: Code, color: 'text-os-secondary', shadow: '#00d2fd' },
-    { id: 'skills',   icon: SlidersHorizontal, color: 'text-[#00f5a0]', shadow: '#10b981' },
-    { id: 'cv',       icon: FileText, color: 'text-[#ff86c3]', shadow: '#ff86c3' },
-    { id: 'media',    icon: Monitor, color: 'text-[#00d2fd]', shadow: '#0ea5e9' },
-    { id: 'photos',   icon: Wallpaper, color: 'text-[#ff86c3]', shadow: '#f472b6' },
-    { id: 'music',    icon: Music, color: 'text-os-primary', shadow: 'rgba(var(--os-primary-rgb), 1)' },
-    { id: 'terminal', icon: null, text: '>_', shadow: '#ffffff' },
-    { id: 'games',    icon: Gamepad2, color: 'text-os-tertiary', shadow: 'rgba(var(--os-tertiary-rgb), 1)' },
-    { id: 'files',    icon: HardDrive, color: 'text-[#ffc86b]', shadow: '#f59e0b' },
-    { id: 'settings', icon: SettingsIcon, color: 'text-[#9effc8]', shadow: '#10b981' },
-  ];
-
-  const pinnedAppIds = pinnedApps.map(app => app.id);
-  const unpinnedOpenApps = openWindows
-    .filter(id => !pinnedAppIds.includes(id) && id !== 'about')
-    .map(id => {
-      const appInfo = desktopIcons.find(icon => icon.id === id);
-      if (!appInfo) return null;
-      
-      let appIcon = null;
-      let appColor = 'text-os-onSurface';
-      
-      if (appInfo.icon) {
-        if (appInfo.icon.type === CustomIcon) {
-          appIcon = appInfo.icon.props.icon;
-          appColor = appInfo.icon.props.color;
-        } else if (appInfo.icon.props && appInfo.icon.props.children) {
-          const childrenArray = React.Children.toArray(appInfo.icon.props.children);
-          const customIcon = childrenArray.find(child => child && child.type === CustomIcon);
-          if (customIcon) {
-            appIcon = customIcon.props.icon;
-            appColor = customIcon.props.color;
-          }
-        }
-      }
-
-      return {
-        id,
-        icon: appIcon,
-        color: appColor,
-        shadow: 'rgba(var(--os-primary-rgb), 1)',
-        text: id === 'terminal' ? '>_' : null
-      };
-    })
-    .filter(app => app !== null);
-
-  const allDockApps = [...pinnedApps, ...unpinnedOpenApps];
-
-  const featuredApps = desktopIcons.filter(app => ['about', 'cv', 'projects', 'terminal'].includes(app.id));
-  const otherApps = desktopIcons.filter(app => !['about', 'cv', 'projects', 'terminal'].includes(app.id));
+  // Filter apps for the dock (pinned or currently open)
+  const dockApps = APPS.filter(app => app.pinned || openWindows.includes(app.id));
+  
+  const featuredApps = APPS.filter(app => app.featured);
+  const otherApps = APPS.filter(app => !app.featured);
 
   return (
     <>
@@ -149,43 +78,35 @@ const Taskbar = ({ desktopIcons }) => {
         <div className="h-8 w-px bg-os-outline/20 mx-2 md:mr-4" />
 
         <div className={`flex items-center ${isMobile ? 'space-x-1 overflow-x-auto scrollbar-hide flex-grow' : 'space-x-1 flex-grow justify-center px-2'}`}>
-          {allDockApps.map(({ id, icon: IconComponent, color, shadow, text }) => {
-            const isOpen = openWindows.includes(id);
-            const isActive = activeWindow === id;
+          {dockApps.map((app) => {
+            const isOpen = openWindows.includes(app.id);
+            const isActive = activeWindow === app.id;
 
             return (
               <div
-                key={id}
+                key={app.id}
                 onClick={() => {
                   if (isOpen) {
                     if (isActive) {
-                      toggleMinimizeWindow(id);
+                      toggleMinimizeWindow(app.id);
                     } else {
-                      focusWindow(id);
+                      focusWindow(app.id);
                     }
                   } else {
-                    openWindow(id);
+                    openWindow(app.id);
                   }
                 }}
                 className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl ${isActive ? 'bg-white/10 shadow-[inset_0_0_12px_rgba(255,255,255,0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
               >
-                <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105 group-active:scale-95'} ${minimizedWindows.includes(id) ? 'opacity-60 scale-90' : 'opacity-100'}`}>                  {IconComponent ? (
-                    <CustomIcon 
-                      icon={IconComponent} 
-                      size={isMobile ? 18 : 22} 
-                      color={color} 
-                      glow={isActive ? shadow : false} 
-                    />
-                  ) : (
-                    <div className={`font-mono font-bold text-os-onSurfaceVariant px-1 ${isMobile ? 'text-sm' : ''}`}>{text}</div>
-                  )}
+                <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105 group-active:scale-95'} ${minimizedWindows.includes(app.id) ? 'opacity-60 scale-90' : 'opacity-100'}`}>
+                  {app.icon(isMobile ? 18 : 22, isActive ? app.color : null)}
                 </div>
                 
                 {isOpen && (
                   <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full transition-all duration-500 ${isActive ? 'w-2 h-1 animate-pulse' : 'w-1 h-1'}`}
                     style={{ 
-                      backgroundColor: shadow || 'rgba(var(--os-primary-rgb), 1)', 
-                      boxShadow: `0 0 10px ${shadow || 'rgba(var(--os-primary-rgb), 1)'}`,
+                      backgroundColor: app.shadow || 'rgba(var(--os-primary-rgb), 1)', 
+                      boxShadow: `0 0 10px ${app.shadow || 'rgba(var(--os-primary-rgb), 1)'}`,
                       opacity: 0.8
                     }} 
                   />
@@ -242,7 +163,7 @@ const Taskbar = ({ desktopIcons }) => {
                           className="flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-all cursor-pointer group"
                         >
                           <div className="p-3 bg-os-primary/10 rounded-2xl border border-os-primary/20 group-hover:bg-os-primary/20 group-hover:border-os-primary/40 transition-all mb-1 flex items-center justify-center">
-                            {renderLauncherAppIcon(app, 22)}
+                            {app.icon(22)}
                           </div>
                           <span className="text-[10px] text-os-primary font-black text-center truncate w-full">{app.title}</span>
                         </div>
@@ -264,7 +185,7 @@ const Taskbar = ({ desktopIcons }) => {
                           className="flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-all cursor-pointer group"
                         >
                           <div className="p-2.5 bg-os-surfaceContainerLow/30 rounded-xl border border-white/5 group-hover:border-os-primary/30 transition-all mb-1">
-                            {renderLauncherAppIcon(app, 18)}
+                            {app.icon(18)}
                           </div>
                           <span className="text-[10px] text-os-onSurfaceVariant font-bold text-center truncate w-full">{app.title}</span>
                         </div>

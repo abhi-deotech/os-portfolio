@@ -1,4 +1,4 @@
-import { pipeline, env } from '@xenova/transformers';
+import { pipeline, env } from '@huggingface/transformers';
 
 // Skip local model check and use remote CDN to avoid bloating the build
 env.allowLocalModels = false;
@@ -11,11 +11,20 @@ self.onmessage = async (e) => {
   if (type === 'init') {
     try {
       if (!extractor) {
-        extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+        // Use WebGPU if available for 2026 performance standards
+        extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+          device: 'webgpu',
+        });
       }
       self.postMessage({ type: 'ready' });
     } catch (error) {
-      self.postMessage({ type: 'error', error: error.message });
+      console.warn('WebGPU not available, falling back to WASM/CPU:', error.message);
+      try {
+        extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
+        self.postMessage({ type: 'ready' });
+      } catch (fallbackError) {
+        self.postMessage({ type: 'error', error: fallbackError.message });
+      }
     }
   }
 
