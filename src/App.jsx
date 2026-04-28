@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import {
-  MousePointer2, FolderPlus, RefreshCw, Cpu, X, RotateCcw, Hash,
-  User, FileText, Code, HardDrive, Gamepad2, Monitor, Music, 
-  Image as Wallpaper, Activity, Mail, MessageSquare, Settings as SettingsIcon, 
-  Trophy, Globe, Brain, Book, SlidersHorizontal
+  MousePointer2, FolderPlus, RefreshCw, Cpu, X, RotateCcw, Hash
 } from 'lucide-react';
-import CustomIcon from './components/common/CustomIcon';
 import {
   Menu,
   Item,
@@ -33,6 +29,7 @@ import PresenceLayer from './components/PresenceLayer';
 import useSoundEffects from './hooks/useSoundEffects';
 import useOSStore from './store/osStore';
 import { useIsMobile } from './hooks/useMediaQuery';
+import { APPS } from './config/apps';
 import './index.css';
 
 // Context menu IDs for desktop and icon menus
@@ -79,6 +76,7 @@ function App() {
   const accentIntensity = useOSStore(state => state.accentIntensity);
   const resetSettingsToDefault = useOSStore(state => state.resetSettingsToDefault);
   const isBSOD = useOSStore(state => state.isBSOD);
+  const activeRetroGame = useOSStore(state => state.activeRetroGame);
 
   const { playSound } = useSoundEffects();
   const [isIdle, setIsIdle] = useState(false);
@@ -103,30 +101,6 @@ function App() {
   }, [toggleSpotlight]);
 
 
-
-  const desktopIcons = [
-    { id: 'about',    title: 'About Me',     icon: <CustomIcon icon={User} size={isMobile ? 32 : 28}           color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
-    { id: 'cv',       title: 'Resume',       icon: <div className="relative"><CustomIcon icon={FileText} size={isMobile ? 32 : 28} color="text-[#ff86c3]" glow="rgba(255,134,195,0.6)" strokeWidth={2.5} /><div className="absolute -top-1 -right-1 w-3 h-3 bg-os-primary rounded-full border-2 border-os-surfaceContainerLow animate-pulse"></div></div> },
-    { id: 'projects', title: 'Projects',     icon: <CustomIcon icon={Code} size={isMobile ? 32 : 28}           color="text-os-secondary" glow="rgba(var(--os-secondary-rgb), 0.3)" strokeWidth={2.5} /> },
-    { id: 'terminal', title: 'Terminal',     icon: <div className={`font-mono font-bold text-os-onSurfaceVariant ${isMobile ? 'text-2xl' : 'text-xl'}`}>{'>_'}</div> },
-    { id: 'files',    title: 'Files',        icon: <CustomIcon icon={HardDrive} size={isMobile ? 32 : 28}      color="text-[#ffc86b]" glow="rgba(255,200,107,0.3)" strokeWidth={2.5} /> },
-    { id: 'games',    title: 'Game Center',  icon: <CustomIcon icon={Gamepad2} size={isMobile ? 32 : 28}       color="text-os-tertiary" glow="rgba(var(--os-tertiary-rgb), 0.3)" strokeWidth={2.5} /> },
-    { id: 'media',    title: 'Media',        icon: <CustomIcon icon={Monitor} size={isMobile ? 32 : 28}      color="text-[#00d2fd]" glow="rgba(0,210,253,0.3)" strokeWidth={2.5} /> },
-    { id: 'music',    title: 'Music',        icon: <CustomIcon icon={Music} size={isMobile ? 32 : 28}        color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
-    { id: 'photos',   title: 'Photos',       icon: <CustomIcon icon={Wallpaper} size={isMobile ? 32 : 28}    color="text-[#ff86c3]" glow="rgba(255,134,195,0.3)" strokeWidth={2.5} /> },
-    { id: 'benchmark', title: 'Benchmark',    icon: <CustomIcon icon={Activity} size={isMobile ? 32 : 28}     color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
-    { id: 'mail',     title: 'Mail',         icon: <CustomIcon icon={Mail} size={isMobile ? 32 : 28}         color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
-    { id: 'chat',     title: 'Guestbook',    icon: <CustomIcon icon={MessageSquare} size={isMobile ? 32 : 28} color="text-[#cc97ff]" glow="rgba(204,151,255,0.3)" strokeWidth={2.5} /> },
-    { id: 'retroarcade', title: 'Retro Arcade', icon: <CustomIcon icon={Gamepad2} size={isMobile ? 32 : 28} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
-    { id: 'settings', title: 'Settings',     icon: <CustomIcon icon={SettingsIcon} size={isMobile ? 32 : 28}   color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} /> },
-    { id: 'notepad',  title: 'Notepad',      icon: <CustomIcon icon={FileText} size={isMobile ? 32 : 28}      color="text-cyan-400" glow="rgba(34,211,238,0.3)" strokeWidth={2.5} /> },
-    { id: 'taskmanager', title: 'Monitor',   icon: <CustomIcon icon={Activity} size={isMobile ? 32 : 28}      color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
-    { id: 'achievements', title: 'Honors',   icon: <CustomIcon icon={Trophy} size={isMobile ? 32 : 28}        color="text-yellow-400" glow="rgba(250,204,21,0.3)" strokeWidth={2.5} /> },
-    { id: 'browser',    title: 'Flow-Net',   icon: <CustomIcon icon={Globe} size={isMobile ? 32 : 28}         color="text-[#00d2fd]" glow="rgba(0,210,253,0.3)" strokeWidth={2.5} /> },
-    { id: 'aichat',     title: 'Lumina AI',  icon: <CustomIcon icon={Brain} size={isMobile ? 32 : 28}        color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> },
-    { id: 'documentation', title: 'Documentation', icon: <CustomIcon icon={Book} size={isMobile ? 32 : 28}     color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} /> },
-    { id: 'skills',     title: 'Skills',      icon: <CustomIcon icon={SlidersHorizontal} size={isMobile ? 32 : 28} color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> },
-    ];
 
     useEffect(() => {    const handleActivity = () => {
       setIsIdle(false);
@@ -196,8 +170,8 @@ function App() {
       onContextMenu={handleDesktopContextMenu}
     >
       <LiveWallpaper />
-      <PresenceLayer />
-      {!isMobile && <Widgets />}
+      {!activeRetroGame && <PresenceLayer />}
+      {!isMobile && !activeRetroGame && <Widgets />}
 
       {/* Context Menus — Desktop */}
       {!isMobile && (
@@ -262,7 +236,7 @@ function App() {
         </div>
       </div>
 
-      <Taskbar desktopIcons={desktopIcons} />
+      <Taskbar />
 
       {/* Control Center Overlay */}
       <ControlCenter />

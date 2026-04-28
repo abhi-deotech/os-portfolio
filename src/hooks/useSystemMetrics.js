@@ -20,7 +20,7 @@ import { useState, useEffect, useMemo } from 'react';
  * @returns {string} returns.platform - Navigator platform string
  * @returns {string} returns.agent - Simplified user agent string
  */
-const useSystemMetrics = () => {
+const useSystemMetrics = (disabled = false) => {
   const [metrics, setMetrics] = useState({ 
     cpu: 0, 
     ram: 0, 
@@ -40,53 +40,46 @@ const useSystemMetrics = () => {
   }), []);
 
   useEffect(() => {
-    let lastTime = performance.now();
-    let frames = 0;
+    if (disabled) return;
     
     const updateMetrics = () => {
-      const now = performance.now();
-      const delta = now - lastTime;
-      frames++;
+      // CPU estimation - use more realistic synthetic data based on frame timing variance
+      // Since we are no longer using rAF, we use a fixed frame variance simulation for realism
+      const frameVariance = Math.random() * 2;
+      // Base CPU on frame variance + random load fluctuation for realism
+      let estimatedCpu = Math.min(100, Math.round((frameVariance / 16.67) * 30) + Math.floor(Math.random() * 15) + 5);
+      // Ensure minimum CPU of 2-8% (idle baseline)
+      estimatedCpu = Math.max(estimatedCpu, Math.floor(Math.random() * 6) + 2);
 
-      if (delta >= 2000) { // Update every 2 seconds
-        // CPU estimation - use more realistic synthetic data based on frame timing variance
-        const avgFrameTime = delta / frames;
-        const frameVariance = Math.abs(avgFrameTime - 16.67);
-        // Base CPU on frame variance + random load fluctuation for realism
-        let estimatedCpu = Math.min(100, Math.round((frameVariance / 16.67) * 30) + Math.floor(Math.random() * 15) + 5);
-        // Ensure minimum CPU of 2-8% (idle baseline)
-        estimatedCpu = Math.max(estimatedCpu, Math.floor(Math.random() * 6) + 2);
+      // RAM usage calculation (if available)
+      let estimatedPercent = Math.floor(Math.random() * 5) + 40; 
+      let usedMb = 0;
+      let limitMb = 4096;
 
-        // RAM usage calculation (if available)
-        let estimatedPercent = Math.floor(Math.random() * 5) + 40; 
-        let usedMb = 0;
-        let limitMb = 4096;
-
-        if (window.performance && window.performance.memory) {
-          const memory = window.performance.memory;
-          estimatedPercent = Math.round((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100);
-          usedMb = Math.round(memory.usedJSHeapSize / (1024 * 1024));
-          limitMb = Math.round(memory.jsHeapSizeLimit / (1024 * 1024));
-        } else {
-            // Fallback for non-Chrome browsers
-            usedMb = Math.round((estimatedPercent / 100) * 4096);
-        }
-
-        setMetrics({ 
-            cpu: estimatedCpu, 
-            ram: estimatedPercent,
-            ramUsedMb: usedMb,
-            ramLimitMb: limitMb
-        });
-        lastTime = now;
-        frames = 0;
+      if (window.performance && window.performance.memory) {
+        const memory = window.performance.memory;
+        estimatedPercent = Math.round((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100);
+        usedMb = Math.round(memory.usedJSHeapSize / (1024 * 1024));
+        limitMb = Math.round(memory.jsHeapSizeLimit / (1024 * 1024));
+      } else {
+          // Fallback for non-Chrome browsers
+          usedMb = Math.round((estimatedPercent / 100) * 4096);
       }
-      requestAnimationFrame(updateMetrics);
+
+      setMetrics({ 
+          cpu: estimatedCpu, 
+          ram: estimatedPercent,
+          ramUsedMb: usedMb,
+          ramLimitMb: limitMb
+      });
     };
 
-    const requestId = requestAnimationFrame(updateMetrics);
-    return () => cancelAnimationFrame(requestId);
-  }, []);
+    // Initial run
+    updateMetrics();
+
+    const intervalId = setInterval(updateMetrics, 2000);
+    return () => clearInterval(intervalId);
+  }, [disabled]);
 
   return { ...metrics, ...hardwareInfo };
 };

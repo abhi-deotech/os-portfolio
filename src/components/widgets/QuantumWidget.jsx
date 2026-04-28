@@ -1,4 +1,4 @@
-import React, { useRef, Suspense } from 'react';
+import React, { useRef, Suspense, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, MeshDistortMaterial, Sphere, PerspectiveCamera } from '@react-three/drei';
 import useOSStore from '../../store/osStore';
@@ -41,25 +41,45 @@ const Core = () => {
 
 const QuantumWidget = () => {
   const { lowPerformance } = useOSStore();
+  const [isVisible, setIsVisible] = useState(false);
+  const widgetRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+
+    if (widgetRef.current) {
+      observer.observe(widgetRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
 
   if (lowPerformance) return null;
 
   return (
-    <div className="w-full h-48 rounded-[2.5rem] bg-os-surfaceContainerLow/30 backdrop-blur-3xl border border-white/10 shadow-2xl overflow-hidden relative group">
+    <div 
+      ref={widgetRef}
+      className="w-full h-48 rounded-[2.5rem] bg-os-surfaceContainerLow/30 backdrop-blur-3xl border border-white/10 shadow-2xl overflow-hidden relative group"
+    >
       <div className="absolute top-4 left-6 z-10">
         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-os-primary opacity-80">Quantum Core</h3>
         <p className="text-[10px] text-os-onSurfaceVariant font-bold uppercase tracking-widest mt-1">System Entropy: 0.024</p>
       </div>
       
       <div className="absolute inset-0 cursor-crosshair">
-        <Canvas>
-          <PerspectiveCamera makeDefault position={[0, 0, 5]} />
-          <ambientLight intensity={0.5} />
-          <pointLight position={[10, 10, 10]} intensity={1.5} />
-          <Suspense fallback={null}>
-            <Core />
-          </Suspense>
-        </Canvas>
+        {isVisible && (
+          <Canvas>
+            <PerspectiveCamera makeDefault position={[0, 0, 5]} />
+            <ambientLight intensity={0.5} />
+            <pointLight position={[10, 10, 10]} intensity={1.5} />
+            <Suspense fallback={null}>
+              <Core />
+            </Suspense>
+          </Canvas>
+        )}
       </div>
 
       <div className="absolute bottom-4 left-0 right-0 px-6 flex justify-between items-end z-10 pointer-events-none">

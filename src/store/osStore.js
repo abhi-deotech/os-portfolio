@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
+import { get, set, del } from 'idb-keyval';
 import { createAuthSlice } from './slices/authSlice';
 import { createFileSystemSlice } from './slices/fileSystemSlice';
 import { createMusicSlice } from './slices/musicSlice';
@@ -28,7 +29,11 @@ const useOSStore = create(
     }),
     {
       name: 'os-settings',
-      storage: createJSONStorage(() => localStorage),
+      storage: {
+        getItem: async (name) => (await get(name)) || null,
+        setItem: async (name, value) => await set(name, value),
+        removeItem: async (name) => await del(name),
+      },
       partialize: (state) => ({
         activeAccent: state.activeAccent,
         wallpaper: state.wallpaper,

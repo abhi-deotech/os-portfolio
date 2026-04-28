@@ -93,6 +93,7 @@
         window.EJS_threads = true;
         window.EJS_sampleRate = 44100;
         window.EJS_volume = 1.0;
+        window.EJS_videoSmooth = false; // DISABLED: Significant performance boost on low-end GPUs
         
         // Advanced 2024/2025 Caching & WASM flags
         window.EJS_cache = {
@@ -110,7 +111,8 @@
         window.EJS_coreConfig = {
             'video_vsync': 'true',
             'video_threaded': 'true',
-            'audio_latency': '128', // Increased for better stability on lower-end CPUs
+            'video_smooth': 'false', // Redundant but good for safety
+            'audio_latency': '160', // Increased slightly more for better stability on lower-end CPUs
             'audio_resampler': 'sinc',
             'audio_out_rate': '44100',
             'run_ahead_enabled': 'false', // DISABLED: Extremely CPU intensive, caused the "unplayable" lag
