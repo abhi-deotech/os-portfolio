@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import {
-  MousePointer2, FolderPlus, RefreshCw, Cpu, X, RotateCcw, Hash
+  MousePointer2, FolderPlus, RefreshCw, Cpu, X, RotateCcw, Hash,
+  User, Image as Wallpaper
 } from 'lucide-react';
+import CustomIcon from './components/common/CustomIcon';
 import {
   Menu,
   Item,

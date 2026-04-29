@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  User, FileText, Code, HardDrive, Gamepad2, Monitor, Music, Wallpaper, 
+  User, FileText, Code, HardDrive, Gamepad2, Monitor, Music, Image as Wallpaper, 
   Activity, Mail, MessageSquare, Settings as SettingsIcon, Trophy, Globe, Brain, Book, SlidersHorizontal 
 } from 'lucide-react';
 import CustomIcon from '../components/common/CustomIcon';
