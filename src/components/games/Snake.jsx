@@ -37,6 +37,15 @@ const Snake = ({ onBack }) => {
     return newFood;
   }, []);
 
+  const handleGameOver = useCallback(() => {
+    setGameOver(true);
+    setIsPlaying(false);
+    if (score > highScore) {
+      setHighScore(score);
+      localStorage.setItem('snake-high-score', score);
+    }
+  }, [score, highScore]);
+
   const moveSnake = useCallback(() => {
     setSnake(prevSnake => {
       const head = { ...prevSnake[0] };
@@ -81,16 +90,7 @@ const Snake = ({ onBack }) => {
 
       return newSnake;
     });
-  }, [generateFood, score, unlockAchievement]);
-
-  const handleGameOver = () => {
-    setGameOver(true);
-    setIsPlaying(false);
-    if (score > highScore) {
-      setHighScore(score);
-      localStorage.setItem('snake-high-score', score);
-    }
-  };
+  }, [generateFood, score, unlockAchievement, handleGameOver]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {

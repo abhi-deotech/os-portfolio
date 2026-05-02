@@ -72,6 +72,7 @@ const QuantumParticles = ({ accentColor = '#a855f7' }) => {
     resize();
 
     // Particle settings
+    const isMobile = window.innerWidth < 768;
     const PARTICLE_COUNT = isMobile ? 50 : 150; // Drastically reduced for performance, but increased size to keep visual impact
     const particles = [];
 
