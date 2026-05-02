@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, RefreshCw, ArrowLeft, CheckCircle2, XCircle, Zap, ShieldCheck, Cpu } from 'lucide-react';
+import { RefreshCw, ArrowLeft, XCircle, Zap, ShieldCheck, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 
