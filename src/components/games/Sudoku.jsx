@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, RefreshCw, ArrowLeft, CheckCircle2, XCircle, Zap, ShieldCheck, Cpu } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Trophy, RefreshCw, ArrowLeft, XCircle, Zap, ShieldCheck, Cpu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 
@@ -30,8 +30,13 @@ const Sudoku = ({ onBack }) => {
     setErrors([]);
   }, []);
 
+  const initialMount = useRef(true);
+
   useEffect(() => {
-    generateSudoku();
+    if (initialMount.current) {
+      generateSudoku();
+      initialMount.current = false;
+    }
   }, [generateSudoku]);
 
   const handleCellClick = (r, c) => {
