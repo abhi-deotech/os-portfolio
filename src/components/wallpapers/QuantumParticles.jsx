@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 // Particle class moved outside component to comply with React hooks rules
 class Particle {
@@ -56,6 +57,7 @@ class Particle {
 const QuantumParticles = ({ accentColor = '#a855f7' }) => {
   const canvasRef = useRef(null);
   const mouseRef = useRef({ x: 0, y: 0, active: false });
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -117,7 +119,7 @@ const QuantumParticles = ({ accentColor = '#a855f7' }) => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [accentColor]);
+  }, [accentColor, isMobile]);
 
   return (
     <canvas 
