@@ -224,7 +224,7 @@ function App() {
                 <Window
                   key={id}
                   id={id}
-                  title={id.charAt(0).toUpperCase() + id.slice(1)}
+                  title={APPS.find(app => app.id === id)?.title || (id.charAt(0).toUpperCase() + id.slice(1))}
                   isActive={activeWindow === id}
                   isMinimized={minimizedWindows.includes(id)}
                   onClose={() => closeWindow(id)}
