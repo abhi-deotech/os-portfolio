@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, RefreshCw, ArrowLeft, Brain, Cpu, Zap, Timer } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Trophy, RefreshCw, ArrowLeft, Brain, Cpu, Zap, Timer, Layers, Globe, ShieldCheck } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 
 const SYMBOLS = [
@@ -14,8 +14,6 @@ const SYMBOLS = [
   { icon: ShieldCheck, color: '#3b82f6', label: 'Secure' }
 ];
 
-import { Layers, Globe, ShieldCheck } from 'lucide-react';
-
 const MemoryGame = ({ onBack }) => {
   const [cards, setCards] = useState([]);
   const [flipped, setFlipped] = useState([]);
@@ -25,7 +23,7 @@ const MemoryGame = ({ onBack }) => {
   const [bestMoves, setBestScore] = useState(localStorage.getItem('memory-best-moves') || '--');
   const { unlockAchievement } = useOSStore();
 
-  const initGame = () => {
+  const initGame = useCallback(() => {
     const duplicatedSymbols = [...SYMBOLS, ...SYMBOLS];
     const shuffled = duplicatedSymbols
       .sort(() => Math.random() - 0.5)
@@ -35,11 +33,11 @@ const MemoryGame = ({ onBack }) => {
     setSolved([]);
     setMoves(0);
     setDisabled(false);
-  };
+  }, []);
 
   useEffect(() => {
     initGame();
-  }, []);
+  }, [initGame]);
 
   useEffect(() => {
     if (flipped.length === 2) {

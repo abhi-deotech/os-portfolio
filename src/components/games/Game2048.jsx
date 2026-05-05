@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, RefreshCw, ArrowLeft, Play, Zap, Brain, Layers } from 'lucide-react';
+import { Trophy, RefreshCw, ArrowLeft, Zap, Brain, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 

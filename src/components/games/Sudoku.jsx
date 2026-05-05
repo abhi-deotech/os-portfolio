@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Trophy, RefreshCw, ArrowLeft, XCircle, Zap, ShieldCheck, Cpu } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { RefreshCw, ArrowLeft, XCircle, Zap, ShieldCheck, Cpu } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 
 const Sudoku = ({ onBack }) => {

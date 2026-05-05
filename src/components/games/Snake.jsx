@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Trophy, RefreshCw, ArrowLeft, Play, Gamepad2, Zap, Target } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 
 const GRID_SIZE = 20;
@@ -13,7 +13,6 @@ const Snake = ({ onBack }) => {
   const isFocused = activeWindow === 'games' || activeWindow === 'snake' || activeWindow === 'retroarcade';
   
   const [snake, setSnake] = useState(INITIAL_SNAKE);
-  const [direction, setDirection] = useState(INITIAL_DIRECTION);
   const [food, setFood] = useState({ x: 5, y: 5 });
   const [gameOver, setGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -102,8 +101,6 @@ const Snake = ({ onBack }) => {
       if (key === 'ArrowDown' && current !== 'UP') directionRef.current = 'DOWN';
       if (key === 'ArrowLeft' && current !== 'RIGHT') directionRef.current = 'LEFT';
       if (key === 'ArrowRight' && current !== 'LEFT') directionRef.current = 'RIGHT';
-      
-      setDirection(directionRef.current);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -120,7 +117,6 @@ const Snake = ({ onBack }) => {
   const startGame = () => {
     setSnake(INITIAL_SNAKE);
     directionRef.current = INITIAL_DIRECTION;
-    setDirection(INITIAL_DIRECTION);
     setGameOver(false);
     setScore(0);
     setFood(generateFood(INITIAL_SNAKE));
@@ -260,11 +256,11 @@ const Snake = ({ onBack }) => {
          {/* Mobile Controls */}
          <div className="grid grid-cols-3 gap-2 mt-2 md:hidden">
             <div />
-            <button onClick={() => directionRef.current !== 'DOWN' && setDirection('UP')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="rotate-90" /></button>
+            <button onClick={() => directionRef.current !== 'DOWN' && (directionRef.current = 'UP')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="rotate-90" /></button>
             <div />
-            <button onClick={() => directionRef.current !== 'RIGHT' && setDirection('LEFT')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft /></button>
-            <button onClick={() => directionRef.current !== 'UP' && setDirection('DOWN')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="-rotate-90" /></button>
-            <button onClick={() => directionRef.current !== 'LEFT' && setDirection('RIGHT')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="rotate-180" /></button>
+            <button onClick={() => directionRef.current !== 'RIGHT' && (directionRef.current = 'LEFT')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft /></button>
+            <button onClick={() => directionRef.current !== 'UP' && (directionRef.current = 'DOWN')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="-rotate-90" /></button>
+            <button onClick={() => directionRef.current !== 'LEFT' && (directionRef.current = 'RIGHT')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="rotate-180" /></button>
          </div>
 
          <p className="text-[9px] font-black text-white/10 uppercase tracking-[0.4em] mt-4">Node Authority: Vibe-OS Gaming Kernel</p>
