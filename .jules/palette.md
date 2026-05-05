@@ -1,0 +1,3 @@
+## 2026-05-23 - [Accessibility: Non-semantic interactive elements]
+**Learning:** In highly customized OS-like web interfaces, developers often prioritize visual fidelity (e.g., specific hover/glassmorphism effects on `div`s) over accessibility. This results in interactive elements that are invisible to screen readers and unreachable via keyboard navigation.
+**Action:** When working on "desktop" or "canvas-based" UI, always audit the core interaction points (taskbars, icons, window controls) and ensure they use semantic `<button>` elements with `aria-label` and `type="button"`, rather than just `onClick` handlers on `div`s.
