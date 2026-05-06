@@ -9,7 +9,6 @@ const TriviaGame = ({ onBack }) => {
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState('loading'); // loading, playing, finished, error
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isCorrect, setIsCorrect] = useState(null);
   const [timeLeft, setLeftTime] = useState(15);
   const { unlockAchievement } = useOSStore();
 
@@ -40,7 +39,6 @@ const TriviaGame = ({ onBack }) => {
         setScore(0);
         setLeftTime(15);
         setSelectedAnswer(null);
-        setIsCorrect(null);
       } else {
         setStatus('error');
       }
@@ -59,14 +57,12 @@ const TriviaGame = ({ onBack }) => {
 
     setSelectedAnswer(answer);
     const correct = answer === questions[currentIndex].correct_answer;
-    setIsCorrect(correct);
     if (correct) setScore(s => s + 1);
 
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
         setCurrentIndex(prev => prev + 1);
         setSelectedAnswer(null);
-        setIsCorrect(null);
         setLeftTime(15);
       } else {
         setStatus('finished');
