@@ -9,7 +9,7 @@ const TriviaGame = ({ onBack }) => {
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState('loading'); // loading, playing, finished, error
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isCorrect, setIsCorrect] = useState(null);
+  const [, setIsCorrect] = useState(null);
   const [timeLeft, setLeftTime] = useState(15);
   const { unlockAchievement } = useOSStore();
 
@@ -52,7 +52,8 @@ const TriviaGame = ({ onBack }) => {
 
   useEffect(() => {
     fetchQuestions();
-  }, [fetchQuestions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAnswer = useCallback((answer) => {
     if (selectedAnswer !== null) return;

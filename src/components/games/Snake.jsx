@@ -13,7 +13,7 @@ const Snake = ({ onBack }) => {
   const isFocused = activeWindow === 'games' || activeWindow === 'snake' || activeWindow === 'retroarcade';
   
   const [snake, setSnake] = useState(INITIAL_SNAKE);
-  const [direction, setDirection] = useState(INITIAL_DIRECTION);
+  const [, setDirection] = useState(INITIAL_DIRECTION);
   const [food, setFood] = useState({ x: 5, y: 5 });
   const [gameOver, setGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
