@@ -39,18 +39,6 @@ const AIChat = () => {
     }
   }, [messages, isTyping]);
 
-  const responses = {
-    stack: "This portfolio is a high-performance MERN-style simulation built with React 19, Vite, Tailwind CSS 3.4, Framer Motion for fluid 60fps animations, and Zustand with persistent storage for the virtual OS state.",
-    author: "Abhimanyu Saxena is a Senior Software Engineer and Team Lead with expertise in architecting scalable platforms, FinTech, and IoT. He currently leads development at Deotechsolutions.",
-    experience: "Abhimanyu has over 4 years of professional experience, including roles at LendFoundry (FinTech) and currently Deotechsolutions. He has a strong background in both full-stack web and systems/embedded development.",
-    contact: "You can find Abhimanyu on LinkedIn or GitHub. For professional inquiries, his email is available in the 'About' section, or you can use the 'Mail' app on this desktop.",
-    projects: "Key projects include Lumina OS, an enterprise MERN Dashboard, and various IoT controllers. Check the 'Projects' app on the desktop for interactive demos and technical deep-dives.",
-    os: "Lumina OS is a custom-built desktop environment simulation designed to showcase React state management, complex windowing systems, and interactive UI/UX patterns in a portfolio context.",
-    hire: "Abhimanyu is currently open to senior engineering roles and high-impact freelance projects. He specializes in React, Node.js, and System Architecture.",
-    skills: "His technical arsenal includes JavaScript/TypeScript, React, Node.js, Python, C++, AWS, Docker, and CI/CD. He is also experienced in IoT and Embedded systems.",
-    default: "I'm Lumina AI, your guide to Abhimanyu's work. Ask me about his 'experience', 'skills', 'stack', or 'hire' status!"
-  };
-
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || isTyping) return;
