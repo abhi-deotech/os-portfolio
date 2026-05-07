@@ -74,9 +74,12 @@ const ControlCenter = () => {
             <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2'} gap-4`}>
                {/* Primary Network Block - Larger */}
                <div className="col-span-1 space-y-4">
-                   <div 
+                   <button
+                     type="button"
                      onClick={() => toggleState('wifi')}
-                     className={`p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden ${toggles.wifi ? 'bg-[#00d2fd]/20 border-[#00d2fd]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
+                     aria-label={toggles.wifi ? "Turn off Wi-Fi" : "Turn on Wi-Fi"}
+                     title={toggles.wifi ? "Turn off Wi-Fi" : "Turn on Wi-Fi"}
+                     className={`w-full text-left p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden ${toggles.wifi ? 'bg-[#00d2fd]/20 border-[#00d2fd]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
                    >
                      {toggles.wifi && <div className="absolute inset-x-0 bottom-0 h-1 bg-[#00d2fd] shadow-[0_0_15px_#00d2fd]" />}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${toggles.wifi ? 'bg-[#00d2fd] text-[#0e0e0e]' : 'bg-os-surfaceContainerHighest text-os-onSurfaceVariant'}`}>
@@ -86,11 +89,14 @@ const ControlCenter = () => {
                         <span className="block text-sm font-bold text-white">Wi-Fi</span>
                         <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.wifi ? 'text-[#00d2fd]' : 'text-os-onSurfaceVariant'}`}>{toggles.wifi ? (network.isOnline ? 'Nexus-Home' : 'Connected') : 'Off'}</span>
                      </div>
-                   </div>
+                   </button>
                    
-                   <div 
+                   <button
+                     type="button"
                      onClick={() => toggleState('bluetooth')}
-                     className={`p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden ${toggles.bluetooth ? 'bg-[#cc97ff]/20 border-[#cc97ff]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
+                     aria-label={toggles.bluetooth ? "Turn off Bluetooth" : "Turn on Bluetooth"}
+                     title={toggles.bluetooth ? "Turn off Bluetooth" : "Turn on Bluetooth"}
+                     className={`w-full text-left p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden ${toggles.bluetooth ? 'bg-[#cc97ff]/20 border-[#cc97ff]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
                    >
                      {toggles.bluetooth && <div className="absolute inset-x-0 bottom-0 h-1 bg-[#cc97ff] shadow-[0_0_15px_#cc97ff]" />}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${toggles.bluetooth ? 'bg-[#cc97ff] text-[#0e0e0e]' : 'bg-os-surfaceContainerHighest text-os-onSurfaceVariant'}`}>
@@ -100,14 +106,17 @@ const ControlCenter = () => {
                         <span className="block text-sm font-bold text-white">Bluetooth</span>
                         <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.bluetooth ? 'text-[#cc97ff]' : 'text-os-onSurfaceVariant'}`}>{toggles.bluetooth ? 'On' : 'Off'}</span>
                      </div>
-                   </div>
+                   </button>
                </div>
 
                {/* Right Stack - Focus */}
                <div className="col-span-1 flex flex-col gap-4">
-                   <div 
+                   <button
+                     type="button"
                      onClick={() => toggleState('airdrop')}
-                     className={`flex-1 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 border ${toggles.airdrop ? 'bg-[#00f5a0]/10 border-[#00f5a0]/30 shadow-[inset_0_0_20px_rgba(0,245,160,0.1)]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
+                     aria-label={toggles.airdrop ? "Turn off Focus" : "Turn on Focus"}
+                     title={toggles.airdrop ? "Turn off Focus" : "Turn on Focus"}
+                     className={`w-full flex-1 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 border ${toggles.airdrop ? 'bg-[#00f5a0]/10 border-[#00f5a0]/30 shadow-[inset_0_0_20px_rgba(0,245,160,0.1)]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
                    >
                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-inner ${toggles.airdrop ? 'bg-[#131313] border border-[#00f5a0]/30' : 'bg-os-surfaceContainerHighest'}`}>
                            <CustomIcon 
@@ -121,7 +130,7 @@ const ControlCenter = () => {
                           <span className={`block text-xs font-bold ${toggles.airdrop ? 'text-white' : 'text-os-onSurfaceVariant'}`}>Focus</span>
                           <span className={`block text-[10px] uppercase font-bold tracking-widest ${toggles.airdrop ? 'text-[#00f5a0]' : 'text-os-onSurfaceVariant'}`}>{toggles.airdrop ? 'Do Not Disturb' : 'Off'}</span>
                       </div>
-                   </div>
+                   </button>
                </div>
             </div>
 

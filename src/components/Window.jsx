@@ -34,12 +34,22 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
   const isMaximized = maximizedWindows?.includes(id) || isMobile;
   const dragControls = useDragControls();
   const windowRef = useRef(null);
+  const [dimensions, setDimensions] = useState({ width, height });
 
   useEffect(() => {
     if (isMobile && !maximizedWindows?.includes(id)) {
       toggleMaximizeWindow(id);
     }
   }, [isMobile, id, maximizedWindows, toggleMaximizeWindow]);
+
+  useEffect(() => {
+    if (windowRef.current) {
+      setDimensions({
+        width: windowRef.current.offsetWidth,
+        height: windowRef.current.offsetHeight
+      });
+    }
+  }, [width, height, isMaximized]);
 
   const accentHexMap = {
     purple: '#cc97ff',
@@ -154,7 +164,10 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
       >
         <div className="flex space-x-2.5 z-50 w-24 group/controls" onPointerDown={(e) => e.stopPropagation()}>
           <button 
+            type="button"
             onClick={() => closeWindow(id)} 
+            aria-label={`Close ${title}`}
+            title={`Close ${title}`}
             className={`${isMobile ? 'w-5 h-5' : 'w-3.5 h-3.5'} rounded-full bg-[#ff5f56] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#e0443e]`}
           >
             <CustomIcon icon={X} size={isMobile ? 12 : 10} strokeWidth={4} color="text-[#4c0000]" className={`${isMobile ? 'opacity-100' : 'opacity-0'} group-hover/controls:opacity-100 transition-opacity`} animate={false} />
@@ -162,12 +175,19 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
           {!isMobile && (
             <>
               <button
-               onClick={() => toggleMinimizeWindow(id)}
-               className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123]"
-              >                <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
+                type="button"
+                onClick={() => toggleMinimizeWindow(id)}
+                aria-label={`Minimize ${title}`}
+                title={`Minimize ${title}`}
+                className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123]"
+              >
+                <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
               </button>
               <button
+                type="button"
                 onClick={() => toggleMaximizeWindow(id)}
+                aria-label={isMaximized ? `Restore ${title}` : `Maximize ${title}`}
+                title={isMaximized ? `Restore ${title}` : `Maximize ${title}`}
                 className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#1aab29]"
               >
                 {isMaximized ? (
@@ -187,8 +207,8 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
 
       {/* Real-time Glass Refraction Layer */}
       <WindowGlass 
-        width={windowRef.current?.offsetWidth || width} 
-        height={windowRef.current?.offsetHeight || height} 
+        width={dimensions.width}
+        height={dimensions.height}
         isActive={isActive} 
       />
 
