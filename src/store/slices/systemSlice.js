@@ -4,6 +4,7 @@ export const createSystemSlice = (set) => ({
   transparencyEffects: true,
   brightness: 100,
   accentIntensity: 80,
+  soundEnabled: true,
   isDragging: false,
   isBSOD: false,
   achievements: [],
@@ -54,6 +55,7 @@ export const createSystemSlice = (set) => ({
   setBrightness: (value) => set({ brightness: value }),
   setAccentIntensity: (value) => set({ accentIntensity: value }),
   setLowPerformance: (enabled) => set({ lowPerformance: enabled }),
+  setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
 
   resetSettingsToDefault: () => set({
     wallpaper: 'sunset-glow',
@@ -61,6 +63,7 @@ export const createSystemSlice = (set) => ({
     transparencyEffects: true,
     brightness: 100,
     accentIntensity: 80,
+    soundEnabled: true,
   }),
 
   triggerBSOD: () => set({ isBSOD: true }),

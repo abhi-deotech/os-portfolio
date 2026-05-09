@@ -40,6 +40,7 @@ const useOSStore = create(
         transparencyEffects: state.transparencyEffects,
         brightness: state.brightness,
         accentIntensity: state.accentIntensity,
+        soundEnabled: state.soundEnabled,
         terminalHistory: state.terminalHistory,
         openWindows: state.openWindows,
         minimizedWindows: state.minimizedWindows,

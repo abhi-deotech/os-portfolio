@@ -20,6 +20,7 @@ import {
   Shield,
   Activity,
   Download,
+  Volume2,
   Upload,
   Zap,
   RotateCcw
@@ -47,6 +48,8 @@ const Settings = () => {
     setAccentIntensity,
     lowPerformance,
     setLowPerformance,
+    soundEnabled,
+    setSoundEnabled,
     resetSettingsToDefault,
     unlockAchievement
   } = useOSStore();
@@ -215,13 +218,16 @@ const Settings = () => {
                             <span className="block text-xs text-os-onSurfaceVariant">Mica glassmorphism style</span>
                         </div>
                     </div>
-                    {/* Mock Toggle */}
-                    <div 
-                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${transparencyEffects ? 'bg-[#cc97ff]' : 'bg-os-surfaceContainerHighest'}`}
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={transparencyEffects}
+                        aria-label="Toggle transparency effects"
+                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-all duration-300 focus-visible:ring-2 focus-visible:ring-[#cc97ff] focus-visible:ring-offset-2 focus-visible:ring-offset-os-surface outline-none ${transparencyEffects ? 'bg-[#cc97ff]' : 'bg-os-surfaceContainerHighest'}`}
                         onClick={() => setTransparencyEffects(!transparencyEffects)}
                     >
                         <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${transparencyEffects ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                    </div>
+                    </button>
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50 transition-colors border border-os-outline/5">
@@ -232,12 +238,36 @@ const Settings = () => {
                             <span className="block text-xs text-os-onSurfaceVariant">Disable 3D wallpaper & effects</span>
                         </div>
                     </div>
-                    <div 
-                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${lowPerformance ? 'bg-os-secondary' : 'bg-os-surfaceContainerHighest'}`}
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={lowPerformance}
+                        aria-label="Toggle performance mode"
+                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-all duration-300 focus-visible:ring-2 focus-visible:ring-os-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-os-surface outline-none ${lowPerformance ? 'bg-os-secondary' : 'bg-os-surfaceContainerHighest'}`}
                         onClick={() => setLowPerformance(!lowPerformance)}
                     >
                         <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${lowPerformance ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50 transition-colors border border-os-outline/5">
+                    <div className="flex items-center gap-3">
+                        <CustomIcon icon={Volume2} size={16} color="text-os-tertiary" glow="rgba(var(--os-tertiary-rgb), 0.3)" />
+                        <div>
+                            <span className="block font-semibold text-sm">Sound Effects</span>
+                            <span className="block text-xs text-os-onSurfaceVariant">System audio feedback</span>
+                        </div>
                     </div>
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={soundEnabled}
+                        aria-label="Toggle sound effects"
+                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-all duration-300 focus-visible:ring-2 focus-visible:ring-os-tertiary focus-visible:ring-offset-2 focus-visible:ring-offset-os-surface outline-none ${soundEnabled ? 'bg-os-tertiary' : 'bg-os-surfaceContainerHighest'}`}
+                        onClick={() => setSoundEnabled(!soundEnabled)}
+                    >
+                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${soundEnabled ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    </button>
                 </div>
             </div>
         </section>
