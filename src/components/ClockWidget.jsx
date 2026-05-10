@@ -5,7 +5,6 @@ import { Sun, Cloud, CloudRain, CloudLightning, Wind } from 'lucide-react';
 const ClockWidget = () => {
   const [time, setTime] = useState(new Date());
   
-  const weatherIcons = [Sun, Cloud, CloudRain, CloudLightning, Wind];
   const [weather] = useState({
     temp: 24,
     condition: 'Clear',

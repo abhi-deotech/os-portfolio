@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Square, Activity, Cpu, AlertTriangle, Zap, CheckCircle2, 
   ShieldAlert, BarChart3, Database, HardDrive, Timer, Gauge

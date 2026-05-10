@@ -29,7 +29,7 @@ const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os
  */
 const LoginScreen = () => {
   const { login, unlockAchievement } = useOSStore();
-  const isMobile = useIsMobile();
+
   const [isBooting, setIsBooting] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [time, setTime] = useState(new Date());

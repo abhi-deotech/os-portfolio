@@ -34,6 +34,16 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
   const isMaximized = maximizedWindows?.includes(id) || isMobile;
   const dragControls = useDragControls();
   const windowRef = useRef(null);
+  const [dimensions, setDimensions] = useState({ width, height });
+
+  React.useLayoutEffect(() => {
+    if (windowRef.current) {
+      setDimensions({
+        width: windowRef.current.offsetWidth,
+        height: windowRef.current.offsetHeight
+      });
+    }
+  }, [isMaximized, isMobile, width, height]);
 
   useEffect(() => {
     if (isMobile && !maximizedWindows?.includes(id)) {
@@ -187,8 +197,8 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
 
       {/* Real-time Glass Refraction Layer */}
       <WindowGlass 
-        width={windowRef.current?.offsetWidth || width} 
-        height={windowRef.current?.offsetHeight || height} 
+        width={dimensions.width}
+        height={dimensions.height}
         isActive={isActive} 
       />
 

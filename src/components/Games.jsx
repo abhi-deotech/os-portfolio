@@ -9,7 +9,7 @@ const Games = () => {
   const { openWindow, unlockAchievement } = useOSStore();
   const [activeTab, setActiveTab] = useState('home');
   const [showSidebar, setShowSidebar] = useState(true);
-  const [hasTriggeredAchievement, setHasTriggeredAchievement] = useState(false);
+
 
   const launchGame = (gameId) => {
     if (gameId === 'retroarcade') {

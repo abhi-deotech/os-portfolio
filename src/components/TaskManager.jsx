@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, X, Shield, Cpu, Database, Zap, HardDrive } from 'lucide-react';
 import useOSStore from '../store/osStore';
