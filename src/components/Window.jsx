@@ -155,6 +155,8 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
         <div className="flex space-x-2.5 z-50 w-24 group/controls" onPointerDown={(e) => e.stopPropagation()}>
           <button 
             onClick={() => closeWindow(id)} 
+            aria-label="Close window"
+            title="Close"
             className={`${isMobile ? 'w-5 h-5' : 'w-3.5 h-3.5'} rounded-full bg-[#ff5f56] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#e0443e]`}
           >
             <CustomIcon icon={X} size={isMobile ? 12 : 10} strokeWidth={4} color="text-[#4c0000]" className={`${isMobile ? 'opacity-100' : 'opacity-0'} group-hover/controls:opacity-100 transition-opacity`} animate={false} />
@@ -163,11 +165,16 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
             <>
               <button
                onClick={() => toggleMinimizeWindow(id)}
+               aria-label="Minimize window"
+               title="Minimize"
                className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123]"
-              >                <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
+              >
+                <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
               </button>
               <button
                 onClick={() => toggleMaximizeWindow(id)}
+                aria-label={isMaximized ? "Restore window" : "Maximize window"}
+                title={isMaximized ? "Restore" : "Maximize"}
                 className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#1aab29]"
               >
                 {isMaximized ? (
