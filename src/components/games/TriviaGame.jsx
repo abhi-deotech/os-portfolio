@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Trophy, RefreshCw, ArrowLeft, Brain, CheckCircle2, XCircle, Timer, ChevronRight, Play, Zap, Cpu, Search } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 
 const TriviaGame = ({ onBack }) => {
@@ -9,7 +9,6 @@ const TriviaGame = ({ onBack }) => {
   const [score, setScore] = useState(0);
   const [status, setStatus] = useState('loading'); // loading, playing, finished, error
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [isCorrect, setIsCorrect] = useState(null);
   const [timeLeft, setLeftTime] = useState(15);
   const { unlockAchievement } = useOSStore();
 
@@ -40,7 +39,6 @@ const TriviaGame = ({ onBack }) => {
         setScore(0);
         setLeftTime(15);
         setSelectedAnswer(null);
-        setIsCorrect(null);
       } else {
         setStatus('error');
       }
@@ -51,7 +49,10 @@ const TriviaGame = ({ onBack }) => {
   }, []);
 
   useEffect(() => {
-    fetchQuestions();
+    const init = async () => {
+      await fetchQuestions();
+    };
+    init();
   }, [fetchQuestions]);
 
   const handleAnswer = useCallback((answer) => {
@@ -59,21 +60,19 @@ const TriviaGame = ({ onBack }) => {
 
     setSelectedAnswer(answer);
     const correct = answer === questions[currentIndex].correct_answer;
-    setIsCorrect(correct);
     if (correct) setScore(s => s + 1);
 
     setTimeout(() => {
       if (currentIndex < questions.length - 1) {
         setCurrentIndex(prev => prev + 1);
         setSelectedAnswer(null);
-        setIsCorrect(null);
         setLeftTime(15);
       } else {
         setStatus('finished');
         if (score + (correct ? 1 : 0) >= 8) unlockAchievement('trivia_expert');
       }
     }, 1500);
-  }, [questions, currentIndex, selectedAnswer, score, unlockAchievement]);
+  }, [questions, currentIndex, selectedAnswer, unlockAchievement]);
 
   useEffect(() => {
     if (status === 'playing' && selectedAnswer === null && timeLeft > 0) {
@@ -81,10 +80,17 @@ const TriviaGame = ({ onBack }) => {
         setLeftTime(prev => prev - 1);
       }, 1000);
       return () => clearInterval(timer);
-    } else if (timeLeft === 0 && selectedAnswer === null && status === 'playing') {
-      handleAnswer(null);
     }
-  }, [status, selectedAnswer, timeLeft, handleAnswer]);
+  }, [status, selectedAnswer, timeLeft]);
+
+  useEffect(() => {
+    if (timeLeft === 0 && selectedAnswer === null && status === 'playing') {
+      const timer = setTimeout(() => {
+        handleAnswer(null);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [timeLeft, selectedAnswer, status, handleAnswer]);
 
   if (status === 'loading') {
     return (
@@ -124,13 +130,13 @@ const TriviaGame = ({ onBack }) => {
       <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(204,151,255,0.05)_0%,transparent_70%)]" />
         
-        <motion.div 
+        <Motion.div
           initial={{ scale: 0, rotate: -20 }} 
           animate={{ scale: 1, rotate: 0 }} 
           className="w-24 h-24 bg-gradient-to-br from-os-primary to-os-secondary rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(204,151,255,0.3)] mb-8 relative z-10"
         >
           <Trophy size={48} className="text-black" />
-        </motion.div>
+        </Motion.div>
         
         <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white mb-2 relative z-10">Sync Complete</h2>
         <p className="text-os-primary font-black tracking-[0.3em] uppercase text-[10px] mb-10 relative z-10">Data Integrity verified</p>
@@ -167,14 +173,14 @@ const TriviaGame = ({ onBack }) => {
       
       {/* Header */}
       <div className="flex justify-between items-center mb-8 relative z-10">
-        <motion.button 
+        <Motion.button
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack}
           className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white"
         >
           <ArrowLeft size={20} />
-        </motion.button>
+        </Motion.button>
         
         <div className="flex items-center gap-6">
            <div className="flex flex-col items-end">
@@ -191,7 +197,7 @@ const TriviaGame = ({ onBack }) => {
 
       {/* Progress Bar */}
       <div className="w-full h-1 bg-white/5 rounded-full mb-12 relative overflow-hidden">
-        <motion.div 
+        <Motion.div
           className="absolute h-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary"
           initial={{ width: 0 }}
           animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
@@ -225,7 +231,7 @@ const TriviaGame = ({ onBack }) => {
               }
 
               return (
-                <motion.button
+                <Motion.button
                   key={`${currentIndex}-${answer}`}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -245,7 +251,7 @@ const TriviaGame = ({ onBack }) => {
                   {variant === "correct" && <CheckCircle2 size={24} className="shrink-0 animate-bounce" />}
                   {variant === "wrong" && <XCircle size={24} className="shrink-0" />}
                   {variant === "default" && <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-os-primary" />}
-                </motion.button>
+                </Motion.button>
               );
             })}
           </AnimatePresence>
