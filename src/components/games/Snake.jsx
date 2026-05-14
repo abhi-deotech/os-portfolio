@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Trophy, RefreshCw, ArrowLeft, Play, Gamepad2, Zap, Target } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion as Motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 
 const GRID_SIZE = 20;
@@ -13,7 +13,6 @@ const Snake = ({ onBack }) => {
   const isFocused = activeWindow === 'games' || activeWindow === 'snake' || activeWindow === 'retroarcade';
   
   const [snake, setSnake] = useState(INITIAL_SNAKE);
-  const [direction, setDirection] = useState(INITIAL_DIRECTION);
   const [food, setFood] = useState({ x: 5, y: 5 });
   const [gameOver, setGameOver] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -102,8 +101,6 @@ const Snake = ({ onBack }) => {
       if (key === 'ArrowDown' && current !== 'UP') directionRef.current = 'DOWN';
       if (key === 'ArrowLeft' && current !== 'RIGHT') directionRef.current = 'LEFT';
       if (key === 'ArrowRight' && current !== 'LEFT') directionRef.current = 'RIGHT';
-      
-      setDirection(directionRef.current);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
@@ -120,7 +117,6 @@ const Snake = ({ onBack }) => {
   const startGame = () => {
     setSnake(INITIAL_SNAKE);
     directionRef.current = INITIAL_DIRECTION;
-    setDirection(INITIAL_DIRECTION);
     setGameOver(false);
     setScore(0);
     setFood(generateFood(INITIAL_SNAKE));
@@ -134,14 +130,14 @@ const Snake = ({ onBack }) => {
       
       {/* Header */}
       <div className="w-full max-w-lg flex justify-between items-center mb-8 relative z-10">
-        <motion.button 
+        <Motion.button
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack}
-          className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white"
+          className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white cursor-pointer"
         >
           <ArrowLeft size={20} />
-        </motion.button>
+        </Motion.button>
         
         <div className="flex gap-8">
            <div className="text-center">
@@ -200,7 +196,7 @@ const Snake = ({ onBack }) => {
         {/* Overlay States */}
         <AnimatePresence>
           {!isPlaying && (
-            <motion.div 
+            <Motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -211,15 +207,15 @@ const Snake = ({ onBack }) => {
                   <Trophy size={64} className="text-os-secondary mb-6 drop-shadow-[0_0_20px_rgba(0,210,253,0.5)]" />
                   <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Neural Link Lost</h2>
                   <p className="text-os-secondary font-black tracking-[0.3em] uppercase text-[10px] mb-8">System Re-initialization required</p>
-                  <motion.button 
+                  <Motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={startGame}
-                    className="flex items-center gap-3 px-8 py-4 bg-os-primary text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(204,151,255,0.3)]"
+                    className="flex items-center gap-3 px-8 py-4 bg-os-primary text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(204,151,255,0.3)] cursor-pointer"
                   >
                     <RefreshCw size={20} />
                     Re-Boot Game
-                  </motion.button>
+                  </Motion.button>
                 </>
               ) : (
                 <>
@@ -228,18 +224,18 @@ const Snake = ({ onBack }) => {
                   </div>
                   <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Neon Crawler v2.0</h2>
                   <p className="text-white/30 font-black tracking-[0.3em] uppercase text-[10px] mb-12 text-center max-w-[200px]">Experimental Data Stream Interaction</p>
-                  <motion.button 
+                  <Motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={startGame}
-                    className="flex items-center gap-4 px-10 py-5 bg-os-primary text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(204,151,255,0.3)]"
+                    className="flex items-center gap-4 px-10 py-5 bg-os-primary text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(204,151,255,0.3)] cursor-pointer"
                   >
                     <Play size={24} fill="currentColor" />
                     Enter Stream
-                  </motion.button>
+                  </Motion.button>
                 </>
               )}
-            </motion.div>
+            </Motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -260,11 +256,11 @@ const Snake = ({ onBack }) => {
          {/* Mobile Controls */}
          <div className="grid grid-cols-3 gap-2 mt-2 md:hidden">
             <div />
-            <button onClick={() => directionRef.current !== 'DOWN' && setDirection('UP')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="rotate-90" /></button>
+            <button onClick={() => directionRef.current !== 'DOWN' && (directionRef.current = 'UP')} className="p-4 bg-white/10 rounded-2xl flex justify-center cursor-pointer"><ArrowLeft className="rotate-90" /></button>
             <div />
-            <button onClick={() => directionRef.current !== 'RIGHT' && setDirection('LEFT')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft /></button>
-            <button onClick={() => directionRef.current !== 'UP' && setDirection('DOWN')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="-rotate-90" /></button>
-            <button onClick={() => directionRef.current !== 'LEFT' && setDirection('RIGHT')} className="p-4 bg-white/10 rounded-2xl flex justify-center"><ArrowLeft className="rotate-180" /></button>
+            <button onClick={() => directionRef.current !== 'RIGHT' && (directionRef.current = 'LEFT')} className="p-4 bg-white/10 rounded-2xl flex justify-center cursor-pointer"><ArrowLeft /></button>
+            <button onClick={() => directionRef.current !== 'UP' && (directionRef.current = 'DOWN')} className="p-4 bg-white/10 rounded-2xl flex justify-center cursor-pointer"><ArrowLeft className="-rotate-90" /></button>
+            <button onClick={() => directionRef.current !== 'LEFT' && (directionRef.current = 'RIGHT')} className="p-4 bg-white/10 rounded-2xl flex justify-center cursor-pointer"><ArrowLeft className="rotate-180" /></button>
          </div>
 
          <p className="text-[9px] font-black text-white/10 uppercase tracking-[0.4em] mt-4">Node Authority: Vibe-OS Gaming Kernel</p>
