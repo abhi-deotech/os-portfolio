@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Globe, ArrowLeft, ArrowRight, RotateCw, ExternalLink, Bookmark, ShieldAlert, Lock, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const BLOCKED_DOMAINS = [
+  'github.com', 
+  'linkedin.com', 
+  'twitter.com', 
+  'x.com', 
+  'facebook.com', 
+  'instagram.com', 
+  'netflix.com', 
+  'google.com/search'
+];
 
 const Browser = () => {
   const [url, setUrl] = useState('https://en.m.wikipedia.org/wiki/Main_Page');
   const [iframeUrl, setIframeUrl] = useState('https://en.m.wikipedia.org/wiki/Main_Page');
-  const [isBlocked, setIsBlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const blockedDomains = [
-    'github.com', 
-    'linkedin.com', 
-    'twitter.com', 
-    'x.com', 
-    'facebook.com', 
-    'instagram.com', 
-    'netflix.com', 
-    'google.com/search'
-  ];
 
   const bookmarks = [
     // { title: 'Google', url: 'https://www.google.com/search?q=Search&igu=1' },
@@ -30,13 +29,11 @@ const Browser = () => {
     // { title: 'DuckDuckGo', url: 'https://duckduckgo.com/lite' },
   ];
 
-  const checkBlocked = (targetUrl) => {
-    return blockedDomains.some(domain => targetUrl.toLowerCase().includes(domain.toLowerCase()));
-  };
+  const checkBlocked = useCallback((targetUrl) => {
+    return BLOCKED_DOMAINS.some(domain => targetUrl.toLowerCase().includes(domain.toLowerCase()));
+  }, []);
 
-  useEffect(() => {
-    setIsBlocked(checkBlocked(iframeUrl));
-  }, [iframeUrl]);
+  const isBlocked = useMemo(() => checkBlocked(iframeUrl), [iframeUrl, checkBlocked]);
 
   const handleGo = (e) => {
     if (e) e.preventDefault();

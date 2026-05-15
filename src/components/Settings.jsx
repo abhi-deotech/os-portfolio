@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Settings as SettingsIcon, 
   ImageIcon, 
@@ -97,7 +97,8 @@ const Settings = () => {
     { id: 'cyber-vibes', name: 'Cyber Vibes', type: 'image', url: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=40&w=400&auto=format&fit=crop' },
     { id: 'tech-minimal', name: 'Minimal Tech', type: 'image', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=40&w=400&auto=format&fit=crop' },
     { id: 'sunset-glow', name: 'Sunset Glow', type: 'live', color: 'from-[#ff4d4d] to-[#ffaf40]' },
-    { id: 'quantum-flow', name: 'Quantum Flow', type: 'live', color: 'from-[#cc97ff] to-[#60a5fa]' }
+    { id: 'quantum-flow', name: 'Quantum Flow', type: 'live', color: 'from-[#cc97ff] to-[#60a5fa]' },
+    { id: 'linux-default', name: 'Linux Default', type: 'live', color: 'from-[#4e1a3d] via-[#772953] to-[#e95420]' }
   ];
 
   const accentColors = [
@@ -544,18 +545,6 @@ const Settings = () => {
     );
   };
 
-  const renderPlaceholder = (title, desc) => (
-    <div className="flex flex-col items-center justify-center h-full text-center space-y-4 animate-in fade-in duration-500 py-10 px-4">
-        <div className="w-16 h-16 md:w-20 md:h-20 bg-os-surfaceContainerHigh/30 rounded-3xl flex items-center justify-center mb-4">
-            <CustomIcon icon={SlidersHorizontal} size={isMobile ? 24 : 32} color="text-os-outline" />
-        </div>
-        <h2 className="text-xl md:text-2xl font-display font-bold leading-tight">{title}</h2>
-        <p className="text-os-onSurfaceVariant max-w-sm text-sm">{desc}</p>
-        <button className="px-6 py-2 mt-4 rounded-xl bg-os-surfaceContainerHigh text-sm font-semibold hover:bg-os-surfaceContainerHighest transition-colors">
-            Configure Later
-        </button>
-    </div>
-  );
 
   return (
     <div className="flex h-full w-full bg-os-surface/80 text-os-onSurface rounded-2xl overflow-hidden font-sans backdrop-blur-2xl relative">
@@ -661,7 +650,7 @@ const Settings = () => {
                     </div>
                     <p className="text-xs text-white/40 leading-relaxed">
                       Lumina OS uses edge persistence to save your wallpaper, terminal history, and window states. 
-                      Your settings are currently backed up to the browser's local node.
+                      Your settings are currently backed up to the browser&apos;s local node.
                     </p>
                   </div>
                 </section>

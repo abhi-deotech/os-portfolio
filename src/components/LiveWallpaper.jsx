@@ -19,7 +19,8 @@ const Wallpaper = () => {
       'abstract-blue': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=70&w=1200&auto=format&fit=crop',
       'dark-mountain': 'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=70&w=1200&auto=format&fit=crop',
       'cyber-vibes': 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=70&w=1200&auto=format&fit=crop',
-      'tech-minimal': 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=70&w=1200&auto=format&fit=crop'
+      'tech-minimal': 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=70&w=1200&auto=format&fit=crop',
+      'linux-default': 'bg-gradient-to-br from-[#4e1a3d] via-[#772953] to-[#e95420]'
     };
 
     const value = library[wallpaper] || library['sunset-glow'];
@@ -37,7 +38,8 @@ const Wallpaper = () => {
     'neon-nebula': 'bg-gradient-to-br from-[#cc97ff] to-[#00d2fd]',
     'cyber-grid': 'bg-gradient-to-br from-[#00f5a0] to-[#00d2fd]',
     'sunset-glow': 'bg-gradient-to-br from-[#ff4d4d] to-[#ffaf40]',
-    'quantum-flow': 'bg-gradient-to-br from-[#cc97ff] to-[#60a5fa]'
+    'quantum-flow': 'bg-gradient-to-br from-[#cc97ff] to-[#60a5fa]',
+    'linux-default': 'bg-gradient-to-br from-[#4e1a3d] via-[#772953] to-[#e95420]'
   };
 
   return (

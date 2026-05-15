@@ -20,7 +20,6 @@ const TriviaGame = ({ onBack }) => {
   };
 
   const fetchQuestions = useCallback(async () => {
-    setStatus('loading');
     try {
       const response = await fetch('https://opentdb.com/api.php?amount=10&type=multiple');
       const data = await response.json();
@@ -70,7 +69,10 @@ const TriviaGame = ({ onBack }) => {
         setLeftTime(15);
       } else {
         setStatus('finished');
-        if (score + (correct ? 1 : 0) >= 8) unlockAchievement('trivia_expert');
+        setScore(currentScore => {
+          if (currentScore >= 8) unlockAchievement('trivia_expert');
+          return currentScore;
+        });
       }
     }, 1500);
   }, [questions, currentIndex, selectedAnswer, unlockAchievement]);

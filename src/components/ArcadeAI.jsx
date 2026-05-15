@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Brain, X, MessageSquare, Sparkles, Terminal, Gamepad2, MousePointer2 } from 'lucide-react';
-import useOSStore from '../store/osStore';
 import { sendMessageWithFallback } from '../utils/aiHandler';
 
 const GAME_HELP_PROMPT = `
