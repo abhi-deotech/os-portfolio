@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Trophy, RefreshCw, ArrowLeft, XCircle, Zap, ShieldCheck, Cpu } from 'lucide-react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
+import CustomIcon from '../common/CustomIcon';
 
 const Sudoku = ({ onBack }) => {
   const [grid, setGrid] = useState(Array(9).fill().map(() => Array(9).fill(0)));
@@ -104,7 +105,7 @@ const Sudoku = ({ onBack }) => {
           onClick={onBack}
           className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white"
         >
-          <ArrowLeft size={20} />
+          <CustomIcon icon={ArrowLeft} size={20} />
         </Motion.button>
         
         <div className="text-center">
@@ -117,7 +118,7 @@ const Sudoku = ({ onBack }) => {
           onClick={generateSudoku}
           className="p-3 rounded-2xl bg-os-tertiary/10 border border-os-tertiary/20 text-os-tertiary hover:bg-os-tertiary/20 transition-all"
         >
-          <RefreshCw size={20} />
+          <CustomIcon icon={RefreshCw} size={20} color="text-os-tertiary" glow />
         </Motion.button>
       </div>
 
@@ -164,7 +165,7 @@ const Sudoku = ({ onBack }) => {
               animate={{ opacity: 1 }}
               className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xl"
             >
-               <ShieldCheck size={64} className="text-os-tertiary mb-4 animate-bounce" />
+               <CustomIcon icon={ShieldCheck} size={64} className="mb-4 animate-bounce" color="text-os-tertiary" glow />
                <h2 className="text-3xl font-black italic uppercase tracking-tighter">Integrity Verified</h2>
                <p className="text-os-tertiary font-black tracking-[0.3em] uppercase text-[10px] mb-8">Node Sector Secure</p>
                <button onClick={generateSudoku} className="px-10 py-4 bg-os-tertiary text-black font-black uppercase tracking-widest rounded-2xl">
@@ -186,19 +187,19 @@ const Sudoku = ({ onBack }) => {
                 onClick={() => handleNumberInput(num)}
                 className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/5 border border-white/10 font-black text-sm hover:border-os-tertiary/50 hover:text-os-tertiary transition-all flex items-center justify-center"
               >
-                {num === 0 ? <XCircle size={18} /> : num}
+                {num === 0 ? <CustomIcon icon={XCircle} size={18} /> : num}
               </Motion.button>
             ))}
          </div>
 
          <div className="flex gap-6 opacity-30">
             <div className="flex items-center gap-2">
-               <Cpu size={12} />
+               <CustomIcon icon={Cpu} size={12} animate={false} />
                <span className="text-[8px] font-black uppercase tracking-widest">Logic Flow: Stable</span>
             </div>
             <div className="w-px h-3 bg-white/20" />
             <div className="flex items-center gap-2">
-               <Zap size={12} />
+               <CustomIcon icon={Zap} size={12} animate={false} />
                <span className="text-[8px] font-black uppercase tracking-widest">Latency: 2ms</span>
             </div>
          </div>

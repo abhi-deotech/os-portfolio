@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Trophy, RefreshCw, ArrowLeft, Brain, CheckCircle2, XCircle, Timer, ChevronRight, Play, Zap, Cpu, Search } from 'lucide-react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
+import CustomIcon from '../common/CustomIcon';
 
 const TriviaGame = ({ onBack }) => {
   const [questions, setQuestions] = useState([]);
@@ -98,7 +99,7 @@ const TriviaGame = ({ onBack }) => {
         <div className="relative">
            <div className="w-24 h-24 border-2 border-os-primary/20 border-t-os-primary rounded-full animate-spin" />
            <div className="absolute inset-0 flex items-center justify-center">
-              <Search size={32} className="text-os-primary animate-pulse" />
+              <CustomIcon icon={Search} size={32} color="text-os-primary" className="animate-pulse" glow />
            </div>
         </div>
         <div className="mt-8 text-center">
@@ -113,12 +114,12 @@ const TriviaGame = ({ onBack }) => {
     return (
       <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center p-8 text-center">
         <div className="w-20 h-20 rounded-[2rem] bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-6">
-           <XCircle size={40} className="text-red-500" />
+           <CustomIcon icon={XCircle} size={40} color="text-red-500" glow="#ef4444" />
         </div>
         <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Connection Breach</h2>
         <p className="text-white/40 font-black tracking-[0.2em] uppercase text-[10px] mt-2 mb-8">Trivia repository inaccessible</p>
         <button onClick={fetchQuestions} className="px-10 py-4 bg-white text-black font-black uppercase tracking-widest rounded-2xl flex items-center gap-3">
-          <RefreshCw size={18} /> Re-Attempt Link
+          <CustomIcon icon={RefreshCw} size={18} animate={true} /> Re-Attempt Link
         </button>
       </div>
     );
@@ -135,7 +136,7 @@ const TriviaGame = ({ onBack }) => {
           animate={{ scale: 1, rotate: 0 }} 
           className="w-24 h-24 bg-gradient-to-br from-os-primary to-os-secondary rounded-[2.5rem] flex items-center justify-center shadow-[0_0_50px_rgba(204,151,255,0.3)] mb-8 relative z-10"
         >
-          <Trophy size={48} className="text-black" />
+          <CustomIcon icon={Trophy} size={48} color="text-black" animate={false} />
         </Motion.div>
         
         <h2 className="text-4xl font-black italic uppercase tracking-tighter text-white mb-2 relative z-10">Sync Complete</h2>
@@ -157,7 +158,7 @@ const TriviaGame = ({ onBack }) => {
             Exit Node
           </button>
           <button onClick={fetchQuestions} className="px-8 py-4 rounded-2xl bg-white text-black font-black uppercase text-[10px] tracking-widest shadow-xl flex items-center gap-3 hover:scale-105 active:scale-95 transition-all">
-            <RefreshCw size={16} /> New Session
+            <CustomIcon icon={RefreshCw} size={16} /> New Session
           </button>
         </div>
       </div>
@@ -179,7 +180,7 @@ const TriviaGame = ({ onBack }) => {
           onClick={onBack}
           className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white"
         >
-          <ArrowLeft size={20} />
+          <CustomIcon icon={ArrowLeft} size={20} />
         </Motion.button>
         
         <div className="flex items-center gap-6">
@@ -189,7 +190,13 @@ const TriviaGame = ({ onBack }) => {
            </div>
            <div className="w-px h-8 bg-white/10" />
            <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-2xl border border-white/5 min-w-[80px] justify-center">
-              <Timer size={18} className={timeLeft < 5 ? 'text-red-500 animate-pulse' : 'text-os-secondary'} />
+              <CustomIcon 
+                icon={Timer} 
+                size={18} 
+                color={timeLeft < 5 ? 'text-red-500' : 'text-os-secondary'} 
+                className={timeLeft < 5 ? 'animate-pulse' : ''} 
+                glow={timeLeft < 5 ? '#ef4444' : true}
+              />
               <span className={`text-xl font-black italic tracking-tighter tabular-nums ${timeLeft < 5 ? 'text-red-500' : 'text-white'}`}>{timeLeft}s</span>
            </div>
         </div>
@@ -248,9 +255,9 @@ const TriviaGame = ({ onBack }) => {
                 >
                   <span className="font-black italic text-sm md:text-base tracking-tight uppercase pr-4">{answer}</span>
                   
-                  {variant === "correct" && <CheckCircle2 size={24} className="shrink-0 animate-bounce" />}
-                  {variant === "wrong" && <XCircle size={24} className="shrink-0" />}
-                  {variant === "default" && <ChevronRight size={18} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-os-primary" />}
+                  {variant === "correct" && <CustomIcon icon={CheckCircle2} size={24} className="shrink-0 animate-bounce" color="text-os-primary" glow />}
+                  {variant === "wrong" && <CustomIcon icon={XCircle} size={24} className="shrink-0" color="text-red-500" glow="#ef4444" />}
+                  {variant === "default" && <CustomIcon icon={ChevronRight} size={18} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all text-os-primary" color="text-os-primary" animate={false} />}
                 </Motion.button>
               );
             })}
@@ -261,7 +268,7 @@ const TriviaGame = ({ onBack }) => {
       {/* Footer Details */}
       <div className="mt-auto flex justify-between items-center opacity-20">
          <div className="flex items-center gap-2">
-            <Cpu size={12} />
+            <CustomIcon icon={Cpu} size={12} animate={false} />
             <span className="text-[8px] font-black uppercase tracking-widest">Logic Processor: Ready</span>
          </div>
          <span className="text-[8px] font-black uppercase tracking-widest">Powered by Open Trivia Vault</span>
