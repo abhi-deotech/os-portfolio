@@ -6,7 +6,7 @@ env.allowLocalModels = false;
 let extractor = null;
 
 self.onmessage = async (e) => {
-  const { type, text, data } = e.data;
+  const { type, text } = e.data;
 
   if (type === 'init') {
     try {
