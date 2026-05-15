@@ -4,17 +4,7 @@ import { motion as Motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../../store/osStore';
 import CustomIcon from '../common/CustomIcon';
 
-const Sudoku = ({ onBack }) => {
-  const [grid, setGrid] = useState(Array(9).fill().map(() => Array(9).fill(0)));
-  const [initialGrid, setInitialGrid] = useState(Array(9).fill().map(() => Array(9).fill(0)));
-  const [selected, setSelected] = useState(null);
-  const [solved, setSolved] = useState(false);
-  const [errors, setErrors] = useState([]);
-  const { unlockAchievement } = useOSStore();
-
-  const generateSudoku = useCallback(() => {
-    // A more complex puzzle
-    const puzzle = [
+    const PUZZLE = [
       [0, 0, 0, 2, 6, 0, 7, 0, 1],
       [6, 8, 0, 0, 7, 0, 0, 9, 0],
       [1, 9, 0, 0, 0, 4, 5, 0, 0],
@@ -25,8 +15,18 @@ const Sudoku = ({ onBack }) => {
       [0, 4, 0, 0, 5, 0, 0, 3, 6],
       [7, 0, 3, 0, 1, 8, 0, 0, 0]
     ];
-    setGrid(puzzle.map(row => [...row]));
-    setInitialGrid(puzzle.map(row => [...row]));
+
+const Sudoku = ({ onBack }) => {
+  const [grid, setGrid] = useState(PUZZLE.map(row => [...row]));
+  const [initialGrid, setInitialGrid] = useState(PUZZLE.map(row => [...row]));
+  const [selected, setSelected] = useState(null);
+  const [solved, setSolved] = useState(false);
+  const [errors, setErrors] = useState([]);
+  const { unlockAchievement } = useOSStore();
+
+  const generateSudoku = useCallback(() => {
+    setGrid(PUZZLE.map(row => [...row]));
+    setInitialGrid(PUZZLE.map(row => [...row]));
     setSolved(false);
     setErrors([]);
   }, []);

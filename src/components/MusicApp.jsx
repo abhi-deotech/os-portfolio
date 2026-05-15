@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, List, Heart, Repeat, Shuffle, Music, ChevronLeft, Search, TrendingUp, Radio, Library, Home, Maximize2, Minimize2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../store/osStore';
@@ -42,9 +42,50 @@ const MusicApp = () => {
     );
   }, [music.activeView, music.likedSongs, searchQuery]);
 
-  useEffect(() => {
+  // Sync sidebar with mobile state during render
+  const [prevIsMobile, setPrevIsMobile] = useState(isMobile);
+  if (isMobile !== prevIsMobile) {
+    setPrevIsMobile(isMobile);
     setShowSidebar(!isMobile);
-  }, [isMobile]);
+  }
+
+  const handleNext = useCallback(() => {
+    if (music.repeatMode === 'one') {
+      playerRef.current?.seekTo(0);
+      playerRef.current?.playVideo();
+      return;
+    }
+
+    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
+    let nextTrack;
+
+    if (music.shuffle) {
+      const otherTracks = list.filter(t => t.id !== music.currentTrack.id);
+      nextTrack = otherTracks[Math.floor(Math.random() * otherTracks.length)];
+    } else {
+      const idx = list.findIndex(t => t.id === music.currentTrack.id);
+      if (idx === list.length - 1) {
+        if (music.repeatMode === 'all') nextTrack = list[0];
+        else return; // End of playlist
+      } else {
+        nextTrack = list[idx + 1];
+      }
+    }
+
+    if (nextTrack) setMusicTrack(nextTrack);
+  }, [displayPlaylist, music.currentTrack.id, music.repeatMode, music.shuffle, setMusicTrack]);
+
+  const handlePrev = useCallback(() => {
+    if (music.currentTime > 5) {
+      playerRef.current?.seekTo(0);
+      return;
+    }
+
+    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
+    const idx = list.findIndex(t => t.id === music.currentTrack.id);
+    const prevTrack = idx > 0 ? list[idx - 1] : list[list.length - 1];
+    setMusicTrack(prevTrack);
+  }, [displayPlaylist, music.currentTrack.id, music.currentTime, setMusicTrack]);
 
   useEffect(() => {
     // Load YouTube IFrame API
@@ -106,6 +147,10 @@ const MusicApp = () => {
       }
     };
 
+    // Move handleNext into a ref-like variable if we need it in the initial effect
+    // OR just use a stable handleNext (which it is now with useCallback)
+    // But we need to handle the circular dependency or just use the stable callback.
+    
     if (window.YT && window.YT.Player) {
       createPlayer();
     } else {
@@ -115,7 +160,7 @@ const MusicApp = () => {
         createPlayer();
       };
     }
-  }, []);
+  }, [handleNext, music.currentTrack.youtubeId, music.isPlaying, setMusicIsPlaying, unlockAchievement, volume]);
 
   useEffect(() => {
     if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
@@ -135,10 +180,8 @@ const MusicApp = () => {
   useEffect(() => {
     if (playerRef.current && playerRef.current.loadVideoById) {
       playerRef.current.loadVideoById(music.currentTrack.youtubeId);
-      // Removed redundant playVideo call here as loadVideoById starts playing by default,
-      // and we handle play/pause synchronization in the other useEffect.
     }
-  }, [music.currentTrack.id]);
+  }, [music.currentTrack.id, music.currentTrack.youtubeId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -147,45 +190,8 @@ const MusicApp = () => {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [setMusicCurrentTime]);
 
-  const handleNext = () => {
-    if (music.repeatMode === 'one') {
-      playerRef.current?.seekTo(0);
-      playerRef.current?.playVideo();
-      return;
-    }
-
-    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
-    let nextTrack;
-
-    if (music.shuffle) {
-      const otherTracks = list.filter(t => t.id !== music.currentTrack.id);
-      nextTrack = otherTracks[Math.floor(Math.random() * otherTracks.length)];
-    } else {
-      const idx = list.findIndex(t => t.id === music.currentTrack.id);
-      if (idx === list.length - 1) {
-        if (music.repeatMode === 'all') nextTrack = list[0];
-        else return; // End of playlist
-      } else {
-        nextTrack = list[idx + 1];
-      }
-    }
-
-    if (nextTrack) setMusicTrack(nextTrack);
-  };
-
-  const handlePrev = () => {
-    if (music.currentTime > 5) {
-      playerRef.current?.seekTo(0);
-      return;
-    }
-
-    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
-    const idx = list.findIndex(t => t.id === music.currentTrack.id);
-    const prevTrack = idx > 0 ? list[idx - 1] : list[list.length - 1];
-    setMusicTrack(prevTrack);
-  };
 
   const handleVolumeChange = (e) => {
     const newVol = parseInt(e.target.value);
@@ -419,7 +425,7 @@ const MusicApp = () => {
                 {searchQuery && (
                   <div>
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
-                      <Search className="text-os-primary" /> Search results for "{searchQuery}"
+                      <Search className="text-os-primary" /> Search results for &quot;{searchQuery}&quot;
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                       {displayPlaylist.map(track => (
@@ -672,7 +678,7 @@ const MusicApp = () => {
                   {/* Lyrics Placeholder */}
                   <div className="h-48 md:h-64 overflow-hidden mask-fade relative">
                      <div className="space-y-4 py-8">
-                        <p className="text-lg md:text-2xl font-bold opacity-30">Yeah, we're living in the moment</p>
+                        <p className="text-lg md:text-2xl font-bold opacity-30">Yeah, we&apos;re living in the moment</p>
                         <p className="text-xl md:text-3xl font-black text-white">Every heartbeat is a new song</p>
                         <p className="text-lg md:text-2xl font-bold opacity-30">Lumina OS rhythm keeping us strong</p>
                         <p className="text-lg md:text-2xl font-bold opacity-30">Vibing with the particles, all night long</p>

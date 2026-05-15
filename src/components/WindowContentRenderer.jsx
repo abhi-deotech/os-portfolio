@@ -25,6 +25,8 @@ const Notepad = React.lazy(() => import('./Notepad'));
 const TaskManager = React.lazy(() => import('./TaskManager'));
 const Achievements = React.lazy(() => import('./Achievements'));
 const Browser = React.lazy(() => import('./Browser'));
+const AboutMe = React.lazy(() => import('./AboutMe'));
+const Projects = React.lazy(() => import('./Projects'));
 
 const WindowContentRenderer = ({ id }) => {
   const findNodeById = useOSStore(state => state.findNodeById);
@@ -34,6 +36,10 @@ const WindowContentRenderer = ({ id }) => {
 
   const content = useMemo(() => {
     switch (id) {
+      case 'about':
+        return <AboutMe />;
+      case 'projects':
+        return <Projects />;
       case 'terminal':
         return <Terminal />;
       case 'settings':

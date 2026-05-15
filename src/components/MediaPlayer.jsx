@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Minimize2, List, Grid, Search, ChevronLeft, Film, Music, Info, Download, Share2, MoreVertical, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MEDIA_DATA, MEDIA_CATEGORIES } from '../data/mediaData';
-import useOSStore from '../store/osStore';
 
 const MediaPlayer = ({ file: initialFile }) => {
   const [currentMedia, setCurrentMedia] = useState(initialFile || null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
   const [volume, setVolume] = useState(0.7);
   const [showControls, setShowControls] = useState(true);
   const [view, setView] = useState(initialFile ? 'player' : 'library');
@@ -18,14 +18,14 @@ const MediaPlayer = ({ file: initialFile }) => {
   const videoRef = useRef(null);
   const controlsTimeout = useRef(null);
 
-  const { activeAccent } = useOSStore();
 
-  useEffect(() => {
-    if (initialFile) {
-      setCurrentMedia(initialFile);
-      setView('player');
-    }
-  }, [initialFile]);
+  // Handle external file changes via state sync
+  const [prevInitialFile, setPrevInitialFile] = useState(initialFile);
+  if (initialFile !== prevInitialFile) {
+    setPrevInitialFile(initialFile);
+    setCurrentMedia(initialFile);
+    setView('player');
+  }
 
   const togglePlay = () => {
     if (!videoRef.current) return;
@@ -49,6 +49,7 @@ const MediaPlayer = ({ file: initialFile }) => {
     if (!videoRef.current) return;
     const current = videoRef.current.currentTime;
     const total = videoRef.current.duration;
+    setCurrentTime(current);
     setProgress((current / total) * 100);
   };
 
@@ -263,7 +264,7 @@ const MediaPlayer = ({ file: initialFile }) => {
                   {/* Progress Bar */}
                   <div className="flex flex-col gap-2 mb-6 group/progress">
                     <div className="flex justify-between text-[11px] font-mono text-white/60 px-1">
-                       <span>{formatTime(videoRef.current?.currentTime || 0)}</span>
+                       <span>{formatTime(currentTime)}</span>
                        <span>{formatTime(duration)}</span>
                     </div>
                     <div className="relative h-1.5 w-full bg-white/10 rounded-full overflow-hidden">

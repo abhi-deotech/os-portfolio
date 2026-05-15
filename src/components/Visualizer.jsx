@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 
 const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
   const canvasRef = useRef(null);
-  const requestRef = useRef();
 
   useEffect(() => {
     const canvas = canvasRef.current;

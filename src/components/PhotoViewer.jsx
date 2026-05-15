@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, RotateCw, Download, Expand, ChevronLeft, Search, Image as ImageIcon, Heart, Share2, Info, Maximize2, Minimize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PHOTO_DATA, PHOTO_CATEGORIES } from '../data/photoData';
-import useOSStore from '../store/osStore';
 
 const PhotoViewer = ({ file: initialFile }) => {
   const [currentPhoto, setCurrentPhoto] = useState(initialFile || null);
@@ -13,14 +12,15 @@ const PhotoViewer = ({ file: initialFile }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showUI, setShowUI] = useState(true);
 
-  const { activeAccent } = useOSStore();
 
-  useEffect(() => {
+  const [prevInitialFile, setPrevInitialFile] = useState(initialFile);
+  if (initialFile !== prevInitialFile) {
+    setPrevInitialFile(initialFile);
     if (initialFile) {
       setCurrentPhoto(initialFile);
       setView('viewer');
     }
-  }, [initialFile]);
+  }
 
   const handleZoomIn = () => setScale(prev => Math.min(prev + 0.2, 3));
   const handleZoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));

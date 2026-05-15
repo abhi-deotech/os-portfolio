@@ -1,7 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, File, AppWindow, Command, X, ArrowRight } from 'lucide-react';
 import useOSStore from '../store/osStore';
+
+const SPOTLIGHT_APPS = [
+  { id: 'terminal', name: 'Terminal', type: 'app', icon: Command },
+  { id: 'settings', name: 'Settings', type: 'app', icon: AppWindow },
+  { id: 'music', name: 'Music', type: 'app', icon: AppWindow },
+  { id: 'benchmark', name: 'Benchmark', type: 'app', icon: AppWindow },
+  { id: 'mail', name: 'Mail', type: 'app', icon: AppWindow },
+  { id: 'chat', name: 'Guestbook', type: 'app', icon: AppWindow },
+  { id: 'files', name: 'File Explorer', type: 'app', icon: AppWindow },
+  { id: 'notepad', name: 'Notepad', type: 'app', icon: AppWindow },
+];
 
 const Spotlight = () => {
   const { isSpotlightOpen, toggleSpotlight, fileSystem, openWindow, openNotepad, unlockAchievement, transparencyEffects } = useOSStore();
@@ -10,34 +21,24 @@ const Spotlight = () => {
   useEffect(() => {
     if (query.length > 0) unlockAchievement('search_pro');
   }, [query, unlockAchievement]);
-  const [results, setResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
 
-  // Define "Apps" available via Spotlight
-  const apps = [
-    { id: 'terminal', name: 'Terminal', type: 'app', icon: Command },
-    { id: 'settings', name: 'Settings', type: 'app', icon: AppWindow },
-    { id: 'music', name: 'Music', type: 'app', icon: AppWindow },
-    { id: 'benchmark', name: 'Benchmark', type: 'app', icon: AppWindow },
-    { id: 'mail', name: 'Mail', type: 'app', icon: AppWindow },
-    { id: 'chat', name: 'Guestbook', type: 'app', icon: AppWindow },
-    { id: 'files', name: 'File Explorer', type: 'app', icon: AppWindow },
-    { id: 'notepad', name: 'Notepad', type: 'app', icon: AppWindow },
-  ];
 
   useEffect(() => {
     if (isSpotlightOpen) {
       inputRef.current?.focus();
-      setQuery('');
     }
   }, [isSpotlightOpen]);
 
-  useEffect(() => {
-    if (!query) {
-      setResults([]);
-      return;
-    }
+  const [prevIsSpotlightOpen, setPrevIsSpotlightOpen] = useState(isSpotlightOpen);
+  if (isSpotlightOpen && !prevIsSpotlightOpen) {
+    setPrevIsSpotlightOpen(isSpotlightOpen);
+    setQuery('');
+  }
+
+  const results = useMemo(() => {
+    if (!query) return [];
 
     const searchFileSystem = (nodes, path = '') => {
       let found = [];
@@ -58,13 +59,18 @@ const Spotlight = () => {
       icon: File
     }));
 
-    const appResults = apps.filter(a => 
+    const appResults = SPOTLIGHT_APPS.filter(a => 
       a.name.toLowerCase().includes(query.toLowerCase())
     );
 
-    setResults([...appResults, ...fileResults].slice(0, 8));
-    setSelectedIndex(0);
+    return [...appResults, ...fileResults].slice(0, 8);
   }, [query, fileSystem]);
+
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
+    setSelectedIndex(0);
+  }
 
   const handleKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
@@ -169,13 +175,13 @@ const Spotlight = () => {
               ) : query ? (
                 <div className="flex flex-col items-center justify-center py-12 text-white/20">
                    <X size={48} strokeWidth={1} className="mb-4" />
-                   <p className="text-sm font-bold uppercase tracking-widest">No results for "{query}"</p>
+                   <p className="text-sm font-bold uppercase tracking-widest">No results for &quot;{query}&quot;</p>
                 </div>
               ) : (
                 <div className="px-8 py-6">
                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 mb-4">Quick Shortcuts</p>
                    <div className="grid grid-cols-2 gap-3">
-                      {apps.map(app => (
+                      {SPOTLIGHT_APPS.map(app => (
                         <button 
                           key={app.id}
                           onClick={() => handleSelect(app)}

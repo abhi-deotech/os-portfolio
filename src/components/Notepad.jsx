@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Save, FileText, ChevronRight, Eye, Edit3 } from 'lucide-react';
 import useOSStore from '../store/osStore';
 
@@ -11,7 +11,9 @@ const Notepad = () => {
   const [isPreview, setIsPreview] = useState(false);
   const [isSaved, setIsSaved] = useState(true);
 
-  useEffect(() => {
+  const [prevFileId, setPrevFileId] = useState(activeNotepadFile);
+  if (activeNotepadFile !== prevFileId) {
+    setPrevFileId(activeNotepadFile);
     if (activeNotepadFile) {
       const findFile = (nodes) => {
         for (const node of nodes) {
@@ -31,7 +33,7 @@ const Notepad = () => {
         setIsSaved(true);
       }
     }
-  }, [activeNotepadFile, fileSystem]);
+  }
 
   const handleSave = () => {
     if (activeNotepadFile) {

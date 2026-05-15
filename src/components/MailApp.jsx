@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Send, Trash2, Archive, Star, PenSquare, ChevronLeft, Search, User, Clock, CheckCircle } from 'lucide-react';
-import useOSStore from '../store/osStore';
 
 const MOCK_EMAILS = [
   {

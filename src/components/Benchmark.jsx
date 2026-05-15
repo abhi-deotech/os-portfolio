@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Play, Square, Activity, Cpu, AlertTriangle, Zap, CheckCircle2, 
   ShieldAlert, BarChart3, Database, HardDrive, Timer, Gauge
@@ -24,7 +24,7 @@ const Benchmark = () => {
   const [ips, setIps] = useState(0); // Iterations Per Second
 
   const workerRef = useRef(null);
-  const lastUpdateRef = useRef(performance.now());
+  const lastUpdateRef = useRef(0);
   const iterationsSinceLastUpdate = useRef(0);
 
   useEffect(() => {
@@ -82,7 +82,6 @@ const Benchmark = () => {
   // IPS Calculation logic
   useEffect(() => {
     if (status !== 'running') {
-      setIps(0);
       return;
     }
 
@@ -129,6 +128,7 @@ const Benchmark = () => {
 
   const stopBenchmark = () => {
     setStatus('idle');
+    setIps(0);
     updateMetrics({ isOverridden: false });
   };
 

@@ -25,9 +25,11 @@ const FileTreeNode = ({ node, level = 0, selectedFile, setSelectedFile }) => {
   const [isOpen, setIsOpen] = useState(level === 0 || isSelected);
 
   // Auto-open if a child is selected
-  useEffect(() => {
-    if (isSelected) setIsOpen(true);
-  }, [isSelected]);
+  const [prevIsSelected, setPrevIsSelected] = useState(isSelected);
+  if (isSelected && isSelected !== prevIsSelected) {
+    setPrevIsSelected(isSelected);
+    setIsOpen(true);
+  }
 
   return (
     <div className="select-none">
@@ -82,7 +84,6 @@ const DocumentationApp = () => {
     setSyncError, 
     isSyncing, 
     lastSyncTime, 
-    syncError,
     activeDocFile,
     openWindow,
     findNodeById,
@@ -99,12 +100,13 @@ const DocumentationApp = () => {
   const [syncStatus, setSyncStatus] = useState(null);
   const [showToC, setShowToC] = useState(false);
 
-  // Sync with store's active file
-  useEffect(() => {
+  // Sync with store's active file during render
+  const [prevActiveDocFile, setPrevActiveDocFile] = useState(activeDocFile);
+  if (activeDocFile !== prevActiveDocFile) {
+    setPrevActiveDocFile(activeDocFile);
     if (activeDocFile) {
       const node = findNodeById(activeDocFile);
       if (node) {
-        // Calculate path for breadcrumbs
         const findPath = (targetId, nodes, path = []) => {
           for (const n of nodes) {
             const currentPath = [...path, n.name];
@@ -120,7 +122,7 @@ const DocumentationApp = () => {
         setSelectedFile({ ...node, path: path || [node.name] });
       }
     }
-  }, [activeDocFile, fileSystem, findNodeById]);
+  }
 
   // GitHub Sync Logic
   const fetchDocumentationFromGitHub = async () => {
