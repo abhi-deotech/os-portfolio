@@ -1,0 +1,3 @@
+## 2026-05-15 - Semantic Buttons & Custom Sound Effects
+**Learning:** In Lumina OS, many interactive elements were originally implemented as `div` or `span` elements, hindering keyboard navigation and screen reader support. Converting these to `<button type="button">` with explicit `aria-label` and `focus-visible` rings significantly improves accessibility. Additionally, synthesized sound effects using the Web Audio API provide a low-overhead way to add delightful feedback without external assets.
+**Action:** Always prefer semantic `<button>` for interactive elements and include `cursor-pointer` explicitly, as the project's button reset may remove it. Use the `useSoundEffects` hook to provide auditory feedback for primary UI actions.
