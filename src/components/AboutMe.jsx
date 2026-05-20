@@ -22,8 +22,6 @@ const TwitterIcon = ({ size = 20, className = "" }) => (
 );
 
 const AboutMe = () => {
-  const { transparencyEffects } = useOSStore();
-
   const socialLinks = [
     { icon: GithubIcon, label: 'GitHub', href: 'https://github.com/abhi-deotech', color: '#ffffff' },
     { icon: LinkedinIcon, label: 'LinkedIn', href: 'https://linkedin.com/in/abhimanyu-saxena-b656a4183', color: '#0077b5' },
