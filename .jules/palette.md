@@ -1,0 +1,4 @@
+## 2026-05-23 - [Taskbar Accessibility & Interactivity Pattern]
+**Learning:** Interactive elements in a simulated desktop OS (like Taskbar icons and launcher buttons) must go beyond simple click handlers on `div` elements to be truly accessible and delightful. Using semantic `<button type="button">` with `aria-label`, explicit `title` attributes for tooltips, and `focus-visible` rings ensures full keyboard and screen reader support. Complementing these with synthesized auditory feedback (via `useSoundEffects`) provides a multi-sensory confirmation that significantly enhances the "OS feel" without the overhead of external audio files.
+
+**Action:** Always refactor non-semantic interactive components into semantic buttons and integrate the existing `useSoundEffects` hook for consistent interaction feedback across the Lumina OS interface.
