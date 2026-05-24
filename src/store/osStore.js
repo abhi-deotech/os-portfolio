@@ -38,6 +38,7 @@ const useOSStore = create(
         activeAccent: state.activeAccent,
         wallpaper: state.wallpaper,
         transparencyEffects: state.transparencyEffects,
+        soundEnabled: state.soundEnabled,
         brightness: state.brightness,
         accentIntensity: state.accentIntensity,
         terminalHistory: state.terminalHistory,
