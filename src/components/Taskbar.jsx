@@ -7,6 +7,7 @@ import {
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import useSoundEffects from '../hooks/useSoundEffects';
 import { APPS } from '../config/apps';
 
 const Taskbar = () => {
@@ -27,6 +28,7 @@ const Taskbar = () => {
   const isAppLauncherOpen = useOSStore(state => state.isAppLauncherOpen);
   const transparencyEffects = useOSStore(state => state.transparencyEffects);
   const logout = useOSStore(state => state.logout);
+  const { playSound } = useSoundEffects();
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -45,26 +47,35 @@ const Taskbar = () => {
         className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-white/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 flex items-center px-4 justify-between z-[1000] shadow-2xl transition-all duration-500 ${(hasMaximizedWindow && activeWindow) ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
       >
         <div className="flex items-center bg-black/20 rounded-2xl p-1 gap-1 border border-white/5 md:mr-4">
-          <div
-            onClick={toggleAppLauncher}
-            className={`p-2.5 rounded-xl transition-all cursor-pointer group relative ${isAppLauncherOpen ? 'bg-os-primary/10 border border-os-primary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
+          <button
+            type="button"
+            aria-label="App Launcher"
+            title="App Launcher"
+            onClick={() => { toggleAppLauncher(); playSound('click'); }}
+            className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/10 ${isAppLauncherOpen ? 'bg-os-primary/10 border border-os-primary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
           >
             <CustomIcon icon={isMobile && openWindows.length > 0 ? Home : LayoutGrid} size={20} color={isAppLauncherOpen ? 'text-os-primary' : 'text-os-onSurface group-hover:text-os-primary'} glow={isAppLauncherOpen ? 'rgba(var(--os-primary-rgb), 0.5)' : false} />
             {isAppLauncherOpen && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-os-primary shadow-[0_0_8px_#cc97ff]" />}
-          </div>
+          </button>
 
           {!isMobile && (
-            <div
-              onClick={() => openWindow('about')}
-              className={`p-2.5 rounded-xl transition-all cursor-pointer group relative ${openWindows.includes('about') ? 'bg-os-secondary/10 border border-os-secondary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
+            <button
+              type="button"
+              aria-label="About Me"
+              title="About Me"
+              onClick={() => { openWindow('about'); playSound('click'); }}
+              className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-secondary/50 focus-visible:bg-white/10 ${openWindows.includes('about') ? 'bg-os-secondary/10 border border-os-secondary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
             >
               <CustomIcon icon={User} size={20} color={openWindows.includes('about') ? 'text-os-secondary' : 'text-os-onSurface group-hover:text-os-secondary'} glow={openWindows.includes('about') ? 'rgba(var(--os-secondary-rgb), 0.5)' : false} />
-            </div>
+            </button>
           )}
 
-          <div
-            onClick={toggleControlCenter}
-            className={`p-2.5 rounded-xl transition-all cursor-pointer group relative ${isControlCenterOpen ? 'bg-os-tertiary/10 border border-os-tertiary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
+          <button
+            type="button"
+            aria-label="Control Center"
+            title="Control Center"
+            onClick={() => { toggleControlCenter(); playSound('click'); }}
+            className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-tertiary/50 focus-visible:bg-white/10 ${isControlCenterOpen ? 'bg-os-tertiary/10 border border-os-tertiary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
           >
             {isControlCenterOpen ? (
               <CustomIcon icon={ChevronDown} size={20} color="text-os-tertiary" glow="rgba(var(--os-tertiary-rgb), 0.5)" />
@@ -72,7 +83,7 @@ const Taskbar = () => {
               <CustomIcon icon={ChevronUp} size={20} color="text-os-onSurface group-hover:text-os-tertiary" />
             )}
             {isControlCenterOpen && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-os-tertiary shadow-[0_0_8px_var(--os-tertiary)]" />}
-          </div>
+          </button>
         </div>
 
         <div className="h-8 w-px bg-os-outline/20 mx-2 md:mr-4" />
@@ -83,9 +94,13 @@ const Taskbar = () => {
             const isActive = activeWindow === app.id;
 
             return (
-              <div
+              <button
+                type="button"
                 key={app.id}
+                aria-label={app.title}
+                title={app.title}
                 onClick={() => {
+                  playSound('click');
                   if (isOpen) {
                     if (isActive) {
                       toggleMinimizeWindow(app.id);
@@ -96,7 +111,7 @@ const Taskbar = () => {
                     openWindow(app.id);
                   }
                 }}
-                className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl ${isActive ? 'bg-white/10 shadow-[inset_0_0_12px_rgba(255,255,255,0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
+                className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/10 ${isActive ? 'bg-white/10 shadow-[inset_0_0_12px_rgba(255,255,255,0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
               >
                 <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105 group-active:scale-95'} ${minimizedWindows.includes(app.id) ? 'opacity-60 scale-90' : 'opacity-100'}`}>
                   {app.icon(isMobile ? 18 : 22, isActive ? app.color : null)}
@@ -111,7 +126,7 @@ const Taskbar = () => {
                     }} 
                   />
                 )}
-              </div>
+              </button>
             );
           })}
         </div>

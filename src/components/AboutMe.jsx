@@ -22,7 +22,7 @@ const TwitterIcon = ({ size = 20, className = "" }) => (
 );
 
 const AboutMe = () => {
-  const { transparencyEffects } = useOSStore();
+  const transparencyEffects = useOSStore(state => state.transparencyEffects);
 
   const socialLinks = [
     { icon: GithubIcon, label: 'GitHub', href: 'https://github.com/abhi-deotech', color: '#ffffff' },
@@ -32,7 +32,7 @@ const AboutMe = () => {
   ];
 
   return (
-    <div className="h-full w-full bg-[#060e20]/60 text-os-onSurface overflow-y-auto scrollbar-hide">
+    <div className={`h-full w-full bg-[#060e20]/60 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} text-os-onSurface overflow-y-auto scrollbar-hide`}>
       <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-12">
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
