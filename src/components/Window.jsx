@@ -5,6 +5,7 @@ import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import WindowGlass from './WindowGlass';
+import useSoundEffects from '../hooks/useSoundEffects';
 
 /**
  * Window container component for Lumina OS applications.
@@ -29,6 +30,7 @@ import WindowGlass from './WindowGlass';
  */
 const Window = ({ id, title, children, isMinimized, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
   const { closeWindow, toggleMinimizeWindow, toggleMaximizeWindow, focusWindow, activeWindow, maximizedWindows, activeAccent, setIsDragging, isDragging, transparencyEffects } = useOSStore();
+  const { playSound } = useSoundEffects();
   const isMobile = useIsMobile();
   const isActive = activeWindow === id;
   const isMaximized = maximizedWindows?.includes(id) || isMobile;
@@ -169,21 +171,31 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
       >
         <div className="flex space-x-2.5 z-50 w-24 group/controls" onPointerDown={(e) => e.stopPropagation()}>
           <button 
-            onClick={() => closeWindow(id)} 
-            className={`${isMobile ? 'w-5 h-5' : 'w-3.5 h-3.5'} rounded-full bg-[#ff5f56] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#e0443e]`}
+            type="button"
+            onClick={() => { closeWindow(id); playSound('close'); }}
+            aria-label={`Close ${title}`}
+            title={`Close ${title}`}
+            className={`${isMobile ? 'w-5 h-5' : 'w-3.5 h-3.5'} rounded-full bg-[#ff5f56] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#e0443e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50`}
           >
             <CustomIcon icon={X} size={isMobile ? 12 : 10} strokeWidth={4} color="text-[#4c0000]" className={`${isMobile ? 'opacity-100' : 'opacity-0'} group-hover/controls:opacity-100 transition-opacity`} animate={false} />
           </button>
           {!isMobile && (
             <>
               <button
-               onClick={() => toggleMinimizeWindow(id)}
-               className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123]"
-              >                <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
+               type="button"
+               onClick={() => { toggleMinimizeWindow(id); playSound('click'); }}
+               aria-label={`Minimize ${title}`}
+               title={`Minimize ${title}`}
+               className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500/50"
+              >
+                <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
               </button>
               <button
-                onClick={() => toggleMaximizeWindow(id)}
-                className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#1aab29]"
+                type="button"
+                onClick={() => { toggleMaximizeWindow(id); playSound(isMaximized ? 'click' : 'open'); }}
+                aria-label={isMaximized ? `Restore ${title}` : `Maximize ${title}`}
+                title={isMaximized ? `Restore ${title}` : `Maximize ${title}`}
+                className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#1aab29] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/50"
               >
                 {isMaximized ? (
                   <CustomIcon icon={Minimize2} size={9} strokeWidth={4} color="text-[#004d09]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
