@@ -18,7 +18,7 @@ const MarkdownRenderer = ({ content, className = '' }) => {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          code({ node, inline, className, children, ...props }) {
+          code({ inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
             return !inline && match ? (
               <div className="rounded-xl overflow-hidden my-4 border border-os-outline/10 shadow-2xl">

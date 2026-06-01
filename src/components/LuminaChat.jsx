@@ -21,7 +21,7 @@ const LuminaChat = () => {
   const { userRole } = useOSStore();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [username, setUsername] = useState(userRole === 'admin' ? 'Abhimanyu' : 'Guest_' + Math.floor(Math.random() * 1000));
+  const [username] = useState(() => userRole === 'admin' ? 'Abhimanyu' : 'Guest_' + Math.floor(Math.random() * 1000));
   const [isConnecting, setIsConnecting] = useState(true);
   const scrollRef = useRef(null);
 
@@ -124,7 +124,7 @@ const LuminaChat = () => {
             </div>
 
             <AnimatePresence initial={false}>
-              {messages.map((msg, i) => {
+              {messages.map((msg) => {
                 const isSystem = msg.role === 'system';
                 const isMe = msg.user === username;
 

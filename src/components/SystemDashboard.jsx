@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Clock, Sun, Cpu, Database, Activity, 
@@ -11,19 +11,10 @@ import useSystemMetrics from '../hooks/useSystemMetrics';
 import SocialWidget from './SocialWidget';
 
 const SystemDashboard = () => {
-  const { transparencyEffects, activeAccent } = useOSStore();
+  const { transparencyEffects } = useOSStore();
   const metrics = useSystemMetrics();
   const [activeTab, setActiveTab] = useState('social'); // 'social', 'system', 'network'
-  const [time, setTime] = useState(new Date());
 
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const accentHex = activeAccent === 'purple' ? '#cc97ff' : 
-                    activeAccent === 'blue' ? '#3b82f6' : 
-                    activeAccent === 'green' ? '#00f5a0' : '#ff68f0';
 
   return (
     <div className={`w-[420px] bg-[#0a0a0a]/90 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} rounded-[2.5rem] border border-white/10 shadow-[0_32px_64px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col select-none`}>

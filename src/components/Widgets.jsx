@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import SocialWidget from './SocialWidget';
 import SystemMetricsWidget from './SystemMetricsWidget';
@@ -52,11 +52,13 @@ const Widgets = () => {
   const [quantumPos, setQuantumPos] = useState(() => getInitialPos('quantum'));
 
   // Reset positions on resize/mode change
-  useEffect(() => {
+  const [prevIsMobile, setPrevIsMobile] = useState(isMobile);
+  if (isMobile !== prevIsMobile) {
+    setPrevIsMobile(isMobile);
     setClockPos(getInitialPos('clock'));
     setDashPos(getInitialPos('dashboard'));
     setQuantumPos(getInitialPos('quantum'));
-  }, [isMobile]);
+  }
 
   if (isMobile) {
     return (

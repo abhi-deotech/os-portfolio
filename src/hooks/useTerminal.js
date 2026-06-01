@@ -13,7 +13,7 @@ const useTerminal = () => {
     fileSystem, terminalTheme, setTerminalTheme, installApp,
     openWindow, installedApps, unlockAchievement,
     terminalCommandCount, incrementCommandCount,
-    bootContainer, runCommand, containerStatus,
+    bootContainer, containerStatus,
     initAi, isAiReady, isAiLoading
   } = useOSStore();
 
@@ -332,7 +332,7 @@ const useTerminal = () => {
       unlockAchievement('easter_egg');
       return "The rabbit hole goes deep... You have discovered the magic within the command line.";
     },
-    node: (args) => {
+    node: () => {
       if (containerStatus === 'idle') {
         return {
           type: 'progressive',
@@ -342,7 +342,7 @@ const useTerminal = () => {
       }
       return `Node.js ${containerStatus === 'ready' ? 'ready' : 'booting...'}. (Implementation pending pipe logic)`;
     },
-    npm: (args) => {
+    npm: () => {
       if (containerStatus === 'idle') {
         return {
           type: 'progressive',
