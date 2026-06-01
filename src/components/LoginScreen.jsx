@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Lock, ArrowRight, Power, RefreshCw, Wifi, BatteryFull, ShieldCheck } from 'lucide-react';
+import { User, Lock, ArrowRight, Power, RefreshCw, Wifi, BatteryFull, ShieldCheck, Cloud } from 'lucide-react';
 import useOSStore from '../store/osStore';
 import BootSequence from './BootSequence';
 
@@ -27,7 +27,7 @@ const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os
  * @component
  */
 const LoginScreen = () => {
-  const { login, unlockAchievement } = useOSStore();
+  const { login, unlockAchievement, checkPuterAuth, signInWithPuter, isPuterConnecting, isPuterSignedIn, puterSyncError } = useOSStore();
   const [isBooting, setIsBooting] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [time, setTime] = useState(new Date());
@@ -38,6 +38,11 @@ const LoginScreen = () => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    // Check if user is already authenticated with Puter
+    checkPuterAuth();
+  }, [checkPuterAuth]);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -155,6 +160,40 @@ const LoginScreen = () => {
                     >
                       Enter as Guest
                     </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const success = await signInWithPuter();
+                        if (success) {
+                          unlockAchievement('first_login');
+                        }
+                      }}
+                      disabled={isPuterConnecting}
+                      className="w-full mt-4 bg-gradient-to-r from-os-primary to-os-secondary text-black font-black py-4 rounded-2xl hover:brightness-110 active:scale-[0.98] transition-all duration-300 uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isPuterConnecting ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <Cloud className="w-3.5 h-3.5" />
+                          Sync with Puter Cloud
+                        </>
+                      )}
+                    </button>
+
+                    {puterSyncError && (
+                      <motion.p 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        className="text-[9px] text-red-500 font-bold uppercase tracking-widest text-center mt-3"
+                      >
+                        {puterSyncError}
+                      </motion.p>
+                    )}
                   </form>
                 </div>
              </div>
