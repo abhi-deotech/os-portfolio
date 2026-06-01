@@ -44,6 +44,10 @@ fileSystemItemSchema.pre('save', async function(next) {
     }
 
     // 2. Calculate Path
+    if (this.isModified('parentId') || this.isModified('name')) {
+        this._originalPath = this.path;
+    }
+
     if (!this.parentId) {
         this.path = `/${this.name}`;
     } else if (this.isModified('parentId') || this.isModified('name')) {
@@ -57,6 +61,43 @@ fileSystemItemSchema.pre('save', async function(next) {
     }
 
     next();
+});
+
+// Post-save hook: Cascade path update to all descendants
+fileSystemItemSchema.post('save', async function(doc) {
+    if (doc._originalPath && doc._originalPath !== doc.path) {
+        const originalPath = doc._originalPath;
+        const newPath = doc.path;
+        const escapedPath = originalPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        // Match descendants: path starts with originalPath + '/' or equals originalPath (excluding doc itself)
+        const descendantRegex = new RegExp(`^${escapedPath}(/|$)`);
+        
+        await mongoose.model('FileSystemItem').updateMany(
+            { 
+                _id: { $ne: doc._id },
+                path: { $regex: descendantRegex } 
+            },
+            [
+                {
+                    $set: {
+                        path: {
+                            $concat: [
+                                newPath,
+                                {
+                                    $substrCP: [
+                                        "$path",
+                                        originalPath.length,
+                                        { $strLenCP: "$path" }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        );
+    }
 });
 
 const FileSystemItem = mongoose.model('FileSystemItem', fileSystemItemSchema);

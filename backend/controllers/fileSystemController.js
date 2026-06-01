@@ -48,17 +48,37 @@ export const updateItem = asyncHandler(async (req, res) => {
     }
 });
 
+// Helper to recursively collect all descendant IDs
+const collectDescendantIds = async (rootId) => {
+    const collectedIds = [];
+    const queue = [rootId];
+    while (queue.length > 0) {
+        const currentId = queue.shift();
+        const children = await FileSystemItem.find({ parentId: currentId });
+        for (const child of children) {
+            collectedIds.push(child._id);
+            if (child.type === 'folder') {
+                queue.push(child._id);
+            }
+        }
+    }
+    return collectedIds;
+};
+
 // @desc    Delete item
 // @route   DELETE /api/fs/:id
 export const deleteItem = asyncHandler(async (req, res) => {
     const item = await FileSystemItem.findById(req.params.id);
 
     if (item) {
-        // Note: For a robust file system, we would recursively delete all children.
-        // Here we do a simple cascading delete for direct children as a demonstration.
-        await FileSystemItem.deleteMany({ parentId: item._id }); 
+        // Recursively collect all descendant IDs starting from item._id using FileSystemItem
+        const collectedIds = await collectDescendantIds(item._id);
+        
+        // Delete all descendants and the root in one operation
+        await FileSystemItem.deleteMany({ _id: { $in: collectedIds } }); 
         await FileSystemItem.deleteOne({ _id: item._id });
-        res.json({ message: 'Item and its direct children removed' });
+        
+        res.json({ message: 'Item and all its descendants removed' });
     } else {
         res.status(404);
         throw new Error('Item not found');
@@ -73,6 +93,23 @@ export const moveItem = asyncHandler(async (req, res) => {
     const item = await FileSystemItem.findById(req.params.id);
     
     if (item) {
+        if (parentId) {
+            let currentParentId = parentId;
+            let isCircular = false;
+            while (currentParentId) {
+                if (currentParentId.toString() === item._id.toString()) {
+                    isCircular = true;
+                    break;
+                }
+                const parentDoc = await FileSystemItem.findById(currentParentId);
+                currentParentId = parentDoc ? parentDoc.parentId : null;
+            }
+            if (isCircular) {
+                res.status(400);
+                return res.json({ message: 'Cannot move item into itself or one of its descendants' });
+            }
+        }
+
         item.parentId = parentId || null;
         
         // This will trigger the pre-save hook to recalculate the path based on the new parent

@@ -16,16 +16,9 @@ app.use(express.json());
 
 // Database Connection
 const connectDB = async () => {
-    try {
-        const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/os-portfolio');
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
-    } catch (error) {
-        console.error(`Error: ${error.message}`);
-        process.exit(1);
-    }
+    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/os-portfolio');
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
 };
-
-connectDB();
 
 // Basic Route
 app.get('/api/health', (req, res) => {
@@ -38,7 +31,17 @@ app.use('/api/fs', fileSystemRoutes);
 // Error Handler Middleware
 app.use(errorHandler);
 
-// Start Server
-app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-});
+// Start Server Flow
+const startServer = async () => {
+    try {
+        await connectDB();
+        app.listen(PORT, () => {
+            console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error(`Database connection failed: ${error.message}`);
+        process.exit(1);
+    }
+};
+
+startServer();
