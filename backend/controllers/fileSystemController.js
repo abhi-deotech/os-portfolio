@@ -1,5 +1,6 @@
 import FileSystemItem from '../models/FileSystemItem.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import mongoose from 'mongoose';
 
 // @desc    Get all file system items
 // @route   GET /api/fs
@@ -89,12 +90,24 @@ export const deleteItem = asyncHandler(async (req, res) => {
 // @route   PUT /api/fs/:id/move
 export const moveItem = asyncHandler(async (req, res) => {
     const { parentId } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        res.status(400);
+        throw new Error('Invalid item id');
+    }
+
+    if (parentId !== undefined && parentId !== null && !mongoose.Types.ObjectId.isValid(parentId)) {
+        res.status(400);
+        throw new Error('Invalid parentId');
+    }
+
+    const safeParentId = parentId ? String(parentId) : null;
     
     const item = await FileSystemItem.findById(req.params.id);
     
     if (item) {
-        if (parentId) {
-            let currentParentId = parentId;
+        if (safeParentId) {
+            let currentParentId = safeParentId;
             let isCircular = false;
             while (currentParentId) {
                 if (currentParentId.toString() === item._id.toString()) {
@@ -110,7 +123,7 @@ export const moveItem = asyncHandler(async (req, res) => {
             }
         }
 
-        item.parentId = parentId || null;
+        item.parentId = safeParentId || null;
         
         // This will trigger the pre-save hook to recalculate the path based on the new parent
         const updatedItem = await item.save(); 
