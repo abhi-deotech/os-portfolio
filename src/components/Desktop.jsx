@@ -2,10 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
+import useSoundEffects from '../hooks/useSoundEffects';
 import { APPS } from '../config/apps';
 
 const Desktop = ({ onIconContextMenu }) => {
   const isMobile = useIsMobile();
+  const { playSound } = useSoundEffects();
   const openWindow = useOSStore(state => state.openWindow);
   const iconPositions = useOSStore(state => state.iconPositions);
   const setIconPosition = useOSStore(state => state.setIconPosition);
@@ -17,13 +19,16 @@ const Desktop = ({ onIconContextMenu }) => {
         {APPS.map((icon, index) => {
           if (isMobile) {
             return (
-              <motion.div
+              <motion.button
                 key={icon.id}
+                type="button"
+                aria-label={icon.title}
+                title={icon.title}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                onClick={() => openWindow(icon.id)}
-                className="flex flex-col items-center justify-start p-2 rounded-2xl active:bg-white/10 transition-colors group"
+                onClick={() => { openWindow(icon.id); playSound('click'); }}
+                className="flex flex-col items-center justify-start p-2 rounded-2xl active:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 cursor-pointer transition-colors group"
               >
                 <div className="mb-2 p-4 bg-white/10 backdrop-blur-2xl rounded-2xl border border-white/10 shadow-lg relative active:scale-95 transition-all overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -34,7 +39,7 @@ const Desktop = ({ onIconContextMenu }) => {
                 <span className="text-[10px] text-white font-bold text-center leading-tight [text-shadow:0_1px_4px_rgba(0,0,0,0.8)] px-2 transition-all">
                   {icon.title}
                 </span>
-              </motion.div>
+              </motion.button>
             );
           }
 
@@ -51,6 +56,10 @@ const Desktop = ({ onIconContextMenu }) => {
           return (
             <motion.div
               key={icon.id}
+              role="button"
+              tabIndex={0}
+              aria-label={icon.title}
+              title={icon.title}
               drag
               dragMomentum={false}
               dragElastic={0}
@@ -67,9 +76,16 @@ const Desktop = ({ onIconContextMenu }) => {
                 setIconPosition(icon.id, { x: newX, y: newY });
               }}
               whileDrag={{ scale: 1.05, zIndex: 100, cursor: 'grabbing' }}
-              onDoubleClick={() => openWindow(icon.id)}
+              onDoubleClick={() => { openWindow(icon.id); playSound('click'); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  openWindow(icon.id);
+                  playSound('click');
+                }
+              }}
               onContextMenu={(e) => onIconContextMenu(e, icon.id)}
-              className="absolute flex flex-col items-center justify-start p-2 rounded-2xl hover:bg-white/5 transition-all cursor-grab w-28 text-center group"
+              className="absolute flex flex-col items-center justify-start p-2 rounded-2xl hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 cursor-grab transition-all w-28 text-center group"
             >
               <div className="mb-2 p-4 bg-white/10 backdrop-blur-3xl rounded-[1.75rem] border border-white/5 group-hover:border-white/20 shadow-xl transition-all relative overflow-hidden group-hover:scale-105 group-active:scale-95 group-hover:bg-white/15">
                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
