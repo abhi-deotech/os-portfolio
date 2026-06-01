@@ -22,6 +22,7 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: {
         ...globals.browser,
+        ...globals.node,
         ...globals.es2020,
       },
       parserOptions: {

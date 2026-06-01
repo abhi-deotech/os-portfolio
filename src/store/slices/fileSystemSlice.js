@@ -16,7 +16,7 @@ export const createFileSystemSlice = (set, get) => ({
 
   setFileSystem: (tree) => set({ fileSystem: tree }),
   
-  createFolder: (name, parentId = null) =>
+  createFolder: (name, parentId = null) => {
     set((state) => {
       const newFolder = { id: `folder-${Date.now()}`, name, children: [] };
       if (!parentId) return { fileSystem: [...state.fileSystem, newFolder] };
@@ -28,9 +28,11 @@ export const createFileSystemSlice = (set, get) => ({
           return n;
         });
       return { fileSystem: addToParent(state.fileSystem) };
-    }),
+    });
+    if (get().isPuterSignedIn) get().syncFilesToPuter();
+  },
 
-  createFile: (name, content = '', parentId = null) =>
+  createFile: (name, content = '', parentId = null) => {
     set((state) => {
       const newFile = { id: `file-${Date.now()}`, name, content };
       if (!parentId) return { fileSystem: [...state.fileSystem, newFile] };
@@ -42,9 +44,11 @@ export const createFileSystemSlice = (set, get) => ({
           return n;
         });
       return { fileSystem: addToParent(state.fileSystem) };
-    }),
+    });
+    if (get().isPuterSignedIn) get().syncFilesToPuter();
+  },
 
-  moveNode: (id, parentId, index = 0) =>
+  moveNode: (id, parentId, index = 0) => {
     set((state) => {
       let movedNode = null;
       
@@ -88,9 +92,11 @@ export const createFileSystemSlice = (set, get) => ({
       };
 
       return { fileSystem: addToTree(treeWithoutNode) };
-    }),
+    });
+    if (get().isPuterSignedIn) get().syncFilesToPuter();
+  },
 
-  deleteNode: (id) =>
+  deleteNode: (id) => {
     set((state) => {
       const removeNode = (nodes) =>
         nodes
@@ -100,9 +106,11 @@ export const createFileSystemSlice = (set, get) => ({
             children: n.children ? removeNode(n.children) : undefined,
           }));
       return { fileSystem: removeNode(state.fileSystem) };
-    }),
+    });
+    if (get().isPuterSignedIn) get().syncFilesToPuter();
+  },
 
-  renameNode: (id, newName) =>
+  renameNode: (id, newName) => {
     set((state) => {
       const renameInTree = (nodes) =>
         nodes.map((n) => {
@@ -111,9 +119,11 @@ export const createFileSystemSlice = (set, get) => ({
           return n;
         });
       return { fileSystem: renameInTree(state.fileSystem) };
-    }),
+    });
+    if (get().isPuterSignedIn) get().syncFilesToPuter();
+  },
 
-  updateFileContent: (fileId, content) =>
+  updateFileContent: (fileId, content) => {
     set((state) => {
       const updateInTree = (nodes) =>
         nodes.map((n) => {
@@ -122,7 +132,9 @@ export const createFileSystemSlice = (set, get) => ({
           return n;
         });
       return { fileSystem: updateInTree(state.fileSystem) };
-    }),
+    });
+    if (get().isPuterSignedIn) get().syncFilesToPuter();
+  },
 
   trackRecentFile: (fileId) => 
     set((state) => {
@@ -130,7 +142,10 @@ export const createFileSystemSlice = (set, get) => ({
       return { recentFiles: [fileId, ...filtered].slice(0, 10) };
     }),
 
-  resetFileSystem: () => set({ fileSystem: DEFAULT_FILE_SYSTEM }),
+  resetFileSystem: () => {
+    set({ fileSystem: DEFAULT_FILE_SYSTEM });
+    if (get().isPuterSignedIn) get().syncFilesToPuter();
+  },
 
   setIsSyncing: (isSyncing) => set({ isSyncing }),
   setLastSyncTime: (lastSyncTime) => set({ lastSyncTime }),

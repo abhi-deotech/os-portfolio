@@ -1,4 +1,4 @@
-export const createSystemSlice = (set) => ({
+export const createSystemSlice = (set, get) => ({
   activeAccent: 'purple',
   wallpaper: 'linux-default',
   transparencyEffects: true,
@@ -48,20 +48,38 @@ export const createSystemSlice = (set) => ({
   notes: 'Welcome to Lumina OS!\n- Explore the apps\n- Check the terminal\n- Have fun!',
   setNotes: (content) => set({ notes: content }),
 
-  setActiveAccent: (accent) => set({ activeAccent: accent }),
-  setWallpaper: (wp) => set({ wallpaper: wp }),
-  setTransparencyEffects: (enabled) => set({ transparencyEffects: enabled }),
-  setBrightness: (value) => set({ brightness: value }),
-  setAccentIntensity: (value) => set({ accentIntensity: value }),
+  setActiveAccent: (accent) => {
+    set({ activeAccent: accent });
+    if (get().isPuterSignedIn) get().syncPrefsToPuter();
+  },
+  setWallpaper: (wp) => {
+    set({ wallpaper: wp });
+    if (get().isPuterSignedIn) get().syncPrefsToPuter();
+  },
+  setTransparencyEffects: (enabled) => {
+    set({ transparencyEffects: enabled });
+    if (get().isPuterSignedIn) get().syncPrefsToPuter();
+  },
+  setBrightness: (value) => {
+    set({ brightness: value });
+    if (get().isPuterSignedIn) get().syncPrefsToPuter();
+  },
+  setAccentIntensity: (value) => {
+    set({ accentIntensity: value });
+    if (get().isPuterSignedIn) get().syncPrefsToPuter();
+  },
   setLowPerformance: (enabled) => set({ lowPerformance: enabled }),
 
-  resetSettingsToDefault: () => set({
-    wallpaper: 'linux-default',
-    activeAccent: 'purple',
-    transparencyEffects: true,
-    brightness: 100,
-    accentIntensity: 80,
-  }),
+  resetSettingsToDefault: () => {
+    set({
+      wallpaper: 'linux-default',
+      activeAccent: 'purple',
+      transparencyEffects: true,
+      brightness: 100,
+      accentIntensity: 80,
+    });
+    if (get().isPuterSignedIn) get().syncPrefsToPuter();
+  },
 
   triggerBSOD: () => set({ isBSOD: true }),
 
@@ -74,15 +92,25 @@ export const createSystemSlice = (set) => ({
       };
     }),
 
-  setTerminalTheme: (theme) => set({ terminalTheme: theme }),
+  setTerminalTheme: (theme) => {
+    set({ terminalTheme: theme });
+    if (get().isPuterSignedIn) get().syncPrefsToPuter();
+  },
   incrementCommandCount: () => set((state) => ({ terminalCommandCount: state.terminalCommandCount + 1 })),
   clearTerminalHistory: () => set({ terminalHistory: [] }),
 
   unlockAchievement: (achievementId) =>
     set((state) => {
       if (state.achievements.includes(achievementId)) return state;
+      
+      const newAchievements = [...state.achievements, achievementId];
+      // Sync in background after setting state
+      setTimeout(() => {
+        if (get().isPuterSignedIn) get().syncPrefsToPuter();
+      }, 0);
+
       return { 
-        achievements: [...state.achievements, achievementId],
+        achievements: newAchievements,
         achievementQueue: [...state.achievementQueue, achievementId]
       };
     }),

@@ -9,6 +9,7 @@ import { createWindowSlice } from './slices/windowSlice';
 import { createSyncSlice } from './slices/syncSlice';
 import { createContainerSlice } from './slices/containerSlice';
 import { createAiSlice } from './slices/aiSlice';
+import { createPuterSlice } from './slices/puterSlice';
 
 /**
  * Zustand store for Lumina OS state management.
@@ -26,6 +27,7 @@ const useOSStore = create(
       ...createSyncSlice(set, get),
       ...createContainerSlice(set, get),
       ...createAiSlice(set, get),
+      ...createPuterSlice(set, get),
     }),
     {
       name: 'os-settings',
@@ -64,6 +66,9 @@ const useOSStore = create(
         systemMetrics: state.systemMetrics,
         lastSyncTime: state.lastSyncTime,
         syncError: state.syncError,
+        puterUser: state.puterUser,
+        isPuterSignedIn: state.isPuterSignedIn,
+        snappedWindows: state.snappedWindows,
         achievementQueue: [] // Don't persist queue
       }),
     }

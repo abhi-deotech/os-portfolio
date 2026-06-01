@@ -2,6 +2,7 @@ export const createWindowSlice = (set) => ({
   openWindows: [],
   minimizedWindows: [],
   maximizedWindows: [],
+  snappedWindows: {},
   activeWindow: null,
   isControlCenterOpen: false,
   isAppLauncherOpen: false,
@@ -53,11 +54,16 @@ export const createWindowSlice = (set) => ({
     }),
 
   closeWindow: (id) =>
-    set((state) => ({
-      openWindows: state.openWindows.filter((w) => w !== id),
-      minimizedWindows: (state.minimizedWindows || []).filter((w) => w !== id),
-      activeWindow: state.activeWindow === id ? null : state.activeWindow,
-    })),
+    set((state) => {
+      const snapped = { ...(state.snappedWindows || {}) };
+      delete snapped[id];
+      return {
+        openWindows: state.openWindows.filter((w) => w !== id),
+        minimizedWindows: (state.minimizedWindows || []).filter((w) => w !== id),
+        snappedWindows: snapped,
+        activeWindow: state.activeWindow === id ? null : state.activeWindow,
+      };
+    }),
 
   toggleMinimizeWindow: (id) =>
     set((state) => {
@@ -79,10 +85,35 @@ export const createWindowSlice = (set) => ({
         ? state.maximizedWindows.filter((w) => w !== id)
         : [...(state.maximizedWindows || []), id];
 
+      // Unsnap when maximizing
+      const snapped = { ...(state.snappedWindows || {}) };
+      delete snapped[id];
+
       return {
         maximizedWindows: newMaximized,
+        snappedWindows: snapped,
         activeWindow: id,
       };
+    }),
+
+  snapWindow: (id, direction) =>
+    set((state) => {
+      const snapped = { ...(state.snappedWindows || {}) };
+      if (direction) {
+        snapped[id] = direction;
+        // Unmaximize when snapping to left/right
+        const newMaximized = (state.maximizedWindows || []).filter((w) => w !== id);
+        return {
+          snappedWindows: snapped,
+          maximizedWindows: newMaximized,
+          activeWindow: id,
+        };
+      } else {
+        delete snapped[id];
+        return {
+          snappedWindows: snapped,
+        };
+      }
     }),
 
   focusWindow: (id) =>
