@@ -22,7 +22,8 @@ import {
   Download,
   Upload,
   Zap,
-  RotateCcw
+  RotateCcw,
+  Cloud
 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
@@ -48,7 +49,17 @@ const Settings = () => {
     lowPerformance,
     setLowPerformance,
     resetSettingsToDefault,
-    unlockAchievement
+    unlockAchievement,
+    isPuterSignedIn,
+    puterUser,
+    isPuterConnecting,
+    signInWithPuter,
+    signOutPuter,
+    syncFilesToPuter,
+    loadFilesFromPuter,
+    syncPrefsToPuter,
+    loadPrefsFromPuter,
+    lastSyncTime
   } = useOSStore();
   const metrics = useSystemMetrics();
   const network = useNetworkInfo();
@@ -625,34 +636,133 @@ const Settings = () => {
                 <section className="p-8 rounded-[2rem] bg-os-surfaceContainerLow/30 border border-os-outline/10 backdrop-blur-xl relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-os-primary/5 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
                   
-                  <div className="flex items-center gap-6 mb-8">
-                    <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-2xl">
-                       🚀
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black text-white">{useOSStore.getState().userRole === 'admin' ? 'Abhimanyu Saxena' : 'Guest User'}</h3>
-                      <p className="text-xs font-bold text-os-primary uppercase tracking-widest">{useOSStore.getState().userRole} Priority Account</p>
-                    </div>
-                  </div>
-
-                  <div className="p-6 rounded-2xl bg-os-primary/10 border border-os-primary/20 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-os-primary/20 rounded-lg text-os-primary">
-                          <RefreshCw size={18} className="animate-spin-slow" />
+                  {isPuterSignedIn ? (
+                    <div className="space-y-8">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-os-primary to-os-secondary border border-white/10 flex items-center justify-center text-4xl shadow-2xl text-black font-black uppercase">
+                          {puterUser?.username?.[0] || 'P'}
                         </div>
-                        <div>
-                          <span className="block font-bold text-sm text-white">Cloud Sync Persistence</span>
-                          <span className="block text-[10px] text-os-primary/60 font-black uppercase tracking-widest">Active via LocalStorage</span>
+                        <div className="flex-1 text-center sm:text-left space-y-1">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <h3 className="text-xl font-black text-white">{puterUser?.username || 'Puter Cloud User'}</h3>
+                            <span className="self-center px-2.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 text-[9px] font-black uppercase tracking-widest">
+                              Connected
+                            </span>
+                          </div>
+                          <p className="text-xs text-os-onSurfaceVariant">Linked with Puter.com Ecosystem</p>
+                        </div>
+                        <button
+                          onClick={signOutPuter}
+                          className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-xs font-semibold uppercase tracking-wider transition-all duration-300"
+                        >
+                          Disconnect
+                        </button>
+                      </div>
+
+                      <div className="p-6 rounded-2xl bg-green-500/10 border border-green-500/20 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-500/20 rounded-lg text-green-400">
+                              <Cloud size={18} />
+                            </div>
+                            <div>
+                              <span className="block font-bold text-sm text-white">Puter Cloud Sync Active</span>
+                              <span className="block text-[10px] text-green-400/80 font-black uppercase tracking-widest">
+                                {lastSyncTime ? `Last Synced: ${new Date(lastSyncTime).toLocaleTimeString()}` : 'Connected and Synchronized'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-white/40 leading-relaxed">
+                          Your virtual file system, system settings, accent colors, and unlocked achievements are securely synced in the cloud. Changes made here are saved instantly.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="p-5 rounded-2xl bg-os-surfaceContainerHigh/30 border border-os-outline/5 space-y-3">
+                          <h4 className="text-xs font-bold uppercase tracking-widest text-os-primary">File System Sync</h4>
+                          <p className="text-[11px] text-os-onSurfaceVariant">Manually push or pull your virtual disk documents.</p>
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              onClick={syncFilesToPuter}
+                              className="flex-1 py-2 rounded-xl bg-os-primary/10 border border-os-primary/20 text-os-primary text-xs font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-all flex items-center justify-center gap-2"
+                            >
+                              <Upload size={13} />
+                              Push Files
+                            </button>
+                            <button
+                              onClick={loadFilesFromPuter}
+                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                            >
+                              <Download size={13} />
+                              Pull Files
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="p-5 rounded-2xl bg-os-surfaceContainerHigh/30 border border-os-outline/5 space-y-3">
+                          <h4 className="text-xs font-bold uppercase tracking-widest text-os-secondary">Settings & Achievements Sync</h4>
+                          <p className="text-[11px] text-os-onSurfaceVariant">Manually push or pull system settings & wallpapers.</p>
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              onClick={syncPrefsToPuter}
+                              className="flex-1 py-2 rounded-xl bg-os-secondary/10 border border-os-secondary/20 text-os-secondary text-xs font-bold uppercase tracking-wider hover:bg-os-secondary/20 transition-all flex items-center justify-center gap-2"
+                            >
+                              <Upload size={13} />
+                              Push Settings
+                            </button>
+                            <button
+                              onClick={loadPrefsFromPuter}
+                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                            >
+                              <Download size={13} />
+                              Pull Settings
+                            </button>
+                          </div>
                         </div>
                       </div>
-                      <div className="px-3 py-1 bg-os-primary text-black text-[10px] font-black rounded-lg uppercase tracking-wider">Synced</div>
                     </div>
-                    <p className="text-xs text-white/40 leading-relaxed">
-                      Lumina OS uses edge persistence to save your wallpaper, terminal history, and window states. 
-                      Your settings are currently backed up to the browser&apos;s local node.
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="space-y-6 text-center sm:text-left">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                        <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-2xl">
+                          👤
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <h3 className="text-xl font-black text-white">Offline/Guest Mode</h3>
+                          <p className="text-xs text-os-onSurfaceVariant">
+                            You are logged in as a local guest. Your changes are saved to this browser&apos;s IndexedDB and will not persist across different browsers or machines.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-6 rounded-2xl bg-os-surfaceContainerHigh/30 border border-os-outline/5 space-y-4">
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 text-left">
+                            <div className="p-2 bg-os-primary/10 rounded-lg text-os-primary">
+                              <Cloud size={18} />
+                            </div>
+                            <div>
+                              <span className="block font-bold text-sm text-white">Connect with Puter Cloud</span>
+                              <span className="block text-[10px] text-os-onSurfaceVariant font-medium">Link your Puter.com account for cross-device sync.</span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={signInWithPuter}
+                            disabled={isPuterConnecting}
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.3)] disabled:opacity-50"
+                          >
+                            {isPuterConnecting ? (
+                              <RefreshCw size={14} className="animate-spin" />
+                            ) : (
+                              <Cloud size={14} />
+                            )}
+                            Sync with Puter Cloud
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </section>
               </div>
             )}
