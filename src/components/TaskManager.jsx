@@ -34,6 +34,24 @@ const TaskManager = () => {
     { id: 'audio-daemon', name: 'Audio Daemon', icon: HardDrive, color: 'text-purple-400', cpu: 0.1, ram: 0.1 },
   ];
 
+  // Stable random variations for system processes
+  const [systemMetricsVariations] = useState(() => 
+    systemProcesses.map(() => Math.random() * 0.5)
+  );
+
+  // Stable random variations for user processes
+  const [userProcessMetrics] = useState(() => {
+    const metrics = {};
+    Object.keys(appMeta).forEach(appId => {
+      metrics[appId] = {
+        cpuVar: Math.random() * 5,
+        ramVar: Math.random() * 0.5 + 0.5,
+        pid: Math.floor(Math.random() * 9000) + 1000
+      };
+    });
+    return metrics;
+  });
+
   return (
     <div className="flex flex-col h-full bg-[#050505] text-white font-sans overflow-hidden">
       {/* Header */}
@@ -72,7 +90,7 @@ const TaskManager = () => {
           </thead>
           <tbody>
             {/* System Processes */}
-            {systemProcesses.map((p) => (
+            {systemProcesses.map((p, idx) => (
               <tr key={p.id} className="border-b border-white/[0.02] bg-white/[0.01]">
                 <td className="px-8 py-4">
                   <div className="flex items-center gap-4">
@@ -85,7 +103,7 @@ const TaskManager = () => {
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-4 text-center font-mono text-xs text-os-primary/50">{(p.cpu + Math.random() * 0.5).toFixed(1)}%</td>
+                <td className="px-4 py-4 text-center font-mono text-xs text-os-primary/50">{(p.cpu + systemMetricsVariations[idx]).toFixed(1)}%</td>
                 <td className="px-4 py-4 text-center font-mono text-xs text-os-secondary/50">{p.ram} GB</td>
                 <td className="px-8 py-4 text-right">
                   <button 
@@ -102,10 +120,11 @@ const TaskManager = () => {
             <AnimatePresence mode="popLayout">
               {openWindows.map((appId) => {
                 const meta = appMeta[appId] || { name: appId, icon: Activity, color: 'text-white' };
+                const metrics = userProcessMetrics[appId] || { cpuVar: 1, ramVar: 0.5, pid: 1234 };
                 // Scale process CPU by global load
                 const cpuBase = appId === 'benchmark' && systemMetrics.isOverridden ? 80 : 2;
-                const cpu = (Math.random() * 5 + cpuBase).toFixed(1);
-                const ram = (Math.random() * 0.5 + 0.5).toFixed(1);
+                const cpu = (metrics.cpuVar + cpuBase).toFixed(1);
+                const ram = metrics.ramVar.toFixed(1);
 
                 return (
                   <motion.tr
@@ -122,7 +141,7 @@ const TaskManager = () => {
                         </div>
                         <div className="flex flex-col">
                            <span className="text-sm font-bold text-white/80">{meta.name}</span>
-                           <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">PID: {Math.floor(Math.random() * 9000) + 1000}</span>
+                           <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">PID: {metrics.pid}</span>
                         </div>
                       </div>
                     </td>

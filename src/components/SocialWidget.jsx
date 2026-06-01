@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Star, GitFork, Users, ExternalLink, RefreshCw, 
   Calendar, BookOpen, User as UserIcon, Info,
@@ -42,11 +42,20 @@ const SocialWidget = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // LinkedIn data state (static, no loading needed)
-  const [linkedinData, setLinkedinData] = useState(null);
-  
   const githubUsername = 'abhi-deotech';
   const linkedinUsername = 'abhimanyu-saxena-b656a4183';
+
+  // LinkedIn data (static)
+  const linkedinData = useMemo(() => ({
+    name: 'Abhimanyu Saxena',
+    headline: 'Software Engineer | Team Lead',
+    location: 'Noida, India',
+    connections: '500+',
+    avatar: `https://github.com/${githubUsername}.png`,
+    company: 'Deotechsolutions',
+    title: 'Team Lead',
+    skills: ['React', 'Node.js', 'TypeScript', 'AWS', 'Docker', 'MongoDB']
+  }), [githubUsername]);
 
   useEffect(() => {
     const fetchGithubData = async () => {
@@ -147,22 +156,6 @@ const SocialWidget = () => {
     fetchGithubData();
   }, [githubUsername]);
 
-  // Simple load - no API needed since LinkedIn blocks scraping
-  useEffect(() => {
-    if (activeTab === 'linkedin') {
-      const LINKEDIN_PROFILE = {
-        name: 'Abhimanyu Saxena',
-        headline: 'Software Engineer | Team Lead',
-        location: 'Noida, India',
-        connections: '500+',
-        avatar: `https://github.com/${githubUsername}.png`,
-        company: 'Deotechsolutions',
-        title: 'Team Lead',
-        skills: ['React', 'Node.js', 'TypeScript', 'AWS', 'Docker', 'MongoDB']
-      };
-      setLinkedinData(LINKEDIN_PROFILE);
-    }
-  }, [activeTab, githubUsername]);
 
   const renderGithub = () => {
     if (loading) {

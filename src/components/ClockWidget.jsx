@@ -5,7 +5,7 @@ import { Sun, Cloud, CloudRain, CloudLightning, Wind } from 'lucide-react';
 const ClockWidget = () => {
   const [time, setTime] = useState(new Date());
   
-  const weatherIcons = [Sun, Cloud, CloudRain, CloudLightning, Wind];
+  const [heights] = useState(() => Array.from({ length: 12 }).map(() => Math.random() * 60 + 20));
   const [weather] = useState({
     temp: 24,
     condition: 'Clear',
@@ -60,11 +60,11 @@ const ClockWidget = () => {
 
       {/* Subtle activity graph at bottom */}
       <div className="flex gap-1 h-4 items-end mt-2 px-1">
-         {Array.from({ length: 12 }).map((_, i) => (
+         {heights.map((h, i) => (
            <div 
              key={i} 
              className="flex-1 bg-white/10 rounded-full" 
-             style={{ height: `${Math.random() * 60 + 20}%` }} 
+             style={{ height: `${h}%` }} 
            />
          ))}
       </div>

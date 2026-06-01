@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Trophy, RefreshCw, ArrowLeft, Brain, Cpu, Zap, Timer } from 'lucide-react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, RefreshCw, ArrowLeft, Brain, Cpu, Zap, Timer, Layers, Globe, ShieldCheck } from 'lucide-react';
 import useOSStore from '../../store/osStore';
 
 const SYMBOLS = [
@@ -14,10 +14,13 @@ const SYMBOLS = [
   { icon: ShieldCheck, color: '#3b82f6', label: 'Secure' }
 ];
 
-import { Layers, Globe, ShieldCheck } from 'lucide-react';
-
 const MemoryGame = ({ onBack }) => {
-  const [cards, setCards] = useState([]);
+  const [cards, setCards] = useState(() => {
+    const duplicatedSymbols = [...SYMBOLS, ...SYMBOLS];
+    return duplicatedSymbols
+      .sort(() => Math.random() - 0.5)
+      .map((item, index) => ({ id: index, ...item }));
+  });
   const [flipped, setFlipped] = useState([]);
   const [solved, setSolved] = useState([]);
   const [disabled, setDisabled] = useState(false);
@@ -37,27 +40,30 @@ const MemoryGame = ({ onBack }) => {
     setDisabled(false);
   };
 
-  useEffect(() => {
-    initGame();
-  }, []);
 
-  useEffect(() => {
-    if (flipped.length === 2) {
+  const handleClick = (index) => {
+    if (disabled || flipped.includes(index) || solved.includes(index)) return;
+    
+    const newFlipped = [...flipped, index];
+    setFlipped(newFlipped);
+
+    if (newFlipped.length === 2) {
       setDisabled(true);
       setMoves(m => m + 1);
-      const [first, second] = flipped;
+      
+      const [first, second] = newFlipped;
       if (cards[first].label === cards[second].label) {
-        setSolved(prev => {
-           const newSolved = [...prev, first, second];
-           if (newSolved.length === cards.length) {
-              if (bestMoves === '--' || moves + 1 < bestMoves) {
-                 setBestScore(moves + 1);
-                 localStorage.setItem('memory-best-moves', moves + 1);
-              }
-              unlockAchievement('memory_master');
-           }
-           return newSolved;
-        });
+        const newSolved = [...solved, first, second];
+        setSolved(newSolved);
+        
+        if (newSolved.length === cards.length) {
+          if (bestMoves === '--' || moves + 1 < bestMoves) {
+            setBestScore(moves + 1);
+            localStorage.setItem('memory-best-moves', moves + 1);
+          }
+          unlockAchievement('memory_master');
+        }
+        
         setFlipped([]);
         setDisabled(false);
       } else {
@@ -67,11 +73,6 @@ const MemoryGame = ({ onBack }) => {
         }, 1000);
       }
     }
-  }, [flipped, cards, moves, bestMoves, unlockAchievement]);
-
-  const handleClick = (index) => {
-    if (disabled || flipped.includes(index) || solved.includes(index)) return;
-    setFlipped(prev => [...prev, index]);
   };
 
   const isGameOver = solved.length === cards.length && cards.length > 0;

@@ -1,6 +1,6 @@
 export const createSystemSlice = (set) => ({
   activeAccent: 'purple',
-  wallpaper: 'sunset-glow',
+  wallpaper: 'linux-default',
   transparencyEffects: true,
   brightness: 100,
   accentIntensity: 80,
@@ -56,7 +56,7 @@ export const createSystemSlice = (set) => ({
   setLowPerformance: (enabled) => set({ lowPerformance: enabled }),
 
   resetSettingsToDefault: () => set({
-    wallpaper: 'sunset-glow',
+    wallpaper: 'linux-default',
     activeAccent: 'purple',
     transparencyEffects: true,
     brightness: 100,

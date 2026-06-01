@@ -17,7 +17,7 @@ const BSOD = () => {
     >
       <div className="text-[100px] md:text-[150px] mb-8 leading-none">:(</div>
       <h1 className="text-xl md:text-3xl mb-8 max-w-2xl leading-relaxed">
-        Your PC ran into a problem and needs to restart. We're just collecting some error info, and then we'll restart for you.
+        Your PC ran into a problem and needs to restart. We&apos;re just collecting some error info, and then we&apos;ll restart for you.
       </h1>
       <div className="flex flex-col md:flex-row items-start md:items-center gap-8 mb-12">
         <div className="w-32 h-32 bg-white p-2">

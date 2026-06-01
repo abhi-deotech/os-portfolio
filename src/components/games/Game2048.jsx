@@ -6,7 +6,6 @@ import useOSStore from '../../store/osStore';
 const GRID_SIZE = 4;
 
 const Game2048 = ({ onBack }) => {
-  const [grid, setGrid] = useState([]);
   const [score, setScore] = useState(0);
   const [bestScore, setBestScore] = useState(localStorage.getItem('2048-best-score') || 0);
   const [gameOver, setGameOver] = useState(false);
@@ -28,6 +27,20 @@ const Game2048 = ({ onBack }) => {
     return newGrid;
   }, []);
 
+  const [grid, setGrid] = useState(() => {
+    let initialGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
+    // Initial random tiles
+    const addInitialRandom = (g) => {
+      const empty = [];
+      g.forEach((row, r) => row.forEach((t, c) => { if (t === 0) empty.push({r, c}); }));
+      const { r, c } = empty[Math.floor(Math.random() * empty.length)];
+      g[r][c] = Math.random() < 0.9 ? 2 : 4;
+    };
+    addInitialRandom(initialGrid);
+    addInitialRandom(initialGrid);
+    return initialGrid;
+  });
+
   const initGame = useCallback(() => {
     let newGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
     newGrid = addRandomTile(newGrid);
@@ -37,9 +50,6 @@ const Game2048 = ({ onBack }) => {
     setGameOver(false);
   }, [addRandomTile]);
 
-  useEffect(() => {
-    initGame();
-  }, [initGame]);
 
   const checkGameOver = (currentGrid) => {
     for (let r = 0; r < GRID_SIZE; r++) {
