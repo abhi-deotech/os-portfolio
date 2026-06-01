@@ -28,7 +28,7 @@ import WindowGlass from './WindowGlass';
  * @param {number} [props.minHeight=300] - Minimum resize height
  */
 const Window = ({ id, title, children, isMinimized, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
-  const { closeWindow, toggleMinimizeWindow, toggleMaximizeWindow, focusWindow, activeWindow, maximizedWindows, activeAccent, setIsDragging, isDragging, transparencyEffects } = useOSStore();
+  const { closeWindow, toggleMinimizeWindow, toggleMaximizeWindow, snapWindow, focusWindow, activeWindow, maximizedWindows, snappedWindows, activeAccent, setIsDragging, isDragging, transparencyEffects } = useOSStore();
   const isMobile = useIsMobile();
   const isActive = activeWindow === id;
   const isMaximized = maximizedWindows?.includes(id) || isMobile;
@@ -64,6 +64,41 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
   };
   const accentHex = accentHexMap[activeAccent] || '#cc97ff';
 
+  const isSnapped = snappedWindows?.[id];
+
+  useEffect(() => {
+    if (!isActive || isMobile) return;
+
+    const handleKeyDown = (e) => {
+      if (e.altKey) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          snapWindow(id, 'left');
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          snapWindow(id, 'right');
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (!isMaximized) {
+            toggleMaximizeWindow(id);
+          }
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (isMaximized) {
+            toggleMaximizeWindow(id);
+          } else if (isSnapped) {
+            snapWindow(id, null);
+          } else {
+            toggleMinimizeWindow(id);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isActive, isMobile, id, isMaximized, isSnapped, snapWindow, toggleMaximizeWindow, toggleMinimizeWindow]);
+
   const windowMotionProps = isMobile ? {
     initial: { y: '100%' },
     animate: { y: 0 },
@@ -74,7 +109,16 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
     animate: { 
       scale: 1, 
       opacity: 1, 
-      ...(isMaximized ? { top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', borderRadius: 0, x: 0, y: 0 } : {})
+      ...(isMaximized ? { top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', borderRadius: 0, x: 0, y: 0 } : {}),
+      ...(isSnapped ? {
+        top: 0,
+        left: isSnapped === 'right' ? '50vw' : 0,
+        width: '50vw',
+        height: '100%',
+        borderRadius: 0,
+        x: 0,
+        y: 0
+      } : {})
     },
     transition: { type: "spring", stiffness: 300, damping: 30 }
   };
@@ -92,8 +136,13 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
 
   const handleDragEnd = () => {
     setIsDragging(false);
-    if (snapTarget === 'top') toggleMaximizeWindow(id);
-    // Add logic for left/right split if desired, but for now just top = maximize
+    if (snapTarget === 'top') {
+      toggleMaximizeWindow(id);
+    } else if (snapTarget === 'left') {
+      snapWindow(id, 'left');
+    } else if (snapTarget === 'right') {
+      snapWindow(id, 'right');
+    }
     setSnapTarget(null);
   };
 
@@ -116,7 +165,7 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
 
       <motion.div
         ref={windowRef}
-        drag={!isMaximized && !isMobile}
+        drag={!isMaximized && !isMobile && !isSnapped}
         dragListener={false}
         dragControls={dragControls}
         dragMomentum={false}
@@ -128,37 +177,42 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
           ...windowMotionProps.animate,
           opacity: isMinimized ? 0 : 1,
           scale: isMinimized ? 0.9 : 1,
-          y: isMinimized ? 40 : (isMaximized ? 0 : -height/2),
+          y: isMinimized ? 40 : (isMaximized || isSnapped ? 0 : -height/2),
           pointerEvents: isMinimized ? 'none' : 'auto',
         }}
         onMouseDown={() => focusWindow(id)}
         style={{
-          ...(!isMaximized ? { width, height, minWidth, minHeight, top: '50%', left: '50%' } : { 
+          ...(!isMaximized && !isSnapped ? { width, height, minWidth, minHeight, top: '50%', left: '50%' } : { 
             position: 'fixed',
             top: 0,
-            left: 0,
-            right: 0,
+            left: isSnapped === 'right' ? '50vw' : 0,
+            right: isSnapped === 'left' ? '50vw' : 0,
             bottom: isMobile ? '80px' : 0,
-            width: '100vw',
+            width: isSnapped ? '50vw' : '100vw',
             height: isMobile ? 'calc(100vh - 80px)' : '100vh',
             x: 0,
             y: 0
           }),
           zIndex: isActive ? 50 : 10,
-          borderColor: isActive && !isMaximized ? accentHex : undefined,
-          boxShadow: isActive && !isMaximized ? `0 32px 64px rgba(0,0,0,0.5), 0 0 20px ${accentHex}33` : undefined,
-          resize: (isMaximized || isMobile) ? 'none' : 'both',
+          borderColor: isActive && !isMaximized && !isSnapped ? accentHex : undefined,
+          boxShadow: isActive && !isMaximized && !isSnapped ? `0 32px 64px rgba(0,0,0,0.5), 0 0 20px ${accentHex}33` : undefined,
+          resize: (isMaximized || isSnapped || isMobile) ? 'none' : 'both',
           overflow: 'hidden'
         }}
         className={`absolute flex flex-col transition-shadow duration-300 pointer-events-auto group/window ${
           isActive ? 'border' : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgba(0,0,0,0.3)]'
-        } ${!isMaximized ? `bg-os-surfaceContainerHighest/50 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl` : `bg-os-surface/95 ${transparencyEffects ? 'backdrop-blur-3xl' : ''}`}`}
+        } ${!isMaximized && !isSnapped ? `bg-os-surfaceContainerHighest/50 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl` : `bg-os-surface/95 ${transparencyEffects ? 'backdrop-blur-3xl' : ''}`}`}
       >
       {/* Title Bar - Glassmorphic Strip */}
       <div 
         className={`${isMobile ? 'h-16' : 'h-14'} flex items-center px-6 border-b border-os-outline/5 relative shrink-0 transition-all duration-300`}
         onPointerDown={(e) => {
-          if (!isMaximized && !isMobile) dragControls.start(e);
+          if (isSnapped) {
+            snapWindow(id, null);
+            dragControls.start(e);
+          } else if (!isMaximized && !isMobile) {
+            dragControls.start(e);
+          }
         }}
         onDoubleClick={() => !isMobile && toggleMaximizeWindow(id)}
         style={{ 

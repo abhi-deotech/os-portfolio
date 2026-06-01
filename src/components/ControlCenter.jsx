@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wifi, Bluetooth, Sun, Volume2, BatteryFull, Signal, Play, Pause, SkipForward, Settings2, X, Music } from 'lucide-react';
+import { Cloud, Wifi, Bluetooth, Sun, Volume2, BatteryFull, Signal, Play, Pause, SkipForward, Settings2, X, Music } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
@@ -17,6 +17,8 @@ const ControlCenter = () => {
   const brightness = useOSStore(state => state.brightness);
   const setBrightness = useOSStore(state => state.setBrightness);
   const setMusicVolume = useOSStore(state => state.setMusicVolume);
+  const isPuterSignedIn = useOSStore(state => state.isPuterSignedIn);
+  const puterUser = useOSStore(state => state.puterUser);
   
   const isMobile = useIsMobile();
   const metrics = useSystemMetrics();
@@ -55,6 +57,15 @@ const ControlCenter = () => {
                   <span className="text-xs font-bold text-white tracking-wide">{100 - Math.round(metrics.cpu / 10)}%</span>
                 </div>
                <div className="flex items-center gap-4">
+                  {isPuterSignedIn && (
+                    <div className="flex flex-col items-end border-r border-white/5 pr-4">
+                      <span className="text-[10px] font-bold text-[#cc97ff] uppercase tracking-widest">Puter Cloud</span>
+                      <div className="flex items-center space-x-1 text-green-400">
+                        <Cloud size={12} />
+                        <span className="text-xs font-bold truncate max-w-[80px] uppercase">{puterUser?.username || 'Synced'}</span>
+                      </div>
+                    </div>
+                  )}
                   <div className="flex flex-col items-end">
                     <span className="text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest">Network</span>
                       <div className="flex items-center space-x-1">
