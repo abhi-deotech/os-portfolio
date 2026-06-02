@@ -30,9 +30,11 @@ import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import useSystemMetrics from '../hooks/useSystemMetrics';
 import useNetworkInfo from '../hooks/useNetworkInfo';
+import useSoundEffects from '../hooks/useSoundEffects';
 
 const Settings = () => {
   const isMobile = useIsMobile();
+  const { playSound } = useSoundEffects();
   const [activeTab, setActiveTab] = useState('personalization');
   const [showSidebar, setShowSidebar] = useState(true);
   const { 
@@ -129,6 +131,7 @@ const Settings = () => {
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
     if (isMobile) setShowSidebar(false);
+    playSound('click');
   };
 
   const renderPersonalization = () => (
@@ -182,10 +185,17 @@ const Settings = () => {
                 </div>
                 <div className="grid grid-cols-4 gap-2">
                   {wallpapers.map((wp) => (
-                    <div 
+                    <button
                       key={wp.id}
-                      onClick={() => { setWallpaper(wp.id); unlockAchievement('decorator'); }}
-                      className={`cursor-pointer rounded-xl h-12 md:h-14 border transition-all duration-300 relative overflow-hidden group/tile ${
+                      type="button"
+                      aria-label={`Set wallpaper to ${wp.name}`}
+                      title={`Set wallpaper to ${wp.name}`}
+                      onClick={() => {
+                        setWallpaper(wp.id);
+                        unlockAchievement('decorator');
+                        playSound('click');
+                      }}
+                      className={`cursor-pointer rounded-xl h-12 md:h-14 border transition-all duration-300 relative overflow-hidden group/tile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${
                         wallpaper === wp.id 
                           ? 'border-[#cc97ff] shadow-[0_0_15px_rgba(204,151,255,0.3)]' 
                           : 'border-os-outline/20 hover:border-os-outline/40'
@@ -202,7 +212,7 @@ const Settings = () => {
                             <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_white]" />
                           </div>
                       )}
-                    </div>
+                    </button>
                   ))}
                 </div>
             </div>
@@ -228,12 +238,19 @@ const Settings = () => {
                         </div>
                     </div>
                     {/* Mock Toggle */}
-                    <div 
-                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${transparencyEffects ? 'bg-[#cc97ff]' : 'bg-os-surfaceContainerHighest'}`}
-                        onClick={() => setTransparencyEffects(!transparencyEffects)}
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={transparencyEffects}
+                        aria-label="Toggle transparency effects"
+                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${transparencyEffects ? 'bg-[#cc97ff]' : 'bg-os-surfaceContainerHighest'}`}
+                        onClick={() => {
+                          setTransparencyEffects(!transparencyEffects);
+                          playSound('click');
+                        }}
                     >
                         <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${transparencyEffects ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                    </div>
+                    </button>
                 </div>
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50 transition-colors border border-os-outline/5">
@@ -244,12 +261,19 @@ const Settings = () => {
                             <span className="block text-xs text-os-onSurfaceVariant">Disable 3D wallpaper & effects</span>
                         </div>
                     </div>
-                    <div 
-                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${lowPerformance ? 'bg-os-secondary' : 'bg-os-surfaceContainerHighest'}`}
-                        onClick={() => setLowPerformance(!lowPerformance)}
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={lowPerformance}
+                        aria-label="Toggle performance mode"
+                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${lowPerformance ? 'bg-os-secondary' : 'bg-os-surfaceContainerHighest'}`}
+                        onClick={() => {
+                          setLowPerformance(!lowPerformance);
+                          playSound('click');
+                        }}
                     >
                         <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${lowPerformance ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                    </div>
+                    </button>
                 </div>
             </div>
         </section>
@@ -267,10 +291,17 @@ const Settings = () => {
                 <span className="block text-sm font-semibold mb-3">Accent Color</span>
                 <div className="flex gap-4">
                     {accentColors.map(color => (
-                        <div 
+                        <button
                             key={color.id}
-                            onClick={() => { setActiveAccent(color.id); unlockAchievement('decorator'); }}
-                            className={`w-8 h-8 rounded-full cursor-pointer transition-all duration-300 flex items-center justify-center`}
+                            type="button"
+                            aria-label={`Set accent color to ${color.id}`}
+                            title={`Set accent color to ${color.id}`}
+                            onClick={() => {
+                              setActiveAccent(color.id);
+                              unlockAchievement('decorator');
+                              playSound('click');
+                            }}
+                            className={`w-8 h-8 rounded-full cursor-pointer transition-all duration-300 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50`}
                             style={{ 
                                 backgroundColor: color.hex,
                                 boxShadow: activeAccent === color.id ? `0 0 20px ${color.shadow}` : 'none',
@@ -278,7 +309,7 @@ const Settings = () => {
                             }}
                         >
                             {activeAccent === color.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                        </div>
+                        </button>
                     ))}
                 </div>
             </div>
@@ -325,8 +356,11 @@ const Settings = () => {
             </div>
           </div>
           <button
-            onClick={resetSettingsToDefault}
-            className="px-6 py-2.5 rounded-xl bg-os-surfaceContainerHigh hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 border border-os-outline/20 transition-all duration-300 text-sm font-semibold flex items-center gap-2 group"
+            onClick={() => {
+              resetSettingsToDefault();
+              playSound('click');
+            }}
+            className="px-6 py-2.5 rounded-xl bg-os-surfaceContainerHigh hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 border border-os-outline/20 transition-all duration-300 text-sm font-semibold flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
           >
             <RotateCcw size={16} className="group-hover:-rotate-180 transition-transform duration-500" />
             Reset to Default
@@ -503,9 +537,12 @@ const Settings = () => {
               Available Networks
             </h3>
             <button 
-              onClick={handleNetworkScan}
+              onClick={() => {
+                handleNetworkScan();
+                playSound('click');
+              }}
               disabled={isScanning}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-os-surfaceContainerHigh/50 hover:bg-os-surfaceContainerHighest transition-colors text-xs font-semibold disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-os-surfaceContainerHigh/50 hover:bg-os-surfaceContainerHighest transition-colors text-xs font-semibold disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             >
               <RefreshCw size={14} className={isScanning ? 'animate-spin' : ''} />
               {isScanning ? 'Scanning...' : 'Scan'}
@@ -543,7 +580,10 @@ const Settings = () => {
                     ))}
                   </div>
                   {!net.connected && (
-                    <button className="px-3 py-1.5 rounded-lg bg-os-primary/10 text-os-primary text-[10px] font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-colors">
+                    <button
+                      onClick={() => playSound('click')}
+                      className="px-3 py-1.5 rounded-lg bg-os-primary/10 text-os-primary text-[10px] font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+                    >
                       Connect
                     </button>
                   )}
@@ -652,8 +692,11 @@ const Settings = () => {
                           <p className="text-xs text-os-onSurfaceVariant">Linked with Puter.com Ecosystem</p>
                         </div>
                         <button
-                          onClick={signOutPuter}
-                          className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-xs font-semibold uppercase tracking-wider transition-all duration-300"
+                          onClick={() => {
+                            signOutPuter();
+                            playSound('click');
+                          }}
+                          className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-xs font-semibold uppercase tracking-wider transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
                         >
                           Disconnect
                         </button>
@@ -684,15 +727,21 @@ const Settings = () => {
                           <p className="text-[11px] text-os-onSurfaceVariant">Manually push or pull your virtual disk documents.</p>
                           <div className="flex gap-2 pt-1">
                             <button
-                              onClick={syncFilesToPuter}
-                              className="flex-1 py-2 rounded-xl bg-os-primary/10 border border-os-primary/20 text-os-primary text-xs font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-all flex items-center justify-center gap-2"
+                              onClick={() => {
+                                syncFilesToPuter();
+                                playSound('click');
+                              }}
+                              className="flex-1 py-2 rounded-xl bg-os-primary/10 border border-os-primary/20 text-os-primary text-xs font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                             >
                               <Upload size={13} />
                               Push Files
                             </button>
                             <button
-                              onClick={loadFilesFromPuter}
-                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                              onClick={() => {
+                                loadFilesFromPuter();
+                                playSound('click');
+                              }}
+                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                             >
                               <Download size={13} />
                               Pull Files
@@ -705,15 +754,21 @@ const Settings = () => {
                           <p className="text-[11px] text-os-onSurfaceVariant">Manually push or pull system settings & wallpapers.</p>
                           <div className="flex gap-2 pt-1">
                             <button
-                              onClick={syncPrefsToPuter}
-                              className="flex-1 py-2 rounded-xl bg-os-secondary/10 border border-os-secondary/20 text-os-secondary text-xs font-bold uppercase tracking-wider hover:bg-os-secondary/20 transition-all flex items-center justify-center gap-2"
+                              onClick={() => {
+                                syncPrefsToPuter();
+                                playSound('click');
+                              }}
+                              className="flex-1 py-2 rounded-xl bg-os-secondary/10 border border-os-secondary/20 text-os-secondary text-xs font-bold uppercase tracking-wider hover:bg-os-secondary/20 transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-secondary/50"
                             >
                               <Upload size={13} />
                               Push Settings
                             </button>
                             <button
-                              onClick={loadPrefsFromPuter}
-                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                              onClick={() => {
+                                loadPrefsFromPuter();
+                                playSound('click');
+                              }}
+                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-secondary/50"
                             >
                               <Download size={13} />
                               Pull Settings
@@ -748,9 +803,12 @@ const Settings = () => {
                             </div>
                           </div>
                           <button
-                            onClick={signInWithPuter}
+                            onClick={() => {
+                              signInWithPuter();
+                              playSound('click');
+                            }}
                             disabled={isPuterConnecting}
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.3)] disabled:opacity-50"
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.3)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                           >
                             {isPuterConnecting ? (
                               <RefreshCw size={14} className="animate-spin" />
