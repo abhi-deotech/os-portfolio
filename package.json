@@ -16,7 +16,7 @@
     "@react-three/fiber": "^9.6.1",
     "@webcontainer/api": "^1.6.4",
     "clsx": "^2.1.1",
-    "framer-motion": "^12.38.0",
+    "framer-motion": "^12.40.0",
     "idb-keyval": "^6.2.2",
     "lucide-react": "^1.14.0",
     "protobufjs": "^7.5.8",
