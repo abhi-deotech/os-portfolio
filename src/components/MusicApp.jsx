@@ -594,9 +594,8 @@ const MusicApp = () => {
                       onChange={handleSeek}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
-                    <motion.div 
-                      initial={false}
-                      animate={{ width: `${(music.currentTime / music.currentTrack.duration) * 100}%` }}
+                    <div 
+                      style={{ width: `${music.currentTrack.duration > 0 ? (music.currentTime / music.currentTrack.duration) * 100 : 0}%` }}
                       className="absolute top-0 left-0 h-full bg-os-primary group-hover/seek:bg-os-secondary transition-colors" 
                     />
                  </div>
