@@ -182,6 +182,7 @@ const Browser = () => {
                 src={iframeUrl}
                 className="w-full h-full border-none bg-white"
                 sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                credentialless="true"
               />
             </motion.div>
           )}

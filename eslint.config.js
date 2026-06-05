@@ -42,7 +42,7 @@ export default defineConfig([
       'react/jsx-uses-vars': 'error',
       'react/react-in-jsx-scope': 'off', // Not needed for React 17+
       'react/prop-types': 'off', // Disable prop-types as it's not used in this project
-      'react/no-unknown-property': ['error', { ignore: ['intensity', 'position', 'args', 'rotation', 'opacity', 'transparent', 'attach', 'object', 'geometry', 'material'] }],
+      'react/no-unknown-property': ['error', { ignore: ['intensity', 'position', 'args', 'rotation', 'opacity', 'transparent', 'attach', 'object', 'geometry', 'material', 'credentialless'] }],
     },
   },
 ])
