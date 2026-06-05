@@ -16,7 +16,13 @@ export const createMusicSlice = (set) => ({
     activeView: 'Home', // Current UI view (Home, Library, etc)
     shuffle: false,
     repeatMode: 'none', // 'none', 'one', 'all'
-    history: [] // Last played track IDs
+    history: [], // Last played track IDs
+    lastFmData: {
+      nowPlaying: null,
+      artistBio: null,
+      topTracks: [],
+      similarTracks: []
+    }
   },
 
   setMusicIsPlaying: (isPlaying) => set((state) => ({
@@ -67,4 +73,20 @@ export const createMusicSlice = (set) => ({
   setMusicVolume: (value) => set((state) => ({
     music: { ...state.music, volume: value }
   })),
+
+  setLastFmNowPlaying: (data) => set((state) => ({
+    music: { ...state.music, lastFmData: { ...state.music.lastFmData, nowPlaying: data } }
+  })),
+
+  setLastFmArtistBio: (bio) => set((state) => ({
+    music: { ...state.music, lastFmData: { ...state.music.lastFmData, artistBio: bio } }
+  })),
+
+  setLastFmTopTracks: (tracks) => set((state) => ({
+    music: { ...state.music, lastFmData: { ...state.music.lastFmData, topTracks: tracks } }
+  })),
+
+  setLastFmSimilarTracks: (tracks) => set((state) => ({
+    music: { ...state.music, lastFmData: { ...state.music.lastFmData, similarTracks: tracks } }
+  }))
 });
