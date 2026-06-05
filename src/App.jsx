@@ -26,7 +26,6 @@ import BSOD from './components/BSOD';
 import WindowContentRenderer from './components/WindowContentRenderer';
 import Desktop from './components/Desktop';
 import Taskbar from './components/Taskbar';
-import PresenceLayer from './components/PresenceLayer';
 
 import useSoundEffects from './hooks/useSoundEffects';
 import useOSStore from './store/osStore';
@@ -172,7 +171,6 @@ function App() {
       onContextMenu={handleDesktopContextMenu}
     >
       <LiveWallpaper />
-      {!activeRetroGame && <PresenceLayer />}
       {!isMobile && !activeRetroGame && <Widgets />}
 
       {/* Context Menus — Desktop */}
