@@ -6,7 +6,6 @@ import { createFileSystemSlice } from './slices/fileSystemSlice';
 import { createMusicSlice } from './slices/musicSlice';
 import { createSystemSlice } from './slices/systemSlice';
 import { createWindowSlice } from './slices/windowSlice';
-import { createSyncSlice } from './slices/syncSlice';
 import { createContainerSlice } from './slices/containerSlice';
 import { createAiSlice } from './slices/aiSlice';
 import { createPuterSlice } from './slices/puterSlice';
@@ -24,7 +23,6 @@ const useOSStore = create(
       ...createMusicSlice(set, get),
       ...createSystemSlice(set, get),
       ...createWindowSlice(set, get),
-      ...createSyncSlice(set, get),
       ...createContainerSlice(set, get),
       ...createAiSlice(set, get),
       ...createPuterSlice(set, get),

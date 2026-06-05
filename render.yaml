@@ -16,14 +16,4 @@ services:
         name: Cross-Origin-Resource-Policy
         value: cross-origin
 
-  - type: web
-    name: y-webrtc-signaling
-    env: node
-    buildCommand: npm install
-    startCommand: npx y-webrtc-signaling --port 10000
-    autoDeploy: true
-    plan: free
-    envVars:
-      - key: PORT
-        value: 10000
 
