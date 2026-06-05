@@ -6,8 +6,10 @@ import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import useSystemMetrics from '../hooks/useSystemMetrics';
 import useNetworkInfo from '../hooks/useNetworkInfo';
+import useSoundEffects from '../hooks/useSoundEffects';
 
 const ControlCenter = () => {
+  const { playSound } = useSoundEffects();
   const isControlCenterOpen = useOSStore(state => state.isControlCenterOpen);
   const toggleControlCenter = useOSStore(state => state.toggleControlCenter);
   const music = useOSStore(state => state.music);
@@ -85,9 +87,12 @@ const ControlCenter = () => {
             <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2'} gap-4`}>
                {/* Primary Network Block - Larger */}
                <div className="col-span-1 space-y-4">
-                   <div 
-                     onClick={() => toggleState('wifi')}
-                     className={`p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden ${toggles.wifi ? 'bg-[#00d2fd]/20 border-[#00d2fd]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
+                   <button
+                     type="button"
+                     role="switch"
+                     aria-checked={toggles.wifi}
+                     onClick={() => { toggleState('wifi'); playSound('click'); }}
+                     className={`w-full p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d2fd]/50 ${toggles.wifi ? 'bg-[#00d2fd]/20 border-[#00d2fd]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
                    >
                      {toggles.wifi && <div className="absolute inset-x-0 bottom-0 h-1 bg-[#00d2fd] shadow-[0_0_15px_#00d2fd]" />}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${toggles.wifi ? 'bg-[#00d2fd] text-[#0e0e0e]' : 'bg-os-surfaceContainerHighest text-os-onSurfaceVariant'}`}>
@@ -97,11 +102,14 @@ const ControlCenter = () => {
                         <span className="block text-sm font-bold text-white">Wi-Fi</span>
                         <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.wifi ? 'text-[#00d2fd]' : 'text-os-onSurfaceVariant'}`}>{toggles.wifi ? (network.isOnline ? 'Nexus-Home' : 'Connected') : 'Off'}</span>
                      </div>
-                   </div>
+                   </button>
                    
-                   <div 
-                     onClick={() => toggleState('bluetooth')}
-                     className={`p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden ${toggles.bluetooth ? 'bg-[#cc97ff]/20 border-[#cc97ff]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
+                   <button
+                     type="button"
+                     role="switch"
+                     aria-checked={toggles.bluetooth}
+                     onClick={() => { toggleState('bluetooth'); playSound('click'); }}
+                     className={`w-full p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cc97ff]/50 ${toggles.bluetooth ? 'bg-[#cc97ff]/20 border-[#cc97ff]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
                    >
                      {toggles.bluetooth && <div className="absolute inset-x-0 bottom-0 h-1 bg-[#cc97ff] shadow-[0_0_15px_#cc97ff]" />}
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${toggles.bluetooth ? 'bg-[#cc97ff] text-[#0e0e0e]' : 'bg-os-surfaceContainerHighest text-os-onSurfaceVariant'}`}>
@@ -111,14 +119,17 @@ const ControlCenter = () => {
                         <span className="block text-sm font-bold text-white">Bluetooth</span>
                         <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.bluetooth ? 'text-[#cc97ff]' : 'text-os-onSurfaceVariant'}`}>{toggles.bluetooth ? 'On' : 'Off'}</span>
                      </div>
-                   </div>
+                   </button>
                </div>
 
                {/* Right Stack - Focus */}
                <div className="col-span-1 flex flex-col gap-4">
-                   <div 
-                     onClick={() => toggleState('airdrop')}
-                     className={`flex-1 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 border ${toggles.airdrop ? 'bg-[#00f5a0]/10 border-[#00f5a0]/30 shadow-[inset_0_0_20px_rgba(0,245,160,0.1)]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
+                   <button
+                     type="button"
+                     role="switch"
+                     aria-checked={toggles.airdrop}
+                     onClick={() => { toggleState('airdrop'); playSound('click'); }}
+                     className={`flex-1 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00f5a0]/50 ${toggles.airdrop ? 'bg-[#00f5a0]/10 border-[#00f5a0]/30 shadow-[inset_0_0_20px_rgba(0,245,160,0.1)]' : 'bg-[#131313]/80 border-os-outline/10 hover:bg-[#1a1a1a]'}`}
                    >
                        <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-inner ${toggles.airdrop ? 'bg-[#131313] border border-[#00f5a0]/30' : 'bg-os-surfaceContainerHighest'}`}>
                            <CustomIcon 
@@ -132,7 +143,7 @@ const ControlCenter = () => {
                           <span className={`block text-xs font-bold ${toggles.airdrop ? 'text-white' : 'text-os-onSurfaceVariant'}`}>Focus</span>
                           <span className={`block text-[10px] uppercase font-bold tracking-widest ${toggles.airdrop ? 'text-[#00f5a0]' : 'text-os-onSurfaceVariant'}`}>{toggles.airdrop ? 'Do Not Disturb' : 'Off'}</span>
                       </div>
-                   </div>
+                   </button>
                </div>
             </div>
 
@@ -145,10 +156,24 @@ const ControlCenter = () => {
                         </span>
                         <span className="text-white">{brightness}%</span>
                     </div>
-                   <div className="h-10 md:h-6 bg-os-surfaceContainerHighest/50 rounded-full relative overflow-hidden cursor-pointer shadow-inner" onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setBrightness(Math.round(((e.clientX - rect.left) / rect.width) * 100));
-                   }}>
+                   <div
+                      role="slider"
+                      aria-label="Brightness"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow={brightness}
+                      tabIndex={0}
+                      className="h-10 md:h-6 bg-os-surfaceContainerHighest/50 rounded-full relative overflow-hidden cursor-pointer shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setBrightness(Math.round(((e.clientX - rect.left) / rect.width) * 100));
+                        playSound('click');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft') { setBrightness(Math.max(0, brightness - 5)); playSound('click'); }
+                        if (e.key === 'ArrowRight') { setBrightness(Math.min(100, brightness + 5)); playSound('click'); }
+                      }}
+                   >
                       <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-white/20 to-white/90 transition-all duration-300" style={{ width: `${brightness}%` }} />
                    </div>
                 </div>
@@ -160,66 +185,98 @@ const ControlCenter = () => {
                         </span>
                         <span className="text-[#00d2fd]">{volume}%</span>
                     </div>
-                   <div className="h-10 md:h-6 bg-os-surfaceContainerHighest/50 rounded-full relative overflow-hidden cursor-pointer shadow-inner" onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      setMusicVolume(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
-                   }}>
+                   <div
+                      role="slider"
+                      aria-label="Volume"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                      aria-valuenow={volume}
+                      tabIndex={0}
+                      className="h-10 md:h-6 bg-os-surfaceContainerHighest/50 rounded-full relative overflow-hidden cursor-pointer shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00d2fd]/50"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMusicVolume(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
+                        playSound('click');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowLeft') { setMusicVolume(Math.max(0, music.volume - 0.05)); playSound('click'); }
+                        if (e.key === 'ArrowRight') { setMusicVolume(Math.min(1, music.volume + 0.05)); playSound('click'); }
+                      }}
+                   >
                       <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#00d2fd]/50 to-[#00d2fd] transition-all duration-300" style={{ width: `${volume}%` }} />
                    </div>
                 </div>
 
                 {/* Now Playing Media Card - Moved inside sliders on mobile for better space */}
                 {isMobile && (
-                   <div 
-                    onClick={() => { openWindow('music'); toggleControlCenter(); }}
-                    className="bg-[#131313]/60 p-4 rounded-[2rem] border border-os-outline/10 flex items-center gap-4 relative overflow-hidden group mt-4 cursor-pointer"
-                  >
-                      <div className="w-14 h-14 bg-gradient-to-br from-[#cc97ff] to-[#00d2fd] rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden">
-                          <img src={music.currentTrack.cover} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-                          <CustomIcon icon={music.isPlaying ? Pause : Play} size={20} color="text-white" glow="rgba(255,255,255,0.4)" className="relative z-10" />
-                      </div>
-                      <div className="flex-grow z-10">
-                        <h4 className="text-xs font-black text-white truncate">{music.currentTrack.title}</h4>
-                        <p className="text-[10px] font-bold text-[#cc97ff] truncate uppercase tracking-wider mt-0.5">{music.currentTrack.artist}</p>
-                      </div>
-                      <div 
-                        onClick={(e) => { e.stopPropagation(); setMusicIsPlaying(!music.isPlaying); }}
-                        className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10"
+                   <div className="w-full bg-[#131313]/60 p-4 rounded-[2rem] border border-os-outline/10 flex items-center gap-4 relative overflow-hidden group mt-4">
+                      <button
+                        type="button"
+                        aria-label={`Open Music: ${music.currentTrack.title} by ${music.currentTrack.artist}`}
+                        onClick={() => { openWindow('music'); toggleControlCenter(); playSound('click'); }}
+                        className="flex flex-grow items-center gap-4 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cc97ff]/50 rounded-xl"
+                      >
+                        <div className="w-14 h-14 bg-gradient-to-br from-[#cc97ff] to-[#00d2fd] rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden flex-shrink-0">
+                            <img src={music.currentTrack.cover} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-50" />
+                            <CustomIcon icon={music.isPlaying ? Pause : Play} size={20} color="text-white" glow="rgba(255,255,255,0.4)" className="relative z-10" />
+                        </div>
+                        <div className="flex-grow min-w-0">
+                          <h4 className="text-xs font-black text-white truncate">{music.currentTrack.title}</h4>
+                          <p className="text-[10px] font-bold text-[#cc97ff] truncate uppercase tracking-wider mt-0.5">{music.currentTrack.artist}</p>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={music.isPlaying ? "Pause music" : "Play music"}
+                        onClick={() => { setMusicIsPlaying(!music.isPlaying); playSound('click'); }}
+                        className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 flex-shrink-0"
                       >
                         <CustomIcon icon={music.isPlaying ? Pause : Play} size={14} color="text-white" />
-                      </div>
+                      </button>
                    </div>
                 )}
             </div>
 
             {/* Desktop only media card */}
             {!isMobile && (
-              <div 
-                onClick={() => { openWindow('music'); toggleControlCenter(); }}
-                className="bg-[#131313]/60 p-4 rounded-[2rem] border border-os-outline/10 flex items-center gap-4 relative overflow-hidden group cursor-pointer"
-              >
+              <div className="w-full bg-[#131313]/60 p-4 rounded-[2rem] border border-os-outline/10 flex items-center gap-4 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 w-[100px] h-[100px] bg-[#cc97ff]/10 blur-[30px] rounded-full pointer-events-none group-hover:bg-[#cc97ff]/20 transition-colors" />
-                  <div className="w-14 h-14 bg-gradient-to-br from-[#cc97ff] to-[#00d2fd] rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300 relative overflow-hidden">
-                      <img src={music.currentTrack.cover} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-                      <div className="absolute inset-0 bg-black/20 rounded-2xl" />
-                      <CustomIcon icon={music.isPlaying ? Pause : Play} size={20} color="text-white" glow="rgba(255,255,255,0.4)" className="relative z-10" />
-                  </div>
                   
-                  <div className="flex-grow z-10">
-                    <h4 className="text-xs font-black text-white truncate">{music.currentTrack.title}</h4>
-                    <p className="text-[10px] font-bold text-[#cc97ff] truncate uppercase tracking-wider mt-0.5">{music.currentTrack.artist}</p>
-                  </div>
+                  <button
+                    type="button"
+                    aria-label={`Open Music: ${music.currentTrack.title} by ${music.currentTrack.artist}`}
+                    onClick={() => { openWindow('music'); toggleControlCenter(); playSound('click'); }}
+                    className="flex flex-grow items-center gap-4 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#cc97ff]/50 rounded-xl z-10"
+                  >
+                    <div className="w-14 h-14 bg-gradient-to-br from-[#cc97ff] to-[#00d2fd] rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300 relative overflow-hidden flex-shrink-0">
+                        <img src={music.currentTrack.cover} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-50" />
+                        <div className="absolute inset-0 bg-black/20 rounded-2xl" />
+                        <CustomIcon icon={music.isPlaying ? Pause : Play} size={20} color="text-white" glow="rgba(255,255,255,0.4)" className="relative z-10" />
+                    </div>
+
+                    <div className="flex-grow min-w-0">
+                      <h4 className="text-xs font-black text-white truncate">{music.currentTrack.title}</h4>
+                      <p className="text-[10px] font-bold text-[#cc97ff] truncate uppercase tracking-wider mt-0.5">{music.currentTrack.artist}</p>
+                    </div>
+                  </button>
                   
                   <div className="flex flex-row gap-2 z-10">
-                      <div 
-                        onClick={(e) => { e.stopPropagation(); setMusicIsPlaying(!music.isPlaying); }}
-                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors"
+                      <button
+                        type="button"
+                        aria-label={music.isPlaying ? "Pause music" : "Play music"}
+                        onClick={() => { setMusicIsPlaying(!music.isPlaying); playSound('click'); }}
+                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                       >
                         <CustomIcon icon={music.isPlaying ? Pause : Play} size={14} color="text-white" />
-                      </div>
-                      <div className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors">
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Skip track"
+                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                        onClick={() => { playSound('click'); }}
+                      >
                         <CustomIcon icon={SkipForward} size={14} color="text-white" />
-                      </div>
+                      </button>
                   </div>
               </div>
             )}
