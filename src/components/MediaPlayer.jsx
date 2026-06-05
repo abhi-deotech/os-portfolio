@@ -276,9 +276,8 @@ const MediaPlayer = ({ file: initialFile }) => {
                          onChange={handleSeek}
                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                        />
-                       <motion.div 
-                         initial={false}
-                         animate={{ width: `${progress}%` }}
+                       <div 
+                         style={{ width: `${progress}%` }}
                          className="absolute top-0 left-0 h-full bg-os-primary"
                        />
                     </div>

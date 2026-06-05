@@ -63,9 +63,10 @@ const Browser = () => {
       {/* Browser Ribbon */}
       <div className="flex items-center gap-3 px-4 py-3 bg-[#121212] border-b border-white/5 relative z-20">
         <div className="flex gap-1.5">
-           <button className="p-2 hover:bg-white/5 rounded-xl text-white/40 transition-colors"><ArrowLeft size={16} /></button>
-           <button className="p-2 hover:bg-white/5 rounded-xl text-white/40 transition-colors"><ArrowRight size={16} /></button>
+           <button aria-label="Go back" className="p-2 hover:bg-white/5 rounded-xl text-white/40 transition-colors"><ArrowLeft size={16} /></button>
+           <button aria-label="Go forward" className="p-2 hover:bg-white/5 rounded-xl text-white/40 transition-colors"><ArrowRight size={16} /></button>
            <button 
+             aria-label="Reload page"
              onClick={() => {
                const current = iframeUrl;
                setIframeUrl('');
@@ -85,6 +86,7 @@ const Browser = () => {
               {isBlocked ? <Lock size={14} /> : <Globe size={14} />}
             </div>
             <input 
+              aria-label="Address bar"
               type="text" 
               value={url}
               onChange={(e) => setUrl(e.target.value)}
@@ -100,6 +102,7 @@ const Browser = () => {
 
         <button 
           onClick={openExternal}
+          aria-label="Open in new tab"
           title="Open in new tab"
           className="p-2 bg-os-primary/10 text-os-primary rounded-xl hover:bg-os-primary/20 transition-all active:scale-90"
         >
