@@ -1,0 +1,24 @@
+name: Sync to SSR Repository
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to SSR Repository
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Add the destination repository as a remote
+          git remote add ssr https://x-access-token:${{ secrets.SYNC_PAT }}@github.com/abhi-deotech/os-portfolio-ssr.git
+          # Push the master branch to the main branch of the SSR repository
+          git push ssr master:main --force
