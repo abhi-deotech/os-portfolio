@@ -243,6 +243,7 @@ const RetroArcade = () => {
                     onLoad={() => setLoading(false)}
                     onError={() => setError(true)}
                     title={`Playing ${activeRetroGame.title}`}
+                    credentialless="true"
                   />
                   
                   {/* AI Toggle Button */}

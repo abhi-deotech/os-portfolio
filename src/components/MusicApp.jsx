@@ -102,10 +102,20 @@ const MusicApp = () => {
       if (playerRef.current || !window.YT || !window.YT.Player || !containerRef.current) return;
       
       try {
-        playerRef.current = new window.YT.Player(containerRef.current, {
+        // Clear container to avoid duplicate iframes
+        containerRef.current.innerHTML = '';
+
+        // Create an iframe and set credentialless so that it can load YouTube in COEP context
+        const iframe = document.createElement('iframe');
+        iframe.id = 'yt-player-iframe';
+        iframe.credentialless = true;
+        iframe.setAttribute('credentialless', 'true');
+        iframe.style.width = '1px';
+        iframe.style.height = '1px';
+        containerRef.current.appendChild(iframe);
+
+        playerRef.current = new window.YT.Player(iframe, {
           host: 'https://www.youtube-nocookie.com',
-          height: '1',
-          width: '1',
           videoId: music.currentTrack.youtubeId,
           playerVars: {
             autoplay: 0,
