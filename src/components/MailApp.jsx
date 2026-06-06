@@ -70,8 +70,9 @@ const MailApp = () => {
       {/* Sidebar */}
       <div className="w-16 md:w-64 border-r border-white/5 flex flex-col p-4 space-y-6">
         <button 
+          type="button"
           onClick={() => setIsComposeOpen(true)}
-          className="w-full bg-os-primary text-black rounded-2xl p-3 md:px-4 flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all"
+          className="w-full bg-os-primary text-black rounded-2xl p-3 md:px-4 flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
         >
           <PenSquare size={18} />
           <span className="hidden md:inline">Compose</span>
@@ -132,8 +133,11 @@ const MailApp = () => {
                 <h4 className={`text-xs truncate ${!email.read ? 'font-bold text-white/90' : 'text-white/40'}`}>{email.subject}</h4>
                 <p className="text-xs text-white/20 truncate mt-1">{email.content}</p>
                 <button 
+                  type="button"
+                  aria-label={email.starred ? "Remove star" : "Star message"}
+                  title={email.starred ? "Remove star" : "Star message"}
                   onClick={(e) => toggleStar(email.id, e)}
-                  className={`absolute right-4 bottom-4 transition-colors ${email.starred ? 'text-yellow-400' : 'text-white/10 hover:text-white/30'}`}
+                  className={`absolute right-4 bottom-4 transition-colors p-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/10 ${email.starred ? 'text-yellow-400' : 'text-white/10 hover:text-white/30'}`}
                 >
                   <Star size={14} fill={email.starred ? "currentColor" : "none"} />
                 </button>
@@ -147,7 +151,7 @@ const MailApp = () => {
               <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
                   <div className="flex items-center gap-4">
-                    <button onClick={() => setSelectedId(null)} className="md:hidden p-2 hover:bg-white/5 rounded-lg">
+                    <button type="button" aria-label="Back to inbox" title="Back to inbox" onClick={() => setSelectedId(null)} className="md:hidden p-2 hover:bg-white/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/10">
                       <ChevronLeft size={20} />
                     </button>
                     <div>
@@ -159,8 +163,8 @@ const MailApp = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="p-2.5 hover:bg-white/5 rounded-xl text-white/40 hover:text-white transition-all"><Archive size={18} /></button>
-                    <button className="p-2.5 hover:bg-red-500/10 rounded-xl text-white/40 hover:text-red-400 transition-all"><Trash2 size={18} /></button>
+                    <button type="button" aria-label="Archive message" title="Archive message" className="p-2.5 hover:bg-white/5 rounded-xl text-white/40 hover:text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/10"><Archive size={18} /></button>
+                    <button type="button" aria-label="Delete message" title="Delete message" className="p-2.5 hover:bg-red-500/10 rounded-xl text-white/40 hover:text-red-400 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"><Trash2 size={18} /></button>
                   </div>
                 </div>
                 <div className="p-8 overflow-y-auto space-y-8">
@@ -212,7 +216,7 @@ const MailApp = () => {
             <div className="relative w-full max-w-xl bg-[#0f0f0f] border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden shadow-black/50">
               <div className="p-6 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
                 <h3 className="font-black uppercase italic tracking-tight text-os-primary">New Neural Message</h3>
-                <button onClick={() => setIsComposeOpen(false)} className="text-white/20 hover:text-white"><Trash2 size={18} /></button>
+                <button type="button" aria-label="Discard message" title="Discard message" onClick={() => setIsComposeOpen(false)} className="p-2 text-white/20 hover:text-white rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 focus-visible:bg-white/10"><Trash2 size={18} /></button>
               </div>
               <form onSubmit={handleSend} className="p-6 space-y-4">
                 <div className="space-y-4">
