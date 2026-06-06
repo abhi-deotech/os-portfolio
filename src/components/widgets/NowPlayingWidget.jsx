@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { motion } from 'framer-motion';
+
 import { Radio } from 'lucide-react';
 import useOSStore from '../../store/osStore';
 import { getNowPlaying } from '../../utils/musicApi';
