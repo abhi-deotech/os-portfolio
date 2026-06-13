@@ -14,3 +14,7 @@
 ## 2026-06-04 - Accessible Window Controls with Auditory Feedback
 **Learning:** Combining ARIA labels and focus-visible rings with synthesized sound effects for window controls (Close, Minimize, Maximize) creates a more inclusive and responsive desktop experience. The auditory cues ('click', 'close') provide immediate confirmation of state changes that visual-only animations might sometimes fail to convey clearly to all users.
 **Action:** Consistently apply semantic `<button type="button">` with aria-label, title, focus-visible styles, and useSoundEffects for all system-level window and taskbar interactions.
+
+## 2026-06-05 - Accessible Media Controls with Auditory Feedback
+**Learning:** In media viewer applications (like PhotoViewer), image manipulation controls (zoom, rotate) and action buttons (save, share, favorite) often rely purely on visual icons without clear labels. Adding `aria-label` and `title` ensures screen reader compatibility, while implementing `focus-visible:ring-2` allows keyboard navigation. Furthermore, integrating `useSoundEffects` for these interactions adds an auditory layer that confirms the action is registered, particularly helpful during media consumption where visual focus might be scattered.
+**Action:** Always ensure media viewer controls have semantic `<button type="button">`, accessible labels (`aria-label`, `title`), keyboard focus rings (`focus-visible`), and auditory feedback via `playSound('click')`.
