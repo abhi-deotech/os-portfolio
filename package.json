@@ -24,7 +24,7 @@
     "lucide-react": "^1.14.0",
     "protobufjs": "^7.5.8",
     "react": "^19.2.6",
-    "react-arborist": "^3.6.1",
+    "react-arborist": "^3.10.5",
     "react-contexify": "^6.0.0",
     "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
