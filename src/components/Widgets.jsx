@@ -5,7 +5,6 @@ import SystemMetricsWidget from './SystemMetricsWidget';
 import ClockWidget from './ClockWidget';
 import SystemDashboard from './SystemDashboard';
 import QuantumWidget from './widgets/QuantumWidget';
-import NowPlayingWidget from './widgets/NowPlayingWidget';
 import { useIsMobile } from '../hooks/useMediaQuery';
 
 const DraggableWidget = ({ children, initialPos, setPos, width, className = "" }) => (
@@ -43,7 +42,6 @@ const Widgets = () => {
         case 'clock':     return { x: Math.floor(window.innerWidth / 2) - 170, y: 40 };
         case 'dashboard': return { x: window.innerWidth - 460, y: 40 };
         case 'quantum':   return { x: 40, y: window.innerHeight - 240 };
-        case 'nowPlaying':return { x: window.innerWidth - 380, y: window.innerHeight - 180 };
         default:          return { x: 40, y: 40 };
       }
     }
@@ -52,7 +50,6 @@ const Widgets = () => {
   const [clockPos, setClockPos] = useState(() => getInitialPos('clock'));
   const [dashPos, setDashPos] = useState(() => getInitialPos('dashboard'));
   const [quantumPos, setQuantumPos] = useState(() => getInitialPos('quantum'));
-  const [nowPlayingPos, setNowPlayingPos] = useState(() => getInitialPos('nowPlaying'));
 
   // Reset positions on resize/mode change
   const [prevIsMobile, setPrevIsMobile] = useState(isMobile);
@@ -61,7 +58,6 @@ const Widgets = () => {
     setClockPos(getInitialPos('clock'));
     setDashPos(getInitialPos('dashboard'));
     setQuantumPos(getInitialPos('quantum'));
-    setNowPlayingPos(getInitialPos('nowPlaying'));
   }
 
   if (isMobile) {
@@ -75,9 +71,6 @@ const Widgets = () => {
         </div>
         <div className="w-full max-w-[320px]">
           <QuantumWidget />
-        </div>
-        <div className="w-full max-w-[340px]">
-          <NowPlayingWidget />
         </div>
       </div>
     );
@@ -109,14 +102,6 @@ const Widgets = () => {
           width={320}
         >
           <QuantumWidget />
-        </DraggableWidget>
-
-        <DraggableWidget 
-          initialPos={nowPlayingPos} 
-          setPos={setNowPlayingPos} 
-          width={340}
-        >
-          <NowPlayingWidget />
         </DraggableWidget>
       </div>
     </div>

@@ -4,6 +4,8 @@ import { User, Lock, ArrowRight, Power, RefreshCw, Wifi, BatteryFull, ShieldChec
 import useOSStore from '../store/osStore';
 import BootSequence from './BootSequence';
 
+const IS_PUTER_SHELL = import.meta.env.VITE_APP_MODE === 'puter-shell';
+
 // Define vibrant gradient for the boot button
 const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary bg-[length:200%_auto] hover:bg-[100%_0] text-white font-bold text-xs tracking-[0.3em] uppercase border border-white/20 backdrop-blur-sm transition-all duration-700 shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_40px_rgba(var(--os-primary-rgb),0.5)]";
 
@@ -110,8 +112,12 @@ const LoginScreen = () => {
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-12">
                     <div>
-                      <h2 className="text-3xl font-black text-white italic tracking-tight">Abhimanyu Saxena</h2>
-                      <p className="text-[10px] font-bold text-os-primary uppercase tracking-[0.3em]">System Authority</p>
+                      <h2 className="text-3xl font-black text-white italic tracking-tight">
+                        {IS_PUTER_SHELL ? 'Lumina OS' : 'Abhimanyu Saxena'}
+                      </h2>
+                      <p className="text-[10px] font-bold text-os-primary uppercase tracking-[0.3em]">
+                        {IS_PUTER_SHELL ? 'Core Architecture' : 'System Authority'}
+                      </p>
                     </div>
                     <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-os-primary">
                       <ShieldCheck className="w-6 h-6" />

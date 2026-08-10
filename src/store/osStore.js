@@ -9,6 +9,7 @@ import { createWindowSlice } from './slices/windowSlice';
 import { createContainerSlice } from './slices/containerSlice';
 import { createAiSlice } from './slices/aiSlice';
 import { createPuterSlice } from './slices/puterSlice';
+import { MUSIC_DATA } from '../data/musicData';
 
 /**
  * Zustand store for Lumina OS state management.
@@ -29,6 +30,22 @@ const useOSStore = create(
     }),
     {
       name: 'os-settings',
+      merge: (persistedState, currentState) => {
+        const merged = { ...currentState, ...persistedState };
+        if (merged.music) {
+          // Never rehydrate as "playing" — no audio engine is running yet.
+          // Re-resolve the persisted track against the current catalog so
+          // removed/renamed local files can't leave a dead currentTrack.
+          const found = MUSIC_DATA.find((t) => t.id === merged.music.currentTrack?.id);
+          merged.music = {
+            ...merged.music,
+            currentTrack: found || MUSIC_DATA[0],
+            isPlaying: false,
+            currentTime: 0,
+          };
+        }
+        return merged;
+      },
       storage: {
         getItem: async (name) => (await get(name)) || null,
         setItem: async (name, value) => await set(name, value),

@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 backend/.env
+
+# Generated music cover cache (extracted from MP3 ID3 tags at build time)
+public/assets/music/_covers

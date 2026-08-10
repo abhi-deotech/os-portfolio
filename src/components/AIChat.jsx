@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Brain, Sparkles, MessageSquare, AlertCircle } from 'lucide-react';
 import useOSStore from '../store/osStore';
 import { sendMessageWithFallback } from '../utils/aiHandler';
+import { sendPuterAiMessage } from '../utils/puterAIHandler';
 
 const SYSTEM_PROMPT = `
 You are Lumina AI, the ultra-smart, professional, and enthusiastic digital assistant for Abhimanyu Saxena's portfolio (Lumina OS).
@@ -26,6 +27,7 @@ If asked about something unrelated (e.g., "What is the capital of France?"), ans
 `;
 
 const AIChat = () => {
+  const { isPuterSignedIn, signInWithPuter, unlockAchievement } = useOSStore();
   const [messages, setMessages] = useState([
     { role: 'assistant', text: "Hello! I'm Lumina AI. How can I help you explore this portfolio today?", timestamp: new Date() }
   ]);
@@ -53,36 +55,59 @@ const AIChat = () => {
     // Achievement: Deep Thinker
     const userMessageCount = newMessages.filter(m => m.role === 'user').length;
     if (userMessageCount >= 3) {
-      useOSStore.getState().unlockAchievement('deep_thinker');
+      unlockAchievement('deep_thinker');
     }
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      let text = '';
       
-      if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-        throw new Error("Missing Gemini API Key. Please add VITE_GEMINI_API_KEY to your .env file.");
-      }
+      // Attempt Puter AI first if signed in
+      if (isPuterSignedIn) {
+        console.log("[AIChat] Using Puter Keyless AI");
+        text = await sendPuterAiMessage({
+          userMsg,
+          history: messages,
+          systemInstruction: SYSTEM_PROMPT,
+          model: 'gpt-4o'
+        });
+      } else {
+        // Fallback to Gemini (requires API Key)
+        console.log("[AIChat] Using Gemini API Fallback");
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        
+        if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+          throw new Error("Missing Gemini API Key. Please sign in with Puter for Cloud AI access.");
+        }
 
-      const text = await sendMessageWithFallback({
-        apiKey,
-        userMsg,
-        history: messages,
-        systemInstruction: SYSTEM_PROMPT,
-        modelName: "gemini-3-flash-preview"
-      });
+        text = await sendMessageWithFallback({
+          apiKey,
+          userMsg,
+          history: messages,
+          systemInstruction: SYSTEM_PROMPT,
+          modelName: "gemini-3.5-flash"
+          });
+
+      }
 
       setMessages(prev => [...prev, { role: 'assistant', text: text, timestamp: new Date() }]);
     } catch (error) {
-      console.error("Gemini Error:", error);
-      const errorMsg = error.message.includes("API Key") 
-        ? "System link error: VITE_GEMINI_API_KEY is missing. Please configure the neural core."
-        : "Neural link disrupted. I'm having trouble connecting to the logic core right now.";
+      console.error("AI Error:", error);
+      let errorMsg = error.message;
+      
+      if (errorMsg.includes("sign in with Puter")) {
+        errorMsg = "Neural core disconnected. Please sign in with Puter Cloud to activate the AI without an API key.";
+      } else if (errorMsg.includes("API Key")) {
+        errorMsg = "System link error: VITE_GEMINI_API_KEY is missing. Please configure the neural core or sign in with Puter.";
+      } else {
+        errorMsg = "Neural link disrupted. I'm having trouble connecting to the logic core right now.";
+      }
       
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         text: errorMsg, 
         timestamp: new Date(),
-        isError: true 
+        isError: true,
+        isAuthPrompt: !isPuterSignedIn && error.message.includes("sign in with Puter")
       }]);
     } finally {
       setIsTyping(false);
@@ -98,10 +123,20 @@ const AIChat = () => {
         </div>
         <div>
           <h3 className="text-sm font-black text-white italic">Lumina AI</h3>
-          <p className="text-[10px] font-bold text-os-primary uppercase tracking-widest">Neural Link Active</p>
+          <p className="text-[10px] font-bold text-os-primary uppercase tracking-widest">
+            {isPuterSignedIn ? 'Cloud Link Active' : 'Local Neural Link'}
+          </p>
         </div>
-        <div className="ml-auto flex gap-2">
-           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        <div className="ml-auto flex items-center gap-4">
+           {!isPuterSignedIn && (
+             <button
+               onClick={() => signInWithPuter()}
+               className="px-3 py-1 bg-os-primary/10 border border-os-primary/30 rounded-lg text-[9px] font-black text-os-primary uppercase tracking-widest hover:bg-os-primary/20 transition-all"
+             >
+               Sign In
+             </button>
+           )}
+           <div className={`w-2 h-2 rounded-full ${isPuterSignedIn ? 'bg-os-primary shadow-[0_0_10px_rgba(var(--os-primary-rgb),0.5)]' : 'bg-green-500 animate-pulse'}`} />
         </div>
       </div>
 
@@ -115,31 +150,48 @@ const AIChat = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             key={i} 
-            className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+            className={`flex flex-col gap-4 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
           >
-            <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${
-              msg.role === 'assistant' ? 'bg-os-primary/10 text-os-primary' : 'bg-os-secondary/10 text-os-secondary'
-            }`}>
-              {msg.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
+            <div className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${
+                msg.role === 'assistant' ? 'bg-os-primary/10 text-os-primary' : 'bg-os-secondary/10 text-os-secondary'
+              }`}>
+                {msg.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
+              </div>
+              <div className={`max-w-[80%] rounded-2xl p-4 text-xs leading-relaxed ${
+                msg.role === 'assistant' ? 'bg-white/[0.03] text-white/80' : 'bg-os-secondary/20 text-white border border-os-secondary/20'
+              }`}>
+                {msg.text}
+              </div>
             </div>
-            <div className={`max-w-[80%] rounded-2xl p-4 text-xs leading-relaxed ${
-              msg.role === 'assistant' ? 'bg-white/[0.03] text-white/80' : 'bg-os-secondary/20 text-white border border-os-secondary/20'
-            }`}>
-              {msg.text}
-            </div>
+            
+            {msg.isAuthPrompt && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={() => signInWithPuter()}
+                className="ml-12 px-4 py-2 bg-os-primary text-black text-[10px] font-black uppercase tracking-widest rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg"
+              >
+                Sign in with Puter
+              </motion.button>
+            )}
           </motion.div>
         ))}
         {isTyping && (
-          <div className="flex gap-4">
-            <div className="w-8 h-8 rounded-xl bg-os-primary/10 text-os-primary flex items-center justify-center">
+          <motion.div 
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex gap-4"
+          >
+            <div className="w-8 h-8 rounded-xl bg-os-primary/10 text-os-primary flex items-center justify-center shrink-0">
               <Bot size={16} />
             </div>
-            <div className="bg-white/[0.03] rounded-2xl p-4 flex gap-1">
-              <span className="w-1.5 h-1.5 bg-os-primary/40 rounded-full animate-bounce" />
-              <span className="w-1.5 h-1.5 bg-os-primary/40 rounded-full animate-bounce [animation-delay:0.2s]" />
-              <span className="w-1.5 h-1.5 bg-os-primary/40 rounded-full animate-bounce [animation-delay:0.4s]" />
+            <div className="bg-white/[0.06] rounded-2xl px-4 py-3 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-os-primary rounded-full animate-bounce [animation-duration:0.8s]" />
+              <span className="w-1.5 h-1.5 bg-os-primary rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]" />
+              <span className="w-1.5 h-1.5 bg-os-primary rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]" />
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
@@ -152,7 +204,7 @@ const AIChat = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about Abhimanyu, his stack, or projects..."
+              placeholder={isPuterSignedIn ? "Ask anything (Keyless Cloud AI)..." : "Ask about Abhimanyu, his stack, or projects..."}
               className="w-full bg-[#1a1a1a] border border-white/10 rounded-2xl py-4 px-6 text-xs text-white outline-none focus:border-os-primary/50 transition-all"
             />
             <button 
@@ -163,6 +215,11 @@ const AIChat = () => {
             </button>
           </div>
         </div>
+        {!isPuterSignedIn && (
+          <p className="text-[9px] text-white/20 text-center mt-3 uppercase tracking-widest font-bold">
+            💡 Sign in with Puter to activate Keyless Cloud AI
+          </p>
+        )}
       </form>
     </div>
   );

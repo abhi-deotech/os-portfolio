@@ -249,6 +249,17 @@ const Taskbar = () => {
                       </button>
                     </div>
                   </div>
+                  <div className="mt-3 flex justify-center">
+                    <a 
+                      href="https://developer.puter.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] hover:text-os-primary transition-colors flex items-center gap-2"
+                    >
+                      <div className="w-1.5 h-1.5 rounded-full bg-os-primary/40" />
+                      Powered by Puter
+                    </a>
+                  </div>
                 </div>
               </div>
             </motion.div>

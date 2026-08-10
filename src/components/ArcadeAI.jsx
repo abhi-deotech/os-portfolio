@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Brain, X, MessageSquare, Sparkles, Terminal, Gamepad2, MousePointer2 } from 'lucide-react';
+import useOSStore from '../store/osStore';
 import { sendMessageWithFallback } from '../utils/aiHandler';
+import { sendPuterAiMessage } from '../utils/puterAIHandler';
 
 const GAME_HELP_PROMPT = `
 You are Arcade AI, a specialized gaming assistant within Lumina OS. 
@@ -49,12 +51,9 @@ Always keep the conversation focused on gaming and the current arcade experience
 `;
 
 const ArcadeAI = ({ game }) => {
+  const { isPuterSignedIn, signInWithPuter } = useOSStore();
   const [messages, setMessages] = useState([
-    { 
-      role: 'assistant', 
-      text: `Welcome to the Neural Arcade Interface! I see you're loading ${game?.title || 'a game'}. Need help with the controls?`, 
-      timestamp: new Date() 
-    }
+    { role: 'assistant', text: `Neural link established. I'm Arcade AI. How can I help you dominate ${game?.title || 'this game'}?`, timestamp: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -64,43 +63,60 @@ const ArcadeAI = ({ game }) => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isTyping]);
+  }, [messages]);
 
   const handleSend = async (e) => {
     e.preventDefault();
     if (!input.trim() || isTyping) return;
 
     const userMsg = input.trim();
-    setMessages(prev => [...prev, { role: 'user', text: userMsg, timestamp: new Date() }]);
     setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg, timestamp: new Date() }]);
     setIsTyping(true);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-        throw new Error("Missing API Key");
-      }
-
       const systemInstruction = GAME_HELP_PROMPT
         .replace('{gameTitle}', game?.title || 'Unknown Game')
         .replace('{system}', game?.system || 'Unknown System');
 
-      const text = await sendMessageWithFallback({
-        apiKey,
-        userMsg,
-        history: messages,
-        systemInstruction,
-        modelName: "gemini-1.5-flash"
-      });
+      let text = '';
+
+      if (isPuterSignedIn) {
+        text = await sendPuterAiMessage({
+          userMsg,
+          history: messages,
+          systemInstruction,
+          model: 'gpt-4o'
+        });
+      } else {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+          throw new Error("Missing API Key. Sign in with Puter for Cloud AI.");
+        }
+
+        text = await sendMessageWithFallback({
+          apiKey,
+          userMsg,
+          history: messages,
+          systemInstruction,
+          modelName: "gemini-3.5-flash"
+          });
+
+      }
 
       setMessages(prev => [...prev, { role: 'assistant', text, timestamp: new Date() }]);
     } catch (error) {
       console.error("Arcade AI Error:", error);
+      const errorMsg = error.message.includes("Sign in with Puter")
+        ? "Neural arcade link requires a Puter account for Cloud AI support."
+        : "Neural link disrupted. Just use WASD and Space for now!";
+
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        text: "Neural link disrupted. Just use WASD and Space for now!", 
+        text: errorMsg, 
         timestamp: new Date(),
-        isError: true 
+        isError: true,
+        isAuthPrompt: !isPuterSignedIn && error.message.includes("Puter")
       }]);
     } finally {
       setIsTyping(false);
@@ -115,14 +131,21 @@ const ArcadeAI = ({ game }) => {
       className="flex flex-col h-full bg-[#0c0c0c] border-l border-white/10 w-80 shadow-2xl overflow-hidden"
     >
       {/* Header */}
-      <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_15px_rgba(var(--os-primary-rgb),0.3)]">
-          <Gamepad2 size={16} />
+      <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_15px_rgba(var(--os-primary-rgb),0.3)]">
+            <Gamepad2 size={16} />
+          </div>
+          <div>
+            <h4 className="text-[10px] font-black text-white italic uppercase tracking-wider">Arcade AI</h4>
+            <p className="text-[8px] font-bold text-os-primary uppercase tracking-[0.2em]">
+              {isPuterSignedIn ? 'Cloud Sync active' : 'Game Strategist'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h4 className="text-[10px] font-black text-white italic uppercase tracking-wider">Arcade AI</h4>
-          <p className="text-[8px] font-bold text-os-primary uppercase tracking-[0.2em]">Game Strategist</p>
-        </div>
+        {isPuterSignedIn && (
+          <div className="w-2 h-2 rounded-full bg-os-primary animate-pulse shadow-[0_0_10px_rgba(var(--os-primary-rgb),0.5)]" />
+        )}
       </div>
 
       {/* Messages */}
@@ -139,6 +162,14 @@ const ArcadeAI = ({ game }) => {
             }`}>
               {msg.text}
             </div>
+            {msg.isAuthPrompt && (
+              <button
+                onClick={() => signInWithPuter()}
+                className="mt-2 px-3 py-1.5 bg-os-primary text-black text-[9px] font-black uppercase tracking-widest rounded hover:scale-105 active:scale-95 transition-all"
+              >
+                Link Puter
+              </button>
+            )}
           </div>
         ))}
         {isTyping && (
@@ -149,6 +180,7 @@ const ArcadeAI = ({ game }) => {
           </div>
         )}
       </div>
+...
 
       {/* Control Summary Mini-Panel */}
       <div className="px-4 py-2 bg-white/[0.02] border-y border-white/5">

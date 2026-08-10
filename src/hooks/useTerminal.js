@@ -49,7 +49,27 @@ const useTerminal = () => {
   }, [terminalHistory]);
 
   const commands = {
-    help: () => 'Available commands:\n  help, clear, ls, cd, cat, mkdir, touch, rm, ps, top, vim\n  neofetch, whoami, date, matrix, ssh, lumina-get, theme, man, lumina-ai',
+    help: () => 'Available commands:\n  help, clear, ls, cd, cat, mkdir, touch, rm, ps, top, vim\n  neofetch, whoami, date, matrix, ssh, lumina-get, theme, man, lumina-ai, puter',
+    puter: (args) => {
+      const sub = args[0];
+      const { isPuterSignedIn, puterUser, signInWithPuter, signOutPuter } = useOSStore.getState();
+      
+      if (sub === 'login') {
+        signInWithPuter();
+        return 'Puter neural link initiated. Please check the authentication popup.';
+      }
+      if (sub === 'logout') {
+        signOutPuter();
+        return 'Puter neural link terminated.';
+      }
+      if (sub === 'status' || !sub) {
+        if (isPuterSignedIn) {
+          return `Puter Status: CONNECTED\nUser: ${puterUser?.username || 'Authenticated User'}\nLink: Cloud Drive Active`;
+        }
+        return 'Puter Status: DISCONNECTED\nRun "puter login" to establish neural link.';
+      }
+      return `puter: unknown subcommand '${sub}'. Try 'login', 'logout', or 'status'.`;
+    },
     clear: () => {
       clearTerminalHistory();
       return null;

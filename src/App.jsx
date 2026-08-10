@@ -29,6 +29,7 @@ import Taskbar from './components/Taskbar';
 
 import useSoundEffects from './hooks/useSoundEffects';
 import useOSStore from './store/osStore';
+import { attach as attachMusicEngine } from './utils/musicEngine';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { APPS } from './config/apps';
 import './index.css';
@@ -82,7 +83,29 @@ function App() {
   const { playSound } = useSoundEffects();
   const [isIdle, setIsIdle] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const idleTimer = useRef(null);
+
+  useEffect(() => {
+    attachMusicEngine(useOSStore);
+  }, []);
+
+  useEffect(() => {
+    const handleInteraction = () => {
+      setHasInteracted(true);
+      window.removeEventListener('mousedown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
+    window.addEventListener('mousedown', handleInteraction);
+    window.addEventListener('keydown', handleInteraction);
+    window.addEventListener('touchstart', handleInteraction);
+    return () => {
+      window.removeEventListener('mousedown', handleInteraction);
+      window.removeEventListener('keydown', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
+  }, []);
 
   const isMobile = useIsMobile();
   const contextMenuIconRef = useRef(null);
@@ -117,21 +140,10 @@ function App() {
       window.removeEventListener('mousemove', handleActivity);
       window.removeEventListener('keydown', handleActivity);
       if (idleTimer.current) clearTimeout(idleTimer.current);
-    };
-  }, [isAuthenticated]);
+      };
+      }, [isAuthenticated]);
 
-  // Play sound on window toggle
-  useEffect(() => {
-    if (openWindows.length > 0) playSound('open');
-  }, [openWindows.length, playSound]);
-
-  // Play sound on achievement
-  useEffect(() => {
-    if (achievementQueue.length > 0) playSound('achievement');
-  }, [achievementQueue.length, playSound]);
-
-  const currentAccent = ACCENT_COLORS_MAP[activeAccent] || ACCENT_COLORS_MAP.purple;
-
+      const currentAccent = ACCENT_COLORS_MAP[activeAccent] || ACCENT_COLORS_MAP.purple;
   const handleDesktopContextMenu = (e) => {
     if (isMobile) return;
     e.preventDefault();

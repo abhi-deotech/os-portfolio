@@ -21,38 +21,52 @@ import useOSStore from '../store/osStore';
  * playSound('achievement');
  */
 const useSoundEffects = () => {
-  const { soundEnabled } = useOSStore();
+  const soundEnabled = useOSStore(state => state.soundEnabled ?? true);
   const audioCtx = useRef(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
+  const initAudio = () => {
+    if (!audioCtx.current && typeof window !== 'undefined') {
       audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
     }
+    return audioCtx.current;
+  };
+
+  useEffect(() => {
     return () => {
       if (audioCtx.current) audioCtx.current.close();
     };
   }, []);
 
   const playSound = (type) => {
-    if (!soundEnabled || !audioCtx.current) return;
+    if (!soundEnabled) return;
 
-    const osc = audioCtx.current.createOscillator();
-    const gain = audioCtx.current.createGain();
+    const ctx = initAudio();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
     osc.connect(gain);
-    gain.connect(audioCtx.current.destination);
+    gain.connect(ctx.destination);
 
-    const now = audioCtx.current.currentTime;
-
+    const now = ctx.currentTime;
     switch (type) {
       case 'click':
+        // Soft, high-end "tap" sound using two layered sine waves
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, now);
-        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+        
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.05, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        
         osc.start(now);
-        osc.stop(now + 0.1);
+        osc.stop(now + 0.05);
         break;
       case 'open':
         osc.type = 'triangle';
