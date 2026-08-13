@@ -55,7 +55,7 @@ const AboutMe = () => {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
             >
-              <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-2 underline decoration-os-primary/30 underline-offset-8">
+              <h1 className="text-4xl md:text-6xl font-black tracking-tight text-sdl-ink mb-2 underline decoration-os-primary/30 underline-offset-8">
                 ABHIMANYU <span className="text-os-primary">SAXENA</span>
               </h1>
               <p className="text-xl md:text-2xl font-bold text-os-onSurfaceVariant">
@@ -69,11 +69,11 @@ const AboutMe = () => {
               transition={{ delay: 0.2 }}
               className="flex flex-wrap justify-center md:justify-start gap-4"
             >
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sm font-medium">
                 <MapPin size={16} className="text-os-secondary" />
                 <span>Kota, Rajasthan, India</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sm font-medium">
                 <Briefcase size={16} className="text-os-tertiary" />
                 <span>Team Lead @ Deotechsolutions</span>
               </div>
@@ -91,10 +91,10 @@ const AboutMe = () => {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-os-primary/20 hover:border-os-primary/40 hover:scale-110 transition-all group"
+                  className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-os-primary/20 hover:border-os-primary/40 hover:scale-110 transition-all group"
                   title={link.label}
                 >
-                  <link.icon size={20} className="group-hover:text-white transition-colors" />
+                  <link.icon size={20} className="group-hover:text-sdl-ink transition-colors" />
                 </a>
               ))}
             </motion.div>
@@ -126,7 +126,7 @@ const AboutMe = () => {
             initial={{ x: -30, opacity: 0 }}
             whileInView={{ x: 0, opacity: 1 }}
             viewport={{ once: true }}
-            className="space-y-6 p-8 rounded-3xl bg-white/[0.03] border border-white/5 shadow-xl"
+            className="space-y-6 p-8 rounded-3xl bg-veil/[0.03] border border-hairline/5 shadow-xl"
           >
             <div className="flex items-center gap-3 text-os-secondary">
               <Briefcase size={24} />
@@ -139,7 +139,7 @@ const AboutMe = () => {
               ].map((job, idx) => (
                 <div key={idx} className="relative pl-6 border-l-2 border-os-secondary/20 group hover:border-os-secondary transition-colors">
                   <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-secondary shadow-[0_0_10px_rgba(0,210,253,0.5)] scale-0 group-hover:scale-100 transition-transform" />
-                  <h4 className="font-bold text-white">{job.title}</h4>
+                  <h4 className="font-bold text-sdl-ink">{job.title}</h4>
                   <p className="text-sm text-os-onSurfaceVariant font-medium">{job.company}</p>
                   <p className="text-[10px] text-os-onSurfaceVariant/50 font-black tracking-widest mt-1 uppercase">{job.year}</p>
                   <p className="text-xs text-os-onSurfaceVariant/70 mt-2 line-clamp-2">{job.desc}</p>
@@ -152,7 +152,7 @@ const AboutMe = () => {
             initial={{ x: 30, opacity: 0 }}
             whileInView={{ x: 0, opacity: 1 }}
             viewport={{ once: true }}
-            className="space-y-6 p-8 rounded-3xl bg-white/[0.03] border border-white/5 shadow-xl"
+            className="space-y-6 p-8 rounded-3xl bg-veil/[0.03] border border-hairline/5 shadow-xl"
           >
             <div className="flex items-center gap-3 text-os-tertiary">
               <GraduationCap size={24} />
@@ -165,7 +165,7 @@ const AboutMe = () => {
               ].map((edu, idx) => (
                 <div key={idx} className="relative pl-6 border-l-2 border-os-tertiary/20 group hover:border-os-tertiary transition-colors">
                   <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-tertiary shadow-[0_0_10px_rgba(0,245,160,0.5)] scale-0 group-hover:scale-100 transition-transform" />
-                  <h4 className="font-bold text-white">{edu.title}</h4>
+                  <h4 className="font-bold text-sdl-ink">{edu.title}</h4>
                   <p className="text-sm text-os-onSurfaceVariant font-medium">{edu.school}</p>
                   <p className="text-[10px] text-os-onSurfaceVariant/50 font-black tracking-widest mt-1 uppercase">{edu.year}</p>
                 </div>
@@ -193,7 +193,7 @@ const AboutMe = () => {
               { label: 'Tools & IoT', skills: ['Docker', 'Git', 'IoT', 'Linux'] },
               { label: 'Competencies', skills: ['Requirement Analysis', 'API Integration', 'Full Stack', 'Agile'] }
             ].map((cat, idx) => (
-              <div key={idx} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+              <div key={idx} className="p-6 rounded-2xl bg-veil/[0.02] border border-hairline/5 hover:bg-veil/[0.05] transition-colors">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-os-secondary mb-4">{cat.label}</h4>
                 <ul className="space-y-2">
                   {cat.skills.map((skill, sIdx) => (
@@ -214,7 +214,7 @@ const AboutMe = () => {
               initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               viewport={{ once: true }}
-              className="p-8 rounded-3xl bg-white/[0.03] border border-white/5 space-y-6"
+              className="p-8 rounded-3xl bg-veil/[0.03] border border-hairline/5 space-y-6"
             >
                 <div className="flex items-center gap-3 text-os-primary">
                     <Award size={24} />
@@ -236,7 +236,7 @@ const AboutMe = () => {
               initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               viewport={{ once: true }}
-              className="p-8 rounded-3xl bg-white/[0.03] border border-white/5 space-y-6"
+              className="p-8 rounded-3xl bg-veil/[0.03] border border-hairline/5 space-y-6"
             >
                 <div className="flex items-center gap-3 text-os-tertiary">
                     <Languages size={24} />
@@ -244,16 +244,16 @@ const AboutMe = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">D.O.B</p>
-                        <p className="text-sm font-bold text-white">17 Feb 1998</p>
+                        <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">D.O.B</p>
+                        <p className="text-sm font-bold text-sdl-ink">17 Feb 1998</p>
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">Languages</p>
-                        <p className="text-sm font-bold text-white">English, Hindi</p>
+                        <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">Languages</p>
+                        <p className="text-sm font-bold text-sdl-ink">English, Hindi</p>
                     </div>
                     <div className="col-span-2">
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">Location</p>
-                        <p className="text-sm font-bold text-white">1-C-27 S.F.S Talwandi, Kota, RJ</p>
+                        <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">Location</p>
+                        <p className="text-sm font-bold text-sdl-ink">1-C-27 S.F.S Talwandi, Kota, RJ</p>
                     </div>
                 </div>
             </motion.div>

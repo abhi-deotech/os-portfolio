@@ -51,13 +51,23 @@ export function saturation(hex) {
   return Math.round((l > 0.5 ? d / (2 - max - min) : d / (max + min)) * 100);
 }
 
+/** WCAG contrast ratio between two hexes. */
+export function contrast(a, b) {
+  const [hi, lo] = [relLuminance(a), relLuminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
 /**
- * Ink to place ON an accent fill. Derived from the ACCENT's luminance, never from the page mode —
- * black-on-teal is wrong on Honey Vivid even though its plane is light. This is the rule that stops
- * buttons looking broken when a light colorway is applied.
+ * Ink to place ON an accent fill.
+ *
+ * Chosen by measured contrast against the ACCENT, never by role name and never by page mode. Naming
+ * one of them ("use plane on bright accents, ink on dark ones") is inverted for half the lineup:
+ * Honey Vivid is a LIGHT colorway whose accent is a DARK teal (#358278), so its dark `ink` on that
+ * accent measures 1.09:1 — a gradient button nobody can read. Measuring picks the light `plane`
+ * instead, which is correct precisely because the accent is dark.
  */
 export function onAccentInk(accentHex, planeHex, inkHex) {
-  return relLuminance(accentHex) > 0.4 ? planeHex : inkHex;
+  return contrast(accentHex, planeHex) >= contrast(accentHex, inkHex) ? planeHex : inkHex;
 }
 
 /* ── wash: "rgba(232,104,168,0.14) at 82% 0%" → CSS radial-gradient layers ───── */

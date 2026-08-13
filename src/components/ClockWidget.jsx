@@ -29,11 +29,11 @@ const ClockWidget = () => {
     <motion.div 
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-6 rounded-[2.5rem] bg-white/[0.03] backdrop-blur-3xl border border-white/10 flex flex-col gap-4 select-none group hover:bg-white/[0.05] transition-colors shadow-2xl"
+      className="p-6 rounded-[2.5rem] bg-veil/[0.03] backdrop-blur-3xl border border-hairline/10 flex flex-col gap-4 select-none group hover:bg-veil/[0.05] transition-colors shadow-2xl"
     >
       <div className="flex justify-between items-start">
         <div className="space-y-1">
-          <h2 className="text-5xl font-black text-white tracking-tighter tabular-nums">
+          <h2 className="text-5xl font-black text-sdl-ink tracking-tighter tabular-nums">
             {formatTime(time)}
           </h2>
           <p className="text-xs font-black text-os-primary uppercase tracking-[0.3em]">
@@ -45,15 +45,15 @@ const ClockWidget = () => {
         </div>
       </div>
 
-      <div className="h-px bg-white/5 w-full my-2" />
+      <div className="h-px bg-veil/5 w-full my-2" />
 
       <div className="flex justify-between items-center px-1">
          <div className="flex flex-col">
-            <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Temperature</span>
-            <span className="text-lg font-black text-white">{weather.temp}°C</span>
+            <span className="text-[10px] font-black text-sdl-sec uppercase tracking-widest">Temperature</span>
+            <span className="text-lg font-black text-sdl-ink">{weather.temp}°C</span>
          </div>
          <div className="flex flex-col items-end">
-            <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Condition</span>
+            <span className="text-[10px] font-black text-sdl-sec uppercase tracking-widest">Condition</span>
             <span className="text-sm font-bold text-os-secondary uppercase tracking-wider">{weather.condition}</span>
          </div>
       </div>
@@ -63,7 +63,7 @@ const ClockWidget = () => {
          {heights.map((h, i) => (
            <div 
              key={i} 
-             className="flex-1 bg-white/10 rounded-full" 
+             className="flex-1 bg-veil/10 rounded-full" 
              style={{ height: `${h}%` }} 
            />
          ))}

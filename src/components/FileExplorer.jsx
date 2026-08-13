@@ -75,7 +75,7 @@ const Node = ({ node, style, dragHandle }) => {
       style={style}
       ref={dragHandle}
       className={`group flex items-center gap-2 px-3 py-1 rounded-xl cursor-pointer transition-all border ${
-        isSelected ? 'bg-os-primary/20 border-os-primary/30 shadow-lg shadow-os-primary/5' : 'hover:bg-white/5 border-transparent'
+        isSelected ? 'bg-os-primary/20 border-os-primary/30 shadow-lg shadow-os-primary/5' : 'hover:bg-veil/5 border-transparent'
       }`}
       onClick={(e) => {
         if (e.detail === 2) handleOpen();
@@ -109,7 +109,7 @@ const Node = ({ node, style, dragHandle }) => {
         <div className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isSelected ? 'opacity-100' : ''}`}>
           <button 
             onClick={(e) => { e.stopPropagation(); setIsRenaming(true); }}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-os-onSurfaceVariant hover:text-os-primary transition-all"
+            className="p-1.5 rounded-lg hover:bg-veil/10 text-os-onSurfaceVariant hover:text-os-primary transition-all"
           >
             <Edit3 size={11} />
           </button>
@@ -210,21 +210,21 @@ const FileExplorer = () => {
           <div className="flex items-center gap-2">
             <button 
               onClick={handleCreateFolder}
-              className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-os-primary/10 hover:border-os-primary/20 text-os-onSurfaceVariant hover:text-os-primary transition-all"
+              className="p-2 rounded-xl bg-veil/5 border border-hairline/10 hover:bg-os-primary/10 hover:border-os-primary/20 text-os-onSurfaceVariant hover:text-os-primary transition-all"
               title="New Folder"
             >
               <FolderPlus size={16} />
             </button>
             <button 
               onClick={handleCreateFile}
-              className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-os-tertiary/10 hover:border-os-tertiary/20 text-os-onSurfaceVariant hover:text-os-tertiary transition-all"
+              className="p-2 rounded-xl bg-veil/5 border border-hairline/10 hover:bg-os-tertiary/10 hover:border-os-tertiary/20 text-os-onSurfaceVariant hover:text-os-tertiary transition-all"
               title="New File"
             >
               <FilePlus size={16} />
             </button>
             <button 
               onClick={handleMountFolder}
-              className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-os-secondary/10 hover:border-os-secondary/20 text-os-onSurfaceVariant hover:text-os-secondary transition-all"
+              className="p-2 rounded-xl bg-veil/5 border border-hairline/10 hover:bg-os-secondary/10 hover:border-os-secondary/20 text-os-onSurfaceVariant hover:text-os-secondary transition-all"
               title="Mount Physical Folder"
             >
               <FolderPlus size={16} />
@@ -285,7 +285,7 @@ const FileExplorer = () => {
                     onClick={() => !item.disabled && setActiveTab(item.id)}
                     className={`flex items-center gap-3 px-3 py-2 rounded-xl transition-all cursor-pointer ${
                       activeTab === item.id ? 'bg-os-primary/10 text-os-primary border border-os-primary/10' : 
-                      item.disabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/5 text-os-onSurfaceVariant hover:text-os-onSurface'
+                      item.disabled ? 'opacity-30 cursor-not-allowed' : 'hover:bg-veil/5 text-os-onSurfaceVariant hover:text-os-onSurface'
                     }`}
                   >
                     <item.icon size={16} />
@@ -303,7 +303,7 @@ const FileExplorer = () => {
                     <div 
                       key={file.id}
                       onClick={() => openWindow(file.name.endsWith('.md') ? 'documentation' : 'notepad', file.id)}
-                      className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-white/5 text-os-onSurfaceVariant hover:text-os-onSurface transition-all cursor-pointer group"
+                      className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-veil/5 text-os-onSurfaceVariant hover:text-os-onSurface transition-all cursor-pointer group"
                     >
                       <FileText size={14} className="text-os-primary/60 group-hover:text-os-primary" />
                       <span className="text-xs truncate">{file.name}</span>
@@ -316,7 +316,7 @@ const FileExplorer = () => {
 
           <div className="p-4 border-t border-os-outline/5">
              <div className="flex items-center gap-3 mb-2">
-                <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-1.5 flex-1 bg-veil/5 rounded-full overflow-hidden">
                    <div className="h-full w-2/3 bg-gradient-to-r from-os-primary to-os-secondary rounded-full" />
                 </div>
                 <span className="text-[10px] font-black text-os-onSurfaceVariant">64%</span>

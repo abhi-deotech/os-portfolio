@@ -82,7 +82,7 @@ const MarkdownRenderer = ({ content, className = '' }) => {
           thead: ({ children }) => <thead className="bg-os-surfaceContainerHighest/50 text-os-onSurface font-bold uppercase text-[10px] tracking-widest">{children}</thead>,
           th: ({ children }) => <th className="px-4 py-3 border-b border-os-outline/10">{children}</th>,
           td: ({ children }) => <td className="px-4 py-3 border-b border-os-outline/10 text-os-onSurfaceVariant">{children}</td>,
-          tr: ({ children }) => <tr className="hover:bg-white/5 transition-colors">{children}</tr>,
+          tr: ({ children }) => <tr className="hover:bg-veil/5 transition-colors">{children}</tr>,
           blockquote: ({ children }) => (
             <blockquote className="border-l-4 border-os-primary bg-os-primary/10 px-6 py-4 rounded-r-xl italic my-6 text-os-onSurfaceVariant leading-relaxed">
               {children}

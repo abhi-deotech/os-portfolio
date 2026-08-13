@@ -162,7 +162,7 @@ const SocialWidget = () => {
       return (
         <div className="flex flex-col items-center justify-center h-full py-12 opacity-50">
           <RefreshCw className="text-os-primary animate-spin mb-4" size={40} />
-          <p className="text-sm font-bold text-white/40 uppercase tracking-[0.2em]">Syncing GitHub Pulse...</p>
+          <p className="text-sm font-bold text-sdl-sec uppercase tracking-[0.2em]">Syncing GitHub Pulse...</p>
         </div>
       );
     }
@@ -171,10 +171,10 @@ const SocialWidget = () => {
       return (
         <div className="flex flex-col items-center justify-center h-full py-12 text-center px-4">
           <p className="text-red-500 text-sm font-bold mb-3">Sync Failed</p>
-          <p className="text-white/40 text-xs leading-relaxed">{error}</p>
+          <p className="text-sdl-sec text-xs leading-relaxed">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="mt-6 px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-white/60 text-xs font-bold transition-all"
+            className="mt-6 px-5 py-2.5 bg-veil/5 hover:bg-veil/10 rounded-xl text-sdl-sec text-xs font-bold transition-all"
           >
             Retry Sync
           </button>
@@ -193,20 +193,20 @@ const SocialWidget = () => {
         <div className="flex items-center gap-5 py-2">
           <div className="relative">
             <img src={githubData.avatar} alt="Avatar" className="w-16 h-16 rounded-2xl border-2 border-os-primary/20 pointer-events-none p-0.5" />
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-black border border-white/10 rounded-lg flex items-center justify-center">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-black border border-hairline/10 rounded-lg flex items-center justify-center">
                <GithubIcon size={12} className="text-os-primary" />
             </div>
           </div>
           <div className="flex flex-col">
-            <span className="text-base font-black text-white tracking-tight">@{githubData.username}</span>
-            <span className="text-xs font-bold text-white/30 uppercase tracking-widest mt-1 truncate max-w-[180px]">{githubData.bio || 'Developer'}</span>
+            <span className="text-base font-black text-sdl-ink tracking-tight">@{githubData.username}</span>
+            <span className="text-xs font-bold text-sdl-sec uppercase tracking-widest mt-1 truncate max-w-[180px]">{githubData.bio || 'Developer'}</span>
           </div>
           <a 
             href={`https://github.com/${githubUsername}`} 
             target="_blank" 
             rel="noreferrer" 
             onClick={() => unlockAchievement('socialite')}
-            className="ml-auto p-2.5 rounded-xl bg-white/5 text-white/40 hover:text-os-primary hover:bg-os-primary/10 transition-all"
+            className="ml-auto p-2.5 rounded-xl bg-veil/5 text-sdl-sec hover:text-os-primary hover:bg-os-primary/10 transition-all"
           >
             <ExternalLink size={18} />
           </a>
@@ -218,20 +218,20 @@ const SocialWidget = () => {
             { icon: GitFork, val: githubData.repos, label: 'Repos', color: 'text-os-primary' },
             { icon: Users, val: githubData.followers, label: 'Fans', color: 'text-blue-400' }
           ].map((item, i) => (
-            <div key={i} className="p-4 bg-white/[0.03] rounded-2xl border border-white/5 flex flex-col items-center justify-center gap-1.5 hover:bg-white/[0.05] transition-colors">
+            <div key={i} className="p-4 bg-veil/[0.03] rounded-2xl border border-hairline/5 flex flex-col items-center justify-center gap-1.5 hover:bg-veil/[0.05] transition-colors">
               <item.icon size={18} className={item.color} />
-              <span className="text-sm font-black text-white">{item.val}</span>
-              <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{item.label}</span>
+              <span className="text-sm font-black text-sdl-ink">{item.val}</span>
+              <span className="text-[10px] font-bold text-sdl-sec uppercase tracking-widest">{item.label}</span>
             </div>
           ))}
         </div>
 
         <div className="space-y-3">
            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-black text-white/30 uppercase tracking-[0.15em]">Contribution Matrix</span>
+              <span className="text-xs font-black text-sdl-sec uppercase tracking-[0.15em]">Contribution Matrix</span>
               <span className="text-[10px] font-bold text-os-primary/60 uppercase tracking-widest font-mono">6 Months</span>
            </div>
-           <div className="p-4 sm:p-5 bg-white rounded-2xl border border-white/10 overflow-hidden shadow-lg">
+           <div className="p-4 sm:p-5 bg-white rounded-2xl border border-hairline/10 overflow-hidden shadow-lg">
               <div className="relative w-full overflow-hidden" style={{ aspectRatio: '3/1' }}>
                   <img
                     src={`https://ghchart.rshah.org/22c55e/${githubUsername}`}
@@ -244,17 +244,17 @@ const SocialWidget = () => {
 
         {/* Recent Activity List */}
         <div className="space-y-3 overflow-hidden">
-           <span className="text-xs font-black text-white/30 uppercase tracking-[0.15em] px-1">Recent Pulses</span>
+           <span className="text-xs font-black text-sdl-sec uppercase tracking-[0.15em] px-1">Recent Pulses</span>
            <div className="flex flex-col gap-2">
               {githubData.recentEvents?.map((event, i) => (
-                 <div key={i} className="flex items-center gap-3 p-3 bg-white/[0.03] rounded-xl border border-white/5 text-sm">
+                 <div key={i} className="flex items-center gap-3 p-3 bg-veil/[0.03] rounded-xl border border-hairline/5 text-sm">
                     <div className={`w-2 h-2 rounded-full ${event.type === 'PushEvent' ? 'bg-os-primary shadow-[0_0_8px_var(--os-primary-rgb)]' : 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]'}`} />
-                    <span className="text-white/50 font-bold">{event.type === 'PushEvent' ? 'Pushed to' : 'Starred'}</span>
-                    <span className="text-white font-black truncate max-w-[180px]">{event.repo.name.split('/')[1]}</span>
+                    <span className="text-sdl-sec font-bold">{event.type === 'PushEvent' ? 'Pushed to' : 'Starred'}</span>
+                    <span className="text-sdl-ink font-black truncate max-w-[180px]">{event.repo.name.split('/')[1]}</span>
                  </div>
               ))}
               {(!githubData.recentEvents || githubData.recentEvents.length === 0) && (
-                 <p className="text-sm text-white/30 italic px-2">No recent pulses detected...</p>
+                 <p className="text-sm text-sdl-sec italic px-2">No recent pulses detected...</p>
               )}
            </div>
         </div>
@@ -272,7 +272,7 @@ const SocialWidget = () => {
         className="flex flex-col h-full"
       >
         {/* Compact Header */}
-        <div className="flex items-start gap-4 pb-4 border-b border-white/5">
+        <div className="flex items-start gap-4 pb-4 border-b border-hairline/5">
           <div className="relative flex-shrink-0">
             <img 
               src={linkedinData.avatar} 
@@ -280,14 +280,14 @@ const SocialWidget = () => {
               className="w-16 h-16 rounded-2xl border-2 border-[#0077b5]/30 pointer-events-none"
             />
             <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0077b5] rounded-full flex items-center justify-center">
-              <BadgeCheck size={12} className="text-white" />
+              <BadgeCheck size={12} className="text-sdl-ink" />
             </div>
           </div>
           
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-black text-white tracking-tight">{linkedinData.name}</h2>
-            <p className="text-sm text-white/60 mt-0.5">{linkedinData.headline}</p>
-            <div className="flex items-center gap-2 mt-1.5 text-xs text-white/40">
+            <h2 className="text-base font-black text-sdl-ink tracking-tight">{linkedinData.name}</h2>
+            <p className="text-sm text-sdl-sec mt-0.5">{linkedinData.headline}</p>
+            <div className="flex items-center gap-2 mt-1.5 text-xs text-sdl-sec">
               <MapPin size={12} />
               <span>{linkedinData.location}</span>
               <span>·</span>
@@ -300,18 +300,18 @@ const SocialWidget = () => {
             target="_blank" 
             rel="noreferrer"
             onClick={() => unlockAchievement('socialite')}
-            className="flex-shrink-0 p-2 rounded-lg bg-[#0077b5] text-white hover:bg-[#008de4] transition-all"
+            className="flex-shrink-0 p-2 rounded-lg bg-[#0077b5] text-sdl-ink hover:bg-[#008de4] transition-all"
           >
             <LinkedinIcon size={18} />
           </a>
         </div>
 
         {/* Skills */}
-        <div className="py-4 border-b border-white/5">
-          <h3 className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Top Skills</h3>
+        <div className="py-4 border-b border-hairline/5">
+          <h3 className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-2">Top Skills</h3>
           <div className="flex flex-wrap gap-1.5">
             {linkedinData.skills?.map((skill, i) => (
-              <span key={i} className="px-2 py-1 bg-white/5 rounded-md text-xs text-white/70">
+              <span key={i} className="px-2 py-1 bg-veil/5 rounded-md text-xs text-sdl-ink/70">
                 {skill}
               </span>
             ))}
@@ -320,13 +320,13 @@ const SocialWidget = () => {
 
         {/* Current Role */}
         <div className="py-4">
-          <h3 className="text-[10px] font-black text-white/30 uppercase tracking-widest mb-2">Current</h3>
+          <h3 className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-2">Current</h3>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0077b5]/20 to-[#0077b5]/5 flex items-center justify-center border border-[#0077b5]/20">
               <Briefcase size={18} className="text-[#70b5f9]" />
             </div>
             <div>
-              <p className="text-sm font-bold text-white">{linkedinData.title}</p>
+              <p className="text-sm font-bold text-sdl-ink">{linkedinData.title}</p>
               <p className="text-xs text-[#70b5f9]">{linkedinData.company}</p>
             </div>
           </div>
@@ -336,17 +336,17 @@ const SocialWidget = () => {
   };
 
   return (
-    <div className="flex flex-col h-full p-5 md:p-6 bg-gradient-to-br from-[#121212] to-[#080808] rounded-3xl border border-white/5 overflow-hidden relative group">
+    <div className="flex flex-col h-full p-5 md:p-6 bg-gradient-to-br from-[#121212] to-[#080808] rounded-3xl border border-hairline/5 overflow-hidden relative group">
       <div className={`absolute top-0 right-0 w-40 h-40 blur-3xl rounded-full transition-all duration-500 ${activeTab === 'github' ? 'bg-os-primary/5' : 'bg-[#0077b5]/10'}`} />
       
       {/* Tab Switcher */}
-      <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] rounded-2xl border border-white/5 mb-5 relative z-10 w-fit mx-auto">
+      <div className="flex items-center gap-2 p-1.5 bg-veil/[0.03] rounded-2xl border border-hairline/5 mb-5 relative z-10 w-fit mx-auto">
         <button
           onClick={() => setActiveTab('github')}
           className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
             activeTab === 'github' 
-              ? 'bg-os-primary text-black shadow-lg shadow-os-primary/20' 
-              : 'text-white/40 hover:text-white/60'
+              ? 'bg-os-primary text-sdl-onAccent shadow-lg shadow-os-primary/20' 
+              : 'text-sdl-sec hover:text-sdl-sec'
           }`}
         >
           <GithubIcon size={16} />
@@ -356,8 +356,8 @@ const SocialWidget = () => {
           onClick={() => setActiveTab('linkedin')}
           className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
             activeTab === 'linkedin' 
-              ? 'bg-[#0077b5] text-white shadow-lg shadow-[#0077b5]/20' 
-              : 'text-white/40 hover:text-white/60'
+              ? 'bg-[#0077b5] text-sdl-ink shadow-lg shadow-[#0077b5]/20' 
+              : 'text-sdl-sec hover:text-sdl-sec'
           }`}
         >
           <LinkedinIcon size={16} />
@@ -370,7 +370,7 @@ const SocialWidget = () => {
       </div>
 
       {/* Footer Branding */}
-      <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-black text-white/20 uppercase tracking-[0.2em]">
+      <div className="mt-5 pt-4 border-t border-hairline/5 flex items-center justify-between text-xs font-black text-sdl-sec uppercase tracking-[0.2em]">
         <span>Networking Hub</span>
         <span>v1.2.0</span>
       </div>

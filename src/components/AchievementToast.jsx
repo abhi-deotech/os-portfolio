@@ -43,8 +43,8 @@ const AchievementToast = ({ achievementId, onComplete }) => {
       </div>
       <div>
         <h4 className="text-xs font-bold text-os-primary uppercase tracking-widest mb-1">Achievement Unlocked</h4>
-        <h3 className="text-sm font-bold text-white mb-0.5">{achievement.title}</h3>
-        <p className="text-[10px] text-white/50 leading-tight">{achievement.desc}</p>
+        <h3 className="text-sm font-bold text-sdl-ink mb-0.5">{achievement.title}</h3>
+        <p className="text-[10px] text-sdl-sec leading-tight">{achievement.desc}</p>
       </div>
       <motion.div 
         initial={{ width: '100%' }}

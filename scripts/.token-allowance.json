@@ -1,24 +1,22 @@
 {
   "src/components/AIChat.jsx": {
     "hex": 2,
-    "white": 12,
     "stock": 1
   },
   "src/components/AboutMe.jsx": {
     "hex": 8,
-    "white": 28,
+    "white": 1,
     "stock": 1
   },
   "src/components/AchievementToast.jsx": {
-    "white": 3
+    "white": 1
   },
   "src/components/ArcadeAI.jsx": {
     "hex": 1,
-    "white": 23
+    "white": 3
   },
   "src/components/Benchmark.jsx": {
     "hex": 1,
-    "white": 19,
     "stock": 7
   },
   "src/components/BootSequence.jsx": {
@@ -30,48 +28,39 @@
     "white": 31,
     "stock": 9
   },
-  "src/components/ClockWidget.jsx": {
-    "white": 9
-  },
   "src/components/ControlCenter.jsx": {
     "hex": 58,
-    "white": 30,
+    "white": 7,
     "stock": 2
   },
   "src/components/Desktop.jsx": {
-    "white": 12
+    "white": 2
   },
   "src/components/DocumentationApp.jsx": {
     "hex": 1,
-    "white": 4,
     "stock": 8
   },
   "src/components/FileExplorer.jsx": {
     "hex": 1,
-    "white": 11,
     "stock": 10
   },
   "src/components/Games.jsx": {
     "hex": 68,
-    "white": 7,
+    "white": 1,
     "stock": 1
   },
-  "src/components/LiveWallpaper.jsx": {
-    "white": 1
-  },
   "src/components/LoginScreen.jsx": {
-    "hex": 5,
-    "white": 24,
+    "hex": 4,
+    "white": 1,
     "stock": 5
   },
   "src/components/LuminaChat.jsx": {
     "hex": 1,
-    "white": 18,
     "stock": 2
   },
   "src/components/MailApp.jsx": {
     "hex": 2,
-    "white": 58,
+    "white": 3,
     "stock": 3
   },
   "src/components/MediaPlayer.jsx": {
@@ -81,12 +70,12 @@
   },
   "src/components/MusicApp.jsx": {
     "hex": 6,
-    "white": 76,
+    "white": 16,
     "stock": 11
   },
   "src/components/Notepad.jsx": {
     "hex": 1,
-    "white": 18,
+    "white": 1,
     "stock": 3
   },
   "src/components/PhotoViewer.jsx": {
@@ -95,7 +84,7 @@
   },
   "src/components/Projects.jsx": {
     "hex": 10,
-    "white": 24
+    "white": 1
   },
   "src/components/RetroArcade.jsx": {
     "hex": 5,
@@ -104,77 +93,69 @@
   },
   "src/components/Settings.jsx": {
     "hex": 32,
-    "white": 40,
+    "white": 5,
     "stock": 21
   },
   "src/components/SocialWidget.jsx": {
     "hex": 14,
-    "white": 48,
+    "white": 2,
     "stock": 4
   },
   "src/components/Spotlight.jsx": {
-    "white": 30
+    "white": 2
   },
   "src/components/SystemDashboard.jsx": {
     "hex": 1,
-    "white": 33
+    "white": 3
   },
   "src/components/SystemMetricsWidget.jsx": {
     "hex": 7,
-    "white": 37,
+    "white": 4,
     "stock": 1
   },
   "src/components/TaskManager.jsx": {
     "hex": 2,
-    "white": 26,
+    "white": 1,
     "stock": 12
   },
   "src/components/Taskbar.jsx": {
     "hex": 1,
-    "white": 24,
+    "white": 1,
     "stock": 3
-  },
-  "src/components/Terminal.jsx": {
-    "white": 4
   },
   "src/components/Window.jsx": {
     "hex": 15,
     "white": 3
   },
-  "src/components/WindowGlass.jsx": {
-    "white": 2
-  },
   "src/components/common/MarkdownRenderer.jsx": {
-    "white": 1,
     "stock": 3
   },
   "src/components/games/Game2048.jsx": {
     "hex": 11,
-    "white": 38
+    "white": 5
   },
   "src/components/games/MemoryGame.jsx": {
     "hex": 12,
-    "white": 17
+    "white": 2
   },
   "src/components/games/Snake.jsx": {
     "hex": 4,
-    "white": 26
+    "white": 1
   },
   "src/components/games/Sudoku.jsx": {
     "hex": 1,
-    "white": 19,
+    "white": 1,
     "stock": 2
   },
   "src/components/games/TriviaGame.jsx": {
     "hex": 7,
-    "white": 35,
+    "white": 2,
     "stock": 9
   },
   "src/components/widgets/NowPlayingWidget.jsx": {
-    "white": 12
+    "white": 3
   },
   "src/components/widgets/QuantumWidget.jsx": {
-    "hex": 4,
-    "white": 1
+    "hex": 4
   }
 }

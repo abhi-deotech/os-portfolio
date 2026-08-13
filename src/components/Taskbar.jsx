@@ -44,15 +44,15 @@ const Taskbar = () => {
   return (
     <>
       <div
-        className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-white/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 flex items-center px-4 justify-between z-[1000] shadow-2xl transition-all duration-500 ${(hasMaximizedWindow && activeWindow) ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
+        className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-veil/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-hairline/10 flex items-center px-4 justify-between z-[1000] shadow-2xl transition-all duration-500 ${(hasMaximizedWindow && activeWindow) ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
       >
-        <div className="flex items-center bg-black/20 rounded-2xl p-1 gap-1 border border-white/5 md:mr-4">
+        <div className="flex items-center bg-black/20 rounded-2xl p-1 gap-1 border border-hairline/5 md:mr-4">
           <button
             type="button"
             onClick={() => { toggleAppLauncher(); playSound('click'); }}
             aria-label="App Launcher"
             title="App Launcher"
-            className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/10 ${isAppLauncherOpen ? 'bg-os-primary/10 border border-os-primary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
+            className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/10 ${isAppLauncherOpen ? 'bg-os-primary/10 border border-os-primary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
           >
             <CustomIcon icon={isMobile && openWindows.length > 0 ? Home : LayoutGrid} size={20} color={isAppLauncherOpen ? 'text-os-primary' : 'text-os-onSurface group-hover:text-os-primary'} glow={isAppLauncherOpen ? 'rgb(var(--os-primary-rgb) / 0.5)' : false} />
             {isAppLauncherOpen && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-os-primary shadow-[0_0_8px_#cc97ff]" />}
@@ -64,7 +64,7 @@ const Taskbar = () => {
               onClick={() => { openWindow('about'); playSound('click'); }}
               aria-label="About Me"
               title="About Me"
-              className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-secondary/50 focus-visible:bg-white/10 ${openWindows.includes('about') ? 'bg-os-secondary/10 border border-os-secondary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
+              className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-secondary/50 focus-visible:bg-veil/10 ${openWindows.includes('about') ? 'bg-os-secondary/10 border border-os-secondary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
             >
               <CustomIcon icon={User} size={20} color={openWindows.includes('about') ? 'text-os-secondary' : 'text-os-onSurface group-hover:text-os-secondary'} glow={openWindows.includes('about') ? 'rgb(var(--os-secondary-rgb) / 0.5)' : false} />
             </button>
@@ -75,7 +75,7 @@ const Taskbar = () => {
             onClick={() => { toggleControlCenter(); playSound('click'); }}
             aria-label="Control Center"
             title="Control Center"
-            className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-tertiary/50 focus-visible:bg-white/10 ${isControlCenterOpen ? 'bg-os-tertiary/10 border border-os-tertiary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
+            className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-tertiary/50 focus-visible:bg-veil/10 ${isControlCenterOpen ? 'bg-os-tertiary/10 border border-os-tertiary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
           >
             {isControlCenterOpen ? (
               <CustomIcon icon={ChevronDown} size={20} color="text-os-tertiary" glow="rgb(var(--os-tertiary-rgb) / 0.5)" />
@@ -111,7 +111,7 @@ const Taskbar = () => {
                     openWindow(app.id);
                   }
                 }}
-                className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/10 ${isActive ? 'bg-white/10 shadow-[inset_0_0_12px_rgba(255,255,255,0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
+                className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/10 ${isActive ? 'bg-veil/10 shadow-[inset_0_0_12px_rgba(255,255,255,0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
               >
                 <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105 group-active:scale-95'} ${minimizedWindows.includes(app.id) ? 'opacity-60 scale-90' : 'opacity-100'}`}>
                   {app.icon(isMobile ? 18 : 22, isActive ? app.color : null)}
@@ -153,7 +153,7 @@ const Taskbar = () => {
               initial={isMobile ? { y: '100%', opacity: 0 } : { y: 20, opacity: 0, scale: 0.95 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={isMobile ? { y: '100%', opacity: 0 } : { y: 20, opacity: 0, scale: 0.95 }}
-              className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-[85vh] rounded-t-[3rem]' : 'bottom-24 left-8 w-[400px] rounded-[2.5rem]'} bg-white/10 ${transparencyEffects ? 'backdrop-blur-[40px]' : ''} border border-white/10 p-6 z-[70] shadow-2xl overflow-hidden`}
+              className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-[85vh] rounded-t-[3rem]' : 'bottom-24 left-8 w-[400px] rounded-[2.5rem]'} bg-veil/10 ${transparencyEffects ? 'backdrop-blur-[40px]' : ''} border border-hairline/10 p-6 z-[70] shadow-2xl overflow-hidden`}
             >
               <div className="absolute -top-24 -left-24 w-[300px] h-[300px] bg-os-primary/10 blur-[100px] rounded-full -z-10" />
               <div className="flex flex-col space-y-4 h-full">
@@ -178,7 +178,7 @@ const Taskbar = () => {
                           aria-label={`Open ${app.title}`}
                           title={`Open ${app.title}`}
                           onClick={() => { openWindow(app.id); toggleAppLauncher(); playSound('click'); }}
-                          className="flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/5"
+                          className="flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-veil/5 active:bg-veil/10 transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/5"
                         >
                           <div className="p-3 bg-os-primary/10 rounded-2xl border border-os-primary/20 group-hover:bg-os-primary/20 group-hover:border-os-primary/40 transition-all mb-1 flex items-center justify-center">
                             {app.icon(22)}
@@ -189,7 +189,7 @@ const Taskbar = () => {
                     </div>
                   </div>
 
-                  <div className="h-px bg-white/5 mx-2" />
+                  <div className="h-px bg-veil/5 mx-2" />
 
                   <div className="space-y-1.5 flex-grow overflow-hidden flex flex-col">
                     <div className="flex items-center gap-2 px-2 text-[10px] font-black uppercase tracking-widest text-os-onSurfaceVariant opacity-40">
@@ -203,9 +203,9 @@ const Taskbar = () => {
                           aria-label={`Open ${app.title}`}
                           title={`Open ${app.title}`}
                           onClick={() => { openWindow(app.id); toggleAppLauncher(); playSound('click'); }}
-                          className="flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/5"
+                          className="flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-veil/5 active:bg-veil/10 transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/5"
                         >
-                          <div className="p-2.5 bg-os-surfaceContainerLow/30 rounded-xl border border-white/5 group-hover:border-os-primary/30 transition-all mb-1">
+                          <div className="p-2.5 bg-os-surfaceContainerLow/30 rounded-xl border border-hairline/5 group-hover:border-os-primary/30 transition-all mb-1">
                             {app.icon(18)}
                           </div>
                           <span className="text-[10px] text-os-onSurfaceVariant font-bold text-center truncate w-full">{app.title}</span>
@@ -215,9 +215,9 @@ const Taskbar = () => {
                   </div>
                 </div>
                 
-                <div className="h-px bg-white/5 mx-2" />
+                <div className="h-px bg-veil/5 mx-2" />
                 
-                <div className="mt-auto bg-white/5 rounded-3xl p-4 border border-white/5">
+                <div className="mt-auto bg-veil/5 rounded-3xl p-4 border border-hairline/5">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-os-primary to-os-secondary p-0.5">
                       <div className="w-full h-full rounded-full bg-os-surfaceContainerHighest flex items-center justify-center overflow-hidden">
@@ -233,7 +233,7 @@ const Taskbar = () => {
                         type="button"
                         aria-label="Settings"
                         title="Settings"
-                        className="p-2 hover:bg-white/10 rounded-xl transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+                        className="p-2 hover:bg-veil/10 rounded-xl transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                         onClick={() => { openWindow('settings'); toggleAppLauncher(); playSound('click'); }}
                       >
                         <SettingsIcon size={16} className="text-os-onSurface" strokeWidth={2} />
@@ -254,7 +254,7 @@ const Taskbar = () => {
                       href="https://developer.puter.com" 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] hover:text-os-primary transition-colors flex items-center gap-2"
+                      className="text-[9px] font-black text-sdl-sec uppercase tracking-[0.2em] hover:text-os-primary transition-colors flex items-center gap-2"
                     >
                       <div className="w-1.5 h-1.5 rounded-full bg-os-primary/40" />
                       Powered by Puter

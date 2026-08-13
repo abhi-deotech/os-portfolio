@@ -35,7 +35,7 @@ const FileTreeNode = ({ node, level = 0, selectedFile, setSelectedFile }) => {
     <div className="select-none">
       <div
         className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer transition-all ${
-          isSelected ? 'bg-os-primary/20 border border-os-outline/30' : 'hover:bg-white/5 border border-transparent'
+          isSelected ? 'bg-os-primary/20 border border-os-outline/30' : 'hover:bg-veil/5 border border-transparent'
         }`}
         style={{ marginLeft: `${level * 12}px` }}
         onClick={() => isFolder ? setIsOpen(!isOpen) : useOSStore.getState().openWindow('documentation', node.id)}
@@ -230,7 +230,7 @@ const DocumentationApp = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-xl hover:bg-white/5 transition-colors touch-hit-area"
+            className="p-2 rounded-xl hover:bg-veil/5 transition-colors touch-hit-area"
           >
             <CustomIcon icon={sidebarOpen ? X : Menu} size={18} color="text-os-onSurfaceVariant" />
           </button>
@@ -275,7 +275,7 @@ const DocumentationApp = () => {
                     <div
                       key={res.id}
                       onClick={() => { openWindow('documentation', res.id); setSearchTerm(''); }}
-                      className="p-3 rounded-xl hover:bg-white/5 cursor-pointer group"
+                      className="p-3 rounded-xl hover:bg-veil/5 cursor-pointer group"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <FileText size={12} className="text-os-primary" />
@@ -370,7 +370,7 @@ const DocumentationApp = () => {
                 
                 <button
                   onClick={() => setShowToC(!showToC)}
-                  className={`p-2 rounded-lg transition-all ${showToC ? 'bg-os-primary/20 text-os-primary' : 'hover:bg-white/5 text-os-onSurfaceVariant'}`}
+                  className={`p-2 rounded-lg transition-all ${showToC ? 'bg-os-primary/20 text-os-primary' : 'hover:bg-veil/5 text-os-onSurfaceVariant'}`}
                 >
                   <List size={18} />
                 </button>

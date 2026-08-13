@@ -18,6 +18,10 @@ const UNSPLASH = (id, w, q) =>
 
 /** @type {Wallpaper[]} */
 export const WALLPAPERS = [
+  // Renders NOTHING, so the colorway's own plane + wash + motif show through. This is the
+  // resolution to a real conflict: SDL's atmosphere grammar (law 8) assumes the designer owns the
+  // background, while this OS hands it to the user. Default for SDL colorways.
+  { id: 'colorway', name: 'Colorway', type: 'none' },
   { id: 'neon-nebula', name: 'Neon Nebula', type: 'live', gradient: 'bg-gradient-to-br from-[#cc97ff] to-[#00d2fd]' },
   { id: 'cyber-grid', name: 'Cyber Grid', type: 'live', gradient: 'bg-gradient-to-br from-[#00f5a0] to-[#00d2fd]' },
   { id: 'sunset-glow', name: 'Sunset Glow', type: 'live', gradient: 'bg-gradient-to-br from-[#ff4d4d] to-[#ffaf40]' },

@@ -19,23 +19,11 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, extname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { DENYLIST, DENY_DIRS } from './denylist.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
 const ALLOWANCE = join(ROOT, 'scripts', '.token-allowance.json');
-
-/** Colour here is CONTENT. Rewriting it breaks something the user reads or a third-party identity. */
-export const DENYLIST = {
-  'src/data/fileSystem.js': 'ships STYLING.md/TERMINAL.md as in-app readable text, incl. literal CSS var declarations',
-  'src/hooks/useTerminal.js': '8 third-party terminal palettes (dracula, solarized, monokai) — shipped feature + others\' brand identities',
-  'src/config/apps.jsx': 'app icon colours are brand identity; a real OS keeps them (icon THEMES handle this instead)',
-  'src/data/musicData.js': 'playlist gradient identities are content',
-  'src/components/Achievements.jsx': 'badge gradient pairs are gamification identity, not chrome',
-  'src/components/BSOD.jsx': 'deliberately off-theme — a blue screen is a blue screen',
-  'src/components/wallpapers/QuantumParticles.jsx': 'generative canvas content',
-  'src/components/Screensaver.jsx': 'generative content',
-  'src/components/Visualizer.jsx': 'generative canvas content',
-};
 
 const EXT = new Set(['.jsx', '.js']);
 function walk(dir, out = []) {
@@ -53,12 +41,6 @@ const RULES = [
   { id: 'stock', label: 'stock Tailwind colour', re: /(?:text|bg|border|ring|from|to|via)-(?:red|green|yellow|blue|purple|cyan|orange|pink|indigo|rose|emerald|violet|teal|sky|amber)-[0-9]{2,3}/g },
 ];
 
-/**
- * Directory-level exemptions. `src/theme/` IS the token layer — centralising every hex there is the
- * entire goal of the migration, so linting it would punish the fix. Everything else in src/ must
- * consume roles, not literals.
- */
-export const DENY_DIRS = ['src/theme/'];
 
 const files = walk(SRC).map((p) => relative(ROOT, p)).sort();
 const current = {};
@@ -121,5 +103,5 @@ if (!regressions.length) {
 console.error(`\ntoken-lint: \x1b[31m${regressions.length} regression(s)\x1b[0m — untokenized colour was ADDED:\n`);
 for (const r of regressions) console.error(`  ${r.file}\n    ${r.rule}: ${r.was} → ${r.now}`);
 console.error(`\n  Use SDL role tokens instead. If the colour is genuinely CONTENT (not chrome),`);
-console.error(`  add the file to DENYLIST in scripts/token-lint.mjs with a reason.\n`);
+console.error(`  add the file to DENYLIST in scripts/denylist.mjs with a reason.\n`);
 process.exit(strict ? 1 : 0);

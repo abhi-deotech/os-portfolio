@@ -102,14 +102,14 @@ const ProjectCard = ({ project }) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9 }}
       whileHover={{ y: -8 }}
-      className="p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/5 hover:border-os-primary/40 transition-all group relative overflow-hidden flex flex-col h-full shadow-2xl"
+      className="p-6 rounded-[2.5rem] bg-veil/[0.03] border border-hairline/5 hover:border-os-primary/40 transition-all group relative overflow-hidden flex flex-col h-full shadow-2xl"
     >
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
       <div className="absolute -right-12 -top-12 w-48 h-48 bg-os-primary/5 blur-[80px] rounded-full group-hover:bg-os-primary/10 transition-all" />
       
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className={`p-4 rounded-2xl flex items-center justify-center border border-white/5 shadow-xl`} style={{ backgroundColor: `${project.color}15` }}>
+        <div className={`p-4 rounded-2xl flex items-center justify-center border border-hairline/5 shadow-xl`} style={{ backgroundColor: `${project.color}15` }}>
           <project.icon size={28} style={{ color: project.color }} />
         </div>
         <div className="flex items-center gap-4">
@@ -128,7 +128,7 @@ const ProjectCard = ({ project }) => {
 
       {/* Content */}
       <div className="flex-1 space-y-4">
-        <h3 className="text-2xl font-black text-white group-hover:text-os-primary transition-colors tracking-tight">
+        <h3 className="text-2xl font-black text-sdl-ink group-hover:text-os-primary transition-colors tracking-tight">
           {project.title}
         </h3>
         <p className="text-sm text-os-onSurfaceVariant leading-relaxed font-medium line-clamp-3">
@@ -136,7 +136,7 @@ const ProjectCard = ({ project }) => {
         </p>
         <div className="flex flex-wrap gap-2 pt-2">
           {project.tags.map(tag => (
-            <span key={tag} className="px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest">
+            <span key={tag} className="px-3 py-1 rounded-lg bg-veil/5 border border-hairline/10 text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest">
               {tag}
             </span>
           ))}
@@ -144,12 +144,12 @@ const ProjectCard = ({ project }) => {
       </div>
 
       {/* Footer Links */}
-      <div className="flex items-center gap-3 mt-8 pt-6 border-t border-white/5">
+      <div className="flex items-center gap-3 mt-8 pt-6 border-t border-hairline/5">
         <a 
           href={project.github} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all active:scale-95"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-veil/5 border border-hairline/10 text-xs font-black uppercase tracking-widest hover:bg-veil/10 transition-all active:scale-95"
         >
           <GithubIcon size={14} />
           Code
@@ -193,7 +193,7 @@ const Projects = () => {
                  <Code size={24} />
                  <span className="text-xs font-black uppercase tracking-[0.4em]">Development Log</span>
               </div>
-              <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white underline decoration-os-primary/30 underline-offset-8">
+              <h1 className="text-4xl md:text-6xl font-black tracking-tight text-sdl-ink underline decoration-os-primary/30 underline-offset-8">
                 FEATURED <span className="text-os-primary">PROJECTS</span>
               </h1>
               <p className="text-lg text-os-onSurfaceVariant max-w-xl font-medium">
@@ -209,7 +209,7 @@ const Projects = () => {
                   placeholder="Filter by tech or name..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-sm text-white placeholder:text-os-onSurfaceVariant/50 focus:outline-none focus:border-os-primary/40 focus:bg-white/10 transition-all w-full md:w-64"
+                  className="pl-12 pr-6 py-4 bg-veil/5 border border-hairline/10 rounded-2xl text-sm text-sdl-ink placeholder:text-os-onSurfaceVariant/50 focus:outline-none focus:border-os-primary/40 focus:bg-veil/10 transition-all w-full md:w-64"
                 />
               </div>
            </div>
@@ -217,7 +217,7 @@ const Projects = () => {
 
         {/* Categories Bar */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-hide">
-           <div className="flex items-center gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-md">
+           <div className="flex items-center gap-2 p-1.5 bg-veil/5 rounded-2xl border border-hairline/10 backdrop-blur-md">
               {categories.map(cat => (
                 <button
                   key={cat}
@@ -225,7 +225,7 @@ const Projects = () => {
                   className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                     filter === cat 
                       ? 'bg-os-primary text-[#060e20] shadow-lg shadow-os-primary/20' 
-                      : 'text-os-onSurfaceVariant hover:bg-white/5 hover:text-white'
+                      : 'text-os-onSurfaceVariant hover:bg-veil/5 hover:text-sdl-ink'
                   }`}
                 >
                   {cat}
@@ -262,11 +262,11 @@ const Projects = () => {
         )}
 
         {/* Footer Stats */}
-        <div className="pt-24 pb-12 flex flex-col md:flex-row items-center justify-between border-t border-white/5 gap-8">
+        <div className="pt-24 pb-12 flex flex-col md:flex-row items-center justify-between border-t border-hairline/5 gap-8">
            <div className="flex gap-12">
               <div>
                  <p className="text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest mb-1">Total Deployments</p>
-                 <p className="text-3xl font-black text-white">24</p>
+                 <p className="text-3xl font-black text-sdl-ink">24</p>
               </div>
               <div>
                  <p className="text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest mb-1">GitHub Commits</p>
@@ -280,7 +280,7 @@ const Projects = () => {
            
            <button 
             onClick={() => useOSStore.getState().openWindow('terminal')}
-            className="flex items-center gap-3 px-8 py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-os-primary hover:border-os-primary hover:text-[#060e20] transition-all group"
+            className="flex items-center gap-3 px-8 py-4 bg-veil/5 border border-hairline/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-os-primary hover:border-os-primary hover:text-[#060e20] transition-all group"
            >
               Explore via Terminal <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
            </button>

@@ -62,7 +62,7 @@ const QuantumWidget = () => {
   return (
     <div 
       ref={widgetRef}
-      className="w-full h-48 rounded-[2.5rem] bg-os-surfaceContainerLow/30 backdrop-blur-3xl border border-white/10 shadow-2xl overflow-hidden relative group"
+      className="w-full h-48 rounded-[2.5rem] bg-os-surfaceContainerLow/30 backdrop-blur-3xl border border-hairline/10 shadow-2xl overflow-hidden relative group"
     >
       <div className="absolute top-4 left-6 z-10">
         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-os-primary opacity-80">Quantum Core</h3>

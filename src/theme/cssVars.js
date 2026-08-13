@@ -158,11 +158,10 @@ export function bridgeVars(cw) {
     '--os-outline-rgb': rgbTriple(r.sec),
     '--os-outline': r.sec,
 
-    // The desktop plane. Jewel/Garden Dawn supply a real double-radial wash; the rest get a quiet
-    // vertical settle so the plane is never flat paper-default (law 1).
-    '--desktop-gradient': cw.wash
-      ? `${cw.wash}, linear-gradient(${r.plane}, ${mix(r.plane, '#000000', 0.72)})`
-      : `linear-gradient(${r.plane}, ${mix(r.plane, cw.mode === 'dark' ? '#000000' : '#ffffff', 0.85)})`,
+    // The desktop plane — BASE ONLY. The wash is applied once, by body::before in grammar.css;
+    // stacking it here as well would double the alpha and breach law 8's 10-22% ceiling.
+    // A quiet vertical settle keeps the plane from ever reading as flat paper-default (law 1).
+    '--desktop-gradient': `linear-gradient(${r.plane}, ${mix(r.plane, cw.mode === 'dark' ? '#000000' : '#ffffff', 0.85)})`,
   };
 }
 

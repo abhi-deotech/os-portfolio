@@ -139,15 +139,15 @@ const Game2048 = ({ onBack }) => {
     16: 'bg-[#00d2fd]/30 text-os-secondary border-os-secondary/30 shadow-[0_0_30px_rgba(0,210,253,0.2)]',
     32: 'bg-[#00f5a0]/20 text-os-tertiary border-os-tertiary/20 shadow-[0_0_35px_rgba(0,245,160,0.1)]',
     64: 'bg-[#00f5a0]/30 text-os-tertiary border-os-tertiary/30 shadow-[0_0_40px_rgba(0,245,160,0.2)]',
-    128: 'bg-os-primary text-black border-white/20 shadow-[0_0_30px_#cc97ff]',
-    256: 'bg-os-secondary text-black border-white/20 shadow-[0_0_35px_#00d2fd]',
-    512: 'bg-os-tertiary text-black border-white/20 shadow-[0_0_40px_#00f5a0]',
-    1024: 'bg-white text-black border-white/40 shadow-[0_0_50px_rgba(255,255,255,0.4)]',
-    2048: 'bg-gradient-to-br from-os-primary via-os-secondary to-os-tertiary text-black border-white/50 shadow-[0_0_60px_#cc97ff]',
+    128: 'bg-os-primary text-sdl-onAccent border-hairline/20 shadow-[0_0_30px_#cc97ff]',
+    256: 'bg-os-secondary text-sdl-onAccent border-hairline/20 shadow-[0_0_35px_#00d2fd]',
+    512: 'bg-os-tertiary text-sdl-onAccent border-hairline/20 shadow-[0_0_40px_#00f5a0]',
+    1024: 'bg-white text-sdl-onAccent border-hairline/40 shadow-[0_0_50px_rgba(255,255,255,0.4)]',
+    2048: 'bg-gradient-to-br from-os-primary via-os-secondary to-os-tertiary text-sdl-onAccent border-hairline/50 shadow-[0_0_60px_#cc97ff]',
   };
 
   return (
-    <div className="h-full w-full bg-[#050505] text-white flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
+    <div className="h-full w-full bg-[#050505] text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,210,253,0.03)_0%,transparent_70%)] pointer-events-none" />
       
@@ -157,21 +157,21 @@ const Game2048 = ({ onBack }) => {
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack}
-          className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white"
+          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink"
         >
           <ArrowLeft size={20} />
         </motion.button>
         
         <div className="flex gap-6">
            <div className="text-center">
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">Compute</p>
+              <p className="text-[10px] font-black text-sdl-sec uppercase tracking-[0.3em] mb-1">Compute</p>
               <p className="text-2xl font-black italic text-os-secondary tracking-tighter tabular-nums leading-none">
                 {score}
               </p>
            </div>
            <div className="text-center">
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">Peak</p>
-              <p className="text-2xl font-black italic text-white/60 tracking-tighter tabular-nums leading-none">
+              <p className="text-[10px] font-black text-sdl-sec uppercase tracking-[0.3em] mb-1">Peak</p>
+              <p className="text-2xl font-black italic text-sdl-sec tracking-tighter tabular-nums leading-none">
                 {bestScore}
               </p>
            </div>
@@ -188,12 +188,12 @@ const Game2048 = ({ onBack }) => {
       </div>
 
       {/* Game Board Container */}
-      <div className="relative p-2 md:p-4 bg-white/[0.03] border border-white/5 rounded-[3rem] backdrop-blur-xl shadow-2xl overflow-hidden group">
+      <div className="relative p-2 md:p-4 bg-veil/[0.03] border border-hairline/5 rounded-[3rem] backdrop-blur-xl shadow-2xl overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none" />
         
         <div className="grid grid-cols-4 gap-2.5 md:gap-4 w-[300px] h-[300px] md:w-[400px] md:h-[400px] relative z-10">
           {grid.flat().map((tile, i) => (
-            <div key={i} className="bg-black/40 rounded-[1.25rem] border border-white/5 relative overflow-hidden h-full w-full">
+            <div key={i} className="bg-black/40 rounded-[1.25rem] border border-hairline/5 relative overflow-hidden h-full w-full">
                <AnimatePresence mode="popLayout">
                 {tile !== 0 && (
                   <motion.div
@@ -201,7 +201,7 @@ const Game2048 = ({ onBack }) => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.5, opacity: 0 }}
                     key={`tile-${i}-${tile}`}
-                    className={`absolute inset-0 flex items-center justify-center font-black text-xl md:text-3xl rounded-[1.25rem] border transition-all duration-300 ${tileColors[tile] || 'bg-black text-white border-white/10'}`}
+                    className={`absolute inset-0 flex items-center justify-center font-black text-xl md:text-3xl rounded-[1.25rem] border transition-all duration-300 ${tileColors[tile] || 'bg-black text-sdl-ink border-hairline/10'}`}
                   >
                     {tile}
                   </motion.div>
@@ -218,7 +218,7 @@ const Game2048 = ({ onBack }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xl rounded-[2.8rem] border border-white/10"
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xl rounded-[2.8rem] border border-hairline/10"
             >
               <Trophy size={64} className="text-os-secondary mb-6 drop-shadow-[0_0_20px_rgba(0,210,253,0.5)]" />
               <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Cycle Complete</h2>
@@ -227,7 +227,7 @@ const Game2048 = ({ onBack }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={initGame}
-                className="flex items-center gap-3 px-8 py-4 bg-os-secondary text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(0,210,253,0.3)]"
+                className="flex items-center gap-3 px-8 py-4 bg-os-secondary text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(0,210,253,0.3)]"
               >
                 <RefreshCw size={20} />
                 Re-Init Node
@@ -240,17 +240,17 @@ const Game2048 = ({ onBack }) => {
       {/* Info / Footer */}
       <div className="mt-auto w-full max-w-lg flex flex-col items-center gap-4">
          <div className="flex gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+            <div className="flex items-center gap-2 px-4 py-2 bg-veil/5 rounded-xl border border-hairline/5">
                <Layers size={14} className="text-os-primary" />
-               <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Merge Parallel Nodes</span>
+               <span className="text-[9px] font-black uppercase tracking-widest text-sdl-sec">Merge Parallel Nodes</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+            <div className="flex items-center gap-2 px-4 py-2 bg-veil/5 rounded-xl border border-hairline/5">
                <Brain size={14} className="text-os-secondary" />
-               <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Recursive Logic Flow</span>
+               <span className="text-[9px] font-black uppercase tracking-widest text-sdl-sec">Recursive Logic Flow</span>
             </div>
          </div>
          
-         <p className="text-[9px] font-black text-white/10 uppercase tracking-[0.4em] mt-4 flex items-center gap-3">
+         <p className="text-[9px] font-black text-sdl-sec uppercase tracking-[0.4em] mt-4 flex items-center gap-3">
            <Zap size={10} className="animate-pulse" /> 
            Powered by Vibe-OS Neural Core 
            <Zap size={10} className="animate-pulse" />

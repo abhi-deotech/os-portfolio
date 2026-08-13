@@ -24,14 +24,14 @@ const Terminal = () => {
   if (isVimMode) {
     return (
       <div className={`h-full w-full ${theme.bg} backdrop-blur-md rounded-xl p-0 font-mono text-sm overflow-hidden border ${theme.border} flex flex-col`}>
-        <div className="bg-white/10 px-4 py-1 text-xs flex justify-between select-none">
+        <div className="bg-veil/10 px-4 py-1 text-xs flex justify-between select-none">
           <span>VIM - {vimFile?.name}</span>
           <span className="opacity-50 tracking-widest uppercase text-[10px] font-bold">[Read-Only Trap]</span>
         </div>
-        <div className="flex-grow p-4 text-white/80 overflow-y-auto whitespace-pre-wrap select-text">
+        <div className="flex-grow p-4 text-sdl-ink/80 overflow-y-auto whitespace-pre-wrap select-text">
           {vimFile?.content || Array(20).fill('~').join('\n')}
         </div>
-        <div className="bg-white/5 px-4 py-1 flex gap-2 items-center">
+        <div className="bg-veil/5 px-4 py-1 flex gap-2 items-center">
           <span className={`${theme.primary} font-bold`}>:</span>
           <input
             autoFocus
@@ -39,7 +39,7 @@ const Terminal = () => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
-            className="flex-grow bg-transparent border-none outline-none text-white p-0 text-sm font-mono"
+            className="flex-grow bg-transparent border-none outline-none text-sdl-ink p-0 text-sm font-mono"
             spellCheck="false"
           />
         </div>

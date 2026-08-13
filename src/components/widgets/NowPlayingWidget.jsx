@@ -24,9 +24,9 @@ const NowPlayingWidget = () => {
 
   if (!nowPlaying) {
     return (
-      <div className="w-full h-full min-h-[120px] rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/10 p-5 flex flex-col justify-center items-center shadow-2xl shadow-black/50 overflow-hidden">
-        <Radio className="text-white/20 mb-2" size={24} />
-        <span className="text-xs font-bold text-white/40">Loading Last.fm...</span>
+      <div className="w-full h-full min-h-[120px] rounded-3xl bg-black/40 backdrop-blur-3xl border border-hairline/10 p-5 flex flex-col justify-center items-center shadow-2xl shadow-black/50 overflow-hidden">
+        <Radio className="text-sdl-sec mb-2" size={24} />
+        <span className="text-xs font-bold text-sdl-sec">Loading Last.fm...</span>
       </div>
     );
   }
@@ -34,7 +34,7 @@ const NowPlayingWidget = () => {
   const isPlaying = nowPlaying.isNowPlaying;
 
   return (
-    <div className="w-full h-full min-h-[120px] rounded-3xl bg-black/60 backdrop-blur-3xl border border-white/10 p-4 flex items-center shadow-2xl shadow-black/50 overflow-hidden relative group">
+    <div className="w-full h-full min-h-[120px] rounded-3xl bg-black/60 backdrop-blur-3xl border border-hairline/10 p-4 flex items-center shadow-2xl shadow-black/50 overflow-hidden relative group">
       {/* Background Glow */}
       <div 
         className="absolute inset-0 opacity-20 pointer-events-none transition-opacity duration-1000"
@@ -44,7 +44,7 @@ const NowPlayingWidget = () => {
       />
 
       <div className="flex gap-4 items-center w-full relative z-10">
-        <div className="relative w-16 h-16 shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-lg">
+        <div className="relative w-16 h-16 shrink-0 rounded-2xl overflow-hidden border border-hairline/10 shadow-lg">
           {nowPlaying.cover ? (
             <img 
               src={nowPlaying.cover} 
@@ -53,13 +53,13 @@ const NowPlayingWidget = () => {
               style={{ borderRadius: isPlaying ? '50%' : '16px', transition: 'border-radius 0.3s' }}
             />
           ) : (
-            <div className="w-full h-full bg-white/5 flex items-center justify-center">
-              <Radio className="text-white/20" size={20} />
+            <div className="w-full h-full bg-veil/5 flex items-center justify-center">
+              <Radio className="text-sdl-sec" size={20} />
             </div>
           )}
           {/* Inner cutout for vinyl record look if playing */}
           {isPlaying && nowPlaying.cover && (
-            <div className="absolute inset-0 m-auto w-4 h-4 bg-black/80 rounded-full border border-white/10" />
+            <div className="absolute inset-0 m-auto w-4 h-4 bg-black/80 rounded-full border border-hairline/10" />
           )}
         </div>
 
@@ -75,7 +75,7 @@ const NowPlayingWidget = () => {
             </span>
             <img src="https://www.last.fm/static/images/lastfm_avatar_twitter.66cd2c48ce03.png" alt="Last.fm" className="h-3 w-3 rounded-sm opacity-50" />
           </div>
-          <h4 className="text-sm font-bold truncate text-white">{nowPlaying.title}</h4>
+          <h4 className="text-sm font-bold truncate text-sdl-ink">{nowPlaying.title}</h4>
           <p className="text-[10px] text-os-onSurfaceVariant font-bold uppercase truncate">{nowPlaying.artist}</p>
         </div>
       </div>

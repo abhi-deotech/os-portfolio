@@ -13,6 +13,14 @@
  *
  * Usage:  __contrastProbe()            → summary + worst 25
  *         __contrastProbe({all:true})  → every finding
+ *
+ * KNOWN LIMITATION — gradient fills read as false positives.
+ * The walk composites `backgroundColor` only. A `bg-gradient-*` fill is a background-IMAGE, so its
+ * element reports a transparent background colour and the probe measures the text against whatever
+ * opaque surface sits behind it. On the gradient "Boot System" button that yields a ratio of exactly
+ * 1.00, because its onAccent ink is derived from the plane and the plane is what gets measured.
+ * A ratio of exactly 1.00 on a gradient element is the signature of this artifact, not a real
+ * failure. Verify those by eye or by reading the gradient stops.
  */
 (function () {
   const parseRGB = (s) => {
@@ -53,6 +61,18 @@
     return false;
   }
 
+  /**
+   * KNOWN BLIND SPOT: an element painted with a gradient has a TRANSPARENT backgroundColor, because
+   * the gradient is a background-IMAGE. Compositing therefore walks past it to the plane and reports
+   * a nonsense ratio — a dark on-accent ink over a dark plane reads as 1.0:1 even though the actual
+   * rendered background is a bright accent gradient. Such elements are reported separately as
+   * UNMEASURED rather than counted as failures, so the pass/fail number stays trustworthy.
+   */
+  function isGradientPainted(el) {
+    const bi = getComputedStyle(el).backgroundImage;
+    return !!bi && bi !== 'none' && /gradient/.test(bi);
+  }
+
   window.__contrastProbe = function (opts = {}) {
     const findings = [];
     const els = document.querySelectorAll('body *');
@@ -75,7 +95,19 @@
           const bold = parseInt(cs.fontWeight, 10) >= 700;
           const large = size >= 24 || (size >= 18.66 && bold);
           const need = large ? 3 : 4.5;
-          if (r < need) findings.push({ type: 'TEXT', ratio: +r.toFixed(2), need, label, text: el.textContent.trim().slice(0, 40), el });
+          if (r < need) {
+            // A gradient ancestor means the measured background is not what actually renders.
+            // Report separately so the failure count stays trustworthy.
+            let painted = null;
+            for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+              if (isGradientPainted(n)) { painted = n; break; }
+            }
+            findings.push({
+              type: painted ? 'UNMEASURED' : 'TEXT',
+              ratio: +r.toFixed(2), need, label,
+              text: el.textContent.trim().slice(0, 40), el,
+            });
+          }
         }
       }
 
@@ -105,11 +137,14 @@
     const cw = document.documentElement.getAttribute('data-colorway') || '(unset)';
     console.log(`%ccontrast-probe  colorway=${cw}  mode=${mode}  scanned=${els.length}`, 'font-weight:bold');
     console.log(`  TEXT failures     ${by('TEXT').length}`);
+    console.log(`  UNMEASURED        ${by('UNMEASURED').length}  (gradient-painted; verify by eye)`);
     console.log(`  UI failures       ${by('UI').length}`);
     console.log(`  VANISHED surfaces ${by('VANISHED').length}`);
     const worst = findings.sort((a, b) => a.ratio - b.ratio).slice(0, opts.all ? findings.length : 25);
     if (worst.length) console.table(worst.map((f) => ({ type: f.type, ratio: f.ratio, need: f.need, label: f.label, text: f.text })));
-    return { colorway: cw, mode, total: findings.length, text: by('TEXT').length, ui: by('UI').length, vanished: by('VANISHED').length, findings };
+    return { colorway: cw, mode, total: findings.length, text: by('TEXT').length,
+             ui: by('UI').length, vanished: by('VANISHED').length,
+             unmeasured: by('UNMEASURED').length, findings };
   };
 
   return '__contrastProbe() ready';

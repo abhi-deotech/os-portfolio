@@ -41,7 +41,7 @@ const ExpandedMetric = ({ icon: Icon, label, value, unit, color, delay, isOpen }
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 20, scale: 0.95 }}
       transition={{ delay, duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="group flex items-center justify-between p-4 bg-gradient-to-r from-white/[0.03] to-transparent rounded-2xl border border-white/[0.08] hover:border-white/20 transition-all cursor-default overflow-hidden relative"
+      className="group flex items-center justify-between p-4 bg-gradient-to-r from-white/[0.03] to-transparent rounded-2xl border border-hairline/[0.08] hover:border-hairline/20 transition-all cursor-default overflow-hidden relative"
     >
       {/* Background glow on hover */}
       <div 
@@ -66,8 +66,8 @@ const ExpandedMetric = ({ icon: Icon, label, value, unit, color, delay, isOpen }
           />
         </motion.div>
         <div className="flex flex-col">
-          <span className="text-[11px] font-bold text-white/60 uppercase tracking-[0.15em]">{label}</span>
-          <div className="h-0.5 w-8 bg-white/10 rounded-full mt-1 overflow-hidden">
+          <span className="text-[11px] font-bold text-sdl-sec uppercase tracking-[0.15em]">{label}</span>
+          <div className="h-0.5 w-8 bg-veil/10 rounded-full mt-1 overflow-hidden">
             <motion.div 
               className="h-full rounded-full"
               style={{ backgroundColor: color }}
@@ -81,12 +81,12 @@ const ExpandedMetric = ({ icon: Icon, label, value, unit, color, delay, isOpen }
       
       <div className="flex items-baseline gap-1 relative z-10">
         <span 
-          className="text-lg font-black text-white tabular-nums"
+          className="text-lg font-black text-sdl-ink tabular-nums"
           style={{ textShadow: `0 0 20px ${color}40` }}
         >
           {displayValue}
         </span>
-        <span className="text-xs font-bold text-white/30 uppercase ml-0.5">{unit}</span>
+        <span className="text-xs font-bold text-sdl-sec uppercase ml-0.5">{unit}</span>
       </div>
     </motion.div>
   );
@@ -94,7 +94,7 @@ const ExpandedMetric = ({ icon: Icon, label, value, unit, color, delay, isOpen }
 
 // Compact metric for widget view
 const CompactMetric = ({ icon: Icon, label, value, unit, color }) => (
-  <div className="flex items-center justify-between p-3 bg-white/[0.02] rounded-2xl border border-white/5 hover:border-white/10 transition-all group">
+  <div className="flex items-center justify-between p-3 bg-veil/[0.02] rounded-2xl border border-hairline/5 hover:border-hairline/10 transition-all group">
     <div className="flex items-center gap-3">
       <div 
         className="p-2 rounded-xl"
@@ -103,13 +103,13 @@ const CompactMetric = ({ icon: Icon, label, value, unit, color }) => (
           boxShadow: `0 0 15px rgba(var(--${color.split('/')[0]}-rgb), 0.2)`
         }}
       >
-        <Icon size={14} className="text-white" />
+        <Icon size={14} className="text-sdl-ink" />
       </div>
-      <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">{label}</span>
+      <span className="text-[10px] font-bold text-sdl-sec uppercase tracking-[0.2em]">{label}</span>
     </div>
     <div className="flex items-baseline gap-1">
-      <span className="text-xs font-black text-white">{value}</span>
-      <span className="text-[8px] font-black text-white/20 uppercase">{unit}</span>
+      <span className="text-xs font-black text-sdl-ink">{value}</span>
+      <span className="text-[8px] font-black text-sdl-sec uppercase">{unit}</span>
     </div>
   </div>
 );
@@ -157,12 +157,12 @@ const SystemMetricsWidget = () => {
         onClick={handleExpand}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="h-full p-5 bg-[#080808] rounded-3xl border border-white/5 flex flex-col gap-4 overflow-hidden cursor-pointer hover:border-white/10 transition-colors"
+        className="h-full p-5 bg-[#080808] rounded-3xl border border-hairline/5 flex flex-col gap-4 overflow-hidden cursor-pointer hover:border-hairline/10 transition-colors"
       >
         <div className="flex items-center gap-3 mb-2">
           <Activity className="text-os-secondary animate-pulse" size={20} />
           <div>
-            <h3 className="text-xs font-black text-white italic tracking-tight uppercase">Architecture Load</h3>
+            <h3 className="text-xs font-black text-sdl-ink italic tracking-tight uppercase">Architecture Load</h3>
             <p className="text-[8px] font-bold text-os-secondary uppercase tracking-widest">System Engine v2.0</p>
           </div>
         </div>
@@ -174,12 +174,12 @@ const SystemMetricsWidget = () => {
           <CompactMetric icon={Zap} label="Power Draw" value={systemMetrics.power} unit="W" color="yellow-500/10" />
         </div>
 
-        <div className="mt-auto pt-4 border-t border-white/5">
+        <div className="mt-auto pt-4 border-t border-hairline/5">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-[8px] font-black text-white/20 uppercase tracking-widest">Efficiency</span>
+            <span className="text-[8px] font-black text-sdl-sec uppercase tracking-widest">Efficiency</span>
             <span className="text-[9px] font-black text-os-secondary uppercase tracking-widest">94.2%</span>
           </div>
-          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+          <div className="w-full h-1 bg-veil/5 rounded-full overflow-hidden">
              <motion.div 
                initial={{ width: '0%' }}
                animate={{ width: '94.2%' }}
@@ -225,7 +225,7 @@ const SystemMetricsWidget = () => {
                 }}
                 className={`pointer-events-auto w-[340px] ${transparencyEffects ? 'backdrop-blur-2xl' : ''}`}
               >
-                <div className="p-6 bg-[#0a0a0a]/95 rounded-[2rem] border border-white/[0.12] shadow-[0_32px_64px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05),inset_0_1px_0_rgba(255,255,255,0.1)] overflow-hidden relative">
+                <div className="p-6 bg-[#0a0a0a]/95 rounded-[2rem] border border-hairline/[0.12] shadow-[0_32px_64px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05),inset_0_1px_0_rgba(255,255,255,0.1)] overflow-hidden relative">
                   {/* Ambient glow layers */}
                   <div className="absolute -top-24 -right-24 w-48 h-48 bg-os-primary/20 rounded-full blur-[80px] pointer-events-none" />
                   <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-os-secondary/15 rounded-full blur-[80px] pointer-events-none" />
@@ -242,14 +242,14 @@ const SystemMetricsWidget = () => {
                       <Activity className="text-os-primary" size={22} />
                     </div>
                     <div className="flex-1">
-                      <h2 className="text-sm font-black text-white italic tracking-tight uppercase">Architecture Load</h2>
-                      <p className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mt-0.5">System Engine V2.0</p>
+                      <h2 className="text-sm font-black text-sdl-ink italic tracking-tight uppercase">Architecture Load</h2>
+                      <p className="text-[10px] font-bold text-sdl-sec uppercase tracking-[0.2em] mt-0.5">System Engine V2.0</p>
                     </div>
                     <motion.button 
                       whileHover={{ scale: 1.1, rotate: 90 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={handleClose}
-                      className="p-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all border border-white/10"
+                      className="p-2.5 rounded-full bg-veil/5 hover:bg-veil/10 text-sdl-sec hover:text-sdl-ink transition-all border border-hairline/10"
                     >
                       <X size={16} strokeWidth={2.5} />
                     </motion.button>
@@ -300,12 +300,12 @@ const SystemMetricsWidget = () => {
                     initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.45, duration: 0.4 }}
-                    className="mt-6 pt-5 border-t border-white/[0.08] relative z-10"
+                    className="mt-6 pt-5 border-t border-hairline/[0.08] relative z-10"
                   >
                     <div className="flex justify-between items-center mb-3">
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-os-secondary animate-pulse" />
-                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Efficiency Rating</span>
+                        <span className="text-[10px] font-bold text-sdl-sec uppercase tracking-widest">Efficiency Rating</span>
                       </div>
                       <motion.span 
                         initial={{ opacity: 0, scale: 0.5 }}
@@ -317,7 +317,7 @@ const SystemMetricsWidget = () => {
                         94.2%
                       </motion.span>
                     </div>
-                    <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden relative">
+                    <div className="w-full h-2 bg-veil/5 rounded-full overflow-hidden relative">
                       <motion.div 
                         initial={{ width: '0%', opacity: 0 }}
                         animate={{ width: '94.2%', opacity: 1 }}
@@ -339,13 +339,13 @@ const SystemMetricsWidget = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.7 }}
-                    className="mt-4 pt-3 border-t border-white/[0.05] flex justify-between items-center"
+                    className="mt-4 pt-3 border-t border-hairline/[0.05] flex justify-between items-center"
                   >
                     <div className="flex items-center gap-2">
                       <div className="w-1 h-1 rounded-full bg-green-500" />
-                      <span className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em]">System Optimal</span>
+                      <span className="text-[9px] font-bold text-sdl-sec uppercase tracking-[0.2em]">System Optimal</span>
                     </div>
-                    <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.3em]">v2.0.1</span>
+                    <span className="text-[8px] font-black text-sdl-sec uppercase tracking-[0.3em]">v2.0.1</span>
                   </motion.div>
 
                   {/* Floating particles */}

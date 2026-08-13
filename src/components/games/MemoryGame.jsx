@@ -78,7 +78,7 @@ const MemoryGame = ({ onBack }) => {
   const isGameOver = solved.length === cards.length && cards.length > 0;
 
   return (
-    <div className="h-full w-full bg-[#050505] text-white flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
+    <div className="h-full w-full bg-[#050505] text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(204,151,255,0.03)_0%,transparent_70%)] pointer-events-none" />
       
@@ -88,21 +88,21 @@ const MemoryGame = ({ onBack }) => {
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack}
-          className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white"
+          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink"
         >
           <ArrowLeft size={20} />
         </motion.button>
         
         <div className="flex gap-8">
            <div className="text-center">
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">Cycles</p>
+              <p className="text-[10px] font-black text-sdl-sec uppercase tracking-[0.3em] mb-1">Cycles</p>
               <p className="text-2xl font-black italic text-os-primary tracking-tighter tabular-nums leading-none">
                 {moves.toString().padStart(2, '0')}
               </p>
            </div>
            <div className="text-center">
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">Min Peak</p>
-              <p className="text-2xl font-black italic text-white/40 tracking-tighter tabular-nums leading-none">
+              <p className="text-[10px] font-black text-sdl-sec uppercase tracking-[0.3em] mb-1">Min Peak</p>
+              <p className="text-2xl font-black italic text-sdl-sec tracking-tighter tabular-nums leading-none">
                 {bestMoves.toString().padStart(2, '0')}
               </p>
            </div>
@@ -138,11 +138,11 @@ const MemoryGame = ({ onBack }) => {
               >
                 {/* Card Front (Hidden side) */}
                 <div 
-                  className="absolute inset-0 bg-[#0a0a0a] border border-white/10 rounded-[1.5rem] flex items-center justify-center backface-hidden shadow-xl overflow-hidden group-hover:border-os-primary/40 transition-colors"
+                  className="absolute inset-0 bg-[#0a0a0a] border border-hairline/10 rounded-[1.5rem] flex items-center justify-center backface-hidden shadow-xl overflow-hidden group-hover:border-os-primary/40 transition-colors"
                   style={{ backfaceVisibility: 'hidden' }}
                 >
                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
-                   <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center">
+                   <div className="w-10 h-10 rounded-2xl bg-veil/5 border border-hairline/5 flex items-center justify-center">
                       <div className="w-2 h-2 rounded-full bg-os-primary/40 animate-pulse" />
                    </div>
                 </div>
@@ -181,7 +181,7 @@ const MemoryGame = ({ onBack }) => {
             className="mt-12 flex flex-col items-center gap-4 bg-os-primary/10 border border-os-primary/20 p-8 rounded-[3rem] backdrop-blur-xl"
           >
             <div className="w-16 h-16 rounded-full bg-os-primary flex items-center justify-center shadow-[0_0_30px_#cc97ff]">
-               <Trophy size={32} className="text-black" />
+               <Trophy size={32} className="text-sdl-onAccent" />
             </div>
             <div className="text-center">
                <h2 className="text-2xl font-black italic uppercase tracking-tighter">Sync Complete</h2>
@@ -193,7 +193,7 @@ const MemoryGame = ({ onBack }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={initGame}
-              className="mt-2 px-8 py-3 bg-white text-black font-black uppercase tracking-widest rounded-2xl"
+              className="mt-2 px-8 py-3 bg-white text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl"
             >
               Restart Link
             </motion.button>
@@ -206,7 +206,7 @@ const MemoryGame = ({ onBack }) => {
             <Brain size={12} />
             <span className="text-[8px] font-black uppercase tracking-widest">Neural Pattern Match</span>
          </div>
-         <div className="w-px h-3 bg-white/20" />
+         <div className="w-px h-3 bg-veil/20" />
          <div className="flex items-center gap-2">
             <Cpu size={12} />
             <span className="text-[8px] font-black uppercase tracking-widest">Cognitive Load: Low</span>

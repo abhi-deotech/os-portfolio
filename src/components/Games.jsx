@@ -71,7 +71,7 @@ const Games = () => {
            <div className="absolute -right-4 -top-4 w-16 h-16 bg-[#00d2fd]/20 blur-xl rounded-full" />
            <p className="text-[10px] text-os-onSurfaceVariant uppercase tracking-widest font-bold mb-1">Player Rank</p>
            <div className="flex items-center space-x-2">
-             <span className="text-xl font-display font-black text-white">LVL 42</span>
+             <span className="text-xl font-display font-black text-sdl-ink">LVL 42</span>
              <Sparkles size={14} className="text-[#00d2fd]" />
            </div>
            <div className="mt-3 h-1 w-full bg-os-surfaceContainerHighest rounded-full overflow-hidden">
@@ -112,7 +112,7 @@ const Games = () => {
                 <div className="absolute inset-0 p-6 md:p-10 flex flex-col justify-end bg-gradient-to-t from-[#0e0e0e] via-[#0e0e0e]/50 to-transparent">
                   <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
-                      <h1 className="font-display text-3xl md:text-5xl font-black text-white mb-1 md:mb-2 drop-shadow-lg group-hover:text-[#cc97ff] transition-colors">Snake Retro</h1>
+                      <h1 className="font-display text-3xl md:text-5xl font-black text-sdl-ink mb-1 md:mb-2 drop-shadow-lg group-hover:text-[#cc97ff] transition-colors">Snake Retro</h1>
                       <p className="text-os-onSurfaceVariant font-medium text-sm md:text-lg max-w-md line-clamp-2 md:line-clamp-none">Classic arcade experience reborn with kinetic glass aesthetics.</p>
                     </div>
                     
@@ -129,7 +129,7 @@ const Games = () => {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-display text-xl md:text-2xl font-bold">Library</h2>
-                <button className="text-xs md:text-sm font-bold text-os-onSurfaceVariant hover:text-white flex items-center space-x-1 group">
+                <button className="text-xs md:text-sm font-bold text-os-onSurfaceVariant hover:text-sdl-ink flex items-center space-x-1 group">
                   <span>See All</span>
                   <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </button>
@@ -143,8 +143,8 @@ const Games = () => {
                     <Gamepad2 size={isMobile ? 20 : 24} className="text-os-primary" />
                   </div>
                   <div className="relative z-10">
-                    <h3 className="font-display font-black text-lg md:text-xl mb-1 text-white group-hover:text-os-primary transition-colors">Retro Arcade</h3>
-                    <p className="text-xs md:text-sm text-white/60 font-medium">Classic NES/GB Emulation Hub.</p>
+                    <h3 className="font-display font-black text-lg md:text-xl mb-1 text-sdl-ink group-hover:text-os-primary transition-colors">Retro Arcade</h3>
+                    <p className="text-xs md:text-sm text-sdl-sec font-medium">Classic NES/GB Emulation Hub.</p>
                   </div>
                 </div>
 
@@ -214,7 +214,7 @@ const Games = () => {
                 ].map((ach, i) => (
                   <div key={i} className="p-6 rounded-3xl bg-[#131313] border border-os-outline/10 relative overflow-hidden group">
                     <div className="flex items-center space-x-4 mb-4">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5`} style={{ backgroundColor: `${ach.color}20` }}>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border border-hairline/5`} style={{ backgroundColor: `${ach.color}20` }}>
                         <ach.icon size={24} style={{ color: ach.color }} />
                       </div>
                       <div>

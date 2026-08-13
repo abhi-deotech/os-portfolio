@@ -14,22 +14,29 @@ const Wallpaper = () => {
 
   let gradientClass = '';
   let backgroundStyle;
+  let isColorwayPlane = false;
 
   if (isCustomWallpaper(wallpaper)) {
     backgroundStyle = { backgroundImage: `url(${wallpaper})` };
   } else {
     const wp = resolveWallpaper(wallpaper);
-    if (wp.type === 'image') backgroundStyle = { backgroundImage: `url(${wp.url})` };
+    if (wp.type === 'none') isColorwayPlane = true;
+    else if (wp.type === 'image') backgroundStyle = { backgroundImage: `url(${wp.url})` };
     else gradientClass = wp.gradient;
   }
+
+  // "Colorway" renders nothing at all, so body's plane + wash (body::before in grammar.css) is what
+  // the user sees. A readability scrim over an already-designed plane would only mute it.
+  if (isColorwayPlane) return null;
 
   return (
     <div
       className={`absolute inset-0 -z-20 transition-all duration-1000 ${gradientClass}`}
       style={backgroundStyle ? { ...backgroundStyle, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
     >
-      {/* Readability scrim. P3 replaces this with the colorway's own wash (law 8: 10-22% alpha). */}
-      <div className="absolute inset-0 bg-black/10 backdrop-brightness-[0.85]" />
+      {/* Readability scrim for user-supplied ingredients, tinted by mode rather than always black —
+          over a light colorway a black scrim reads as grime. */}
+      <div className="absolute inset-0" style={{ background: 'var(--sdl-scrim)', opacity: 0.35 }} />
     </div>
   );
 };

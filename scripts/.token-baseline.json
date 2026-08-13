@@ -5,7 +5,7 @@
     "os-* bridge — accent/outline/container keys": 777,
     "os-* bridge — surface/ink keys": 242,
     "legacy rgba(var(--os-*), N) — must be 0": 0,
-    "var(--sdl-*) — migrated to roles": 8
+    "var(--sdl-*) — migrated to roles": 9
   },
   "tokensDetail": {
     "accentKeys": {
@@ -27,19 +27,19 @@
     }
   },
   "whiteBlack": {
-    "hairline  border-white|black/N": 215,
-    "ink       text-white": 141,
-    "ink muted text-white/N": 192,
-    "veil      bg-white/N": 272,
-    "scrim     bg-black/N": 49,
+    "hairline  border-white|black/N": 34,
+    "ink       text-white": 23,
+    "ink muted text-white/N": 38,
+    "veil      bg-white/N": 65,
+    "scrim     bg-black/N": 48,
     "device    bg-black (bare)": 9,
-    "onAccent  text-black": 49
+    "onAccent  text-black": 9
   },
   "hexes": {
     "accent-duplicating": 143,
     "surface-duplicating": 23,
-    "near-black second ramp": 67,
-    "all 6-digit hexes": 384
+    "near-black second ramp": 66,
+    "all 6-digit hexes": 383
   },
   "hexesDetail": {
     "accent": {
@@ -55,7 +55,7 @@
       "#192540": 2
     },
     "nearBlack": {
-      "#050505": 20,
+      "#050505": 19,
       "#080808": 3,
       "#0a0a0a": 12,
       "#0c0c0c": 7,
@@ -91,7 +91,7 @@
   },
   "headline": {
     "bridgeSites": 1019,
-    "whiteBlackTotal": 927,
-    "untokenizedTotal": 1325
+    "whiteBlackTotal": 226,
+    "untokenizedTotal": 623
   }
 }

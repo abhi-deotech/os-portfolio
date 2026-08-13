@@ -81,7 +81,7 @@ const MusicApp = () => {
   };
 
   return (
-    <div className="flex h-full bg-[#030712] text-white overflow-hidden rounded-b-2xl relative">
+    <div className="flex h-full bg-[#030712] text-sdl-ink overflow-hidden rounded-b-2xl relative">
       {/* Background Glow */}
       <div className="absolute inset-0 bg-gradient-to-br from-os-primary/5 to-transparent pointer-events-none" />
       {/* Sidebar */}
@@ -89,7 +89,7 @@ const MusicApp = () => {
         <motion.div 
           initial={isMobile ? { x: -300 } : false}
           animate={{ x: 0 }}
-          className={`${isMobile ? 'absolute inset-y-0 left-0 z-50 w-64' : 'w-64'} bg-black/90 md:bg-black/40 border-r border-white/5 p-6 flex flex-col gap-8 h-full`}
+          className={`${isMobile ? 'absolute inset-y-0 left-0 z-50 w-64' : 'w-64'} bg-black/90 md:bg-black/40 border-r border-hairline/5 p-6 flex flex-col gap-8 h-full`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 text-os-primary">
@@ -97,7 +97,7 @@ const MusicApp = () => {
               <span className="font-black tracking-tighter text-xl">Lumina Music</span>
             </div>
             {isMobile && (
-              <button onClick={() => setShowSidebar(false)} className="p-2 hover:bg-white/5 rounded-xl">
+              <button onClick={() => setShowSidebar(false)} className="p-2 hover:bg-veil/5 rounded-xl">
                 <ChevronLeft size={20} />
               </button>
             )}
@@ -112,7 +112,7 @@ const MusicApp = () => {
               <button 
                 key={item.id} 
                 onClick={() => setMusicView(item.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left font-bold text-sm ${music.activeView === item.id ? 'bg-os-primary/10 text-os-primary shadow-sm' : 'hover:bg-white/5 text-os-onSurfaceVariant hover:text-white'}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left font-bold text-sm ${music.activeView === item.id ? 'bg-os-primary/10 text-os-primary shadow-sm' : 'hover:bg-veil/5 text-os-onSurfaceVariant hover:text-sdl-ink'}`}
               >
                 <item.icon size={18} />
                 {item.id}
@@ -121,7 +121,7 @@ const MusicApp = () => {
           </nav>
 
           <div className="mt-auto">
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-os-primary/20 to-os-secondary/20 border border-white/10">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-os-primary/20 to-os-secondary/20 border border-hairline/10">
               <p className="text-[10px] font-black uppercase tracking-widest text-os-primary mb-1">Now Playing</p>
               <p className="text-xs font-bold truncate">{music.currentTrack.title}</p>
             </div>
@@ -141,7 +141,7 @@ const MusicApp = () => {
         
         <div className="flex-grow overflow-y-auto p-4 md:p-8 z-10 custom-scrollbar relative">
           {isMobile && (
-            <button onClick={() => setShowSidebar(true)} className="absolute top-4 left-4 p-2 bg-black/40 rounded-xl border border-white/10 z-20">
+            <button onClick={() => setShowSidebar(true)} className="absolute top-4 left-4 p-2 bg-black/40 rounded-xl border border-hairline/10 z-20">
               <List size={20} />
             </button>
           )}
@@ -157,21 +157,21 @@ const MusicApp = () => {
               >
                 <div className="relative group">
                    <div className="absolute inset-0 bg-gradient-to-r from-os-primary/20 to-os-secondary/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
-                   <div className="relative p-8 md:p-12 rounded-3xl border border-white/5 bg-black/40 backdrop-blur-xl overflow-hidden">
+                   <div className="relative p-8 md:p-12 rounded-3xl border border-hairline/5 bg-black/40 backdrop-blur-xl overflow-hidden">
                       <div className="absolute right-0 top-0 w-64 h-64 bg-os-primary/10 blur-[100px]" />
                       <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
                          <motion.img 
                             whileHover={{ scale: 1.05 }}
                             src={MUSIC_DATA[0].cover} 
-                            className="w-48 h-48 md:w-64 md:h-64 rounded-2xl shadow-2xl border border-white/10"
+                            className="w-48 h-48 md:w-64 md:h-64 rounded-2xl shadow-2xl border border-hairline/10"
                          />
                          <div className="text-center md:text-left">
                             <span className="text-xs font-black uppercase tracking-[0.3em] text-os-primary mb-4 block">Recommended for you</span>
                             <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-4">{MUSIC_DATA[0].title}</h2>
                             <p className="text-os-onSurfaceVariant font-bold text-lg mb-8">{MUSIC_DATA[0].artist}</p>
                             <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                               <button onClick={() => setMusicTrack(MUSIC_DATA[0])} className="px-8 py-3 rounded-full bg-os-primary text-black font-black hover:scale-105 active:scale-95 transition-all">Play Now</button>
-                               <button onClick={() => toggleLikeSong(MUSIC_DATA[0].id)} className="px-8 py-3 rounded-full bg-white/5 border border-white/10 font-bold hover:bg-white/10 transition-all flex items-center gap-2">
+                               <button onClick={() => setMusicTrack(MUSIC_DATA[0])} className="px-8 py-3 rounded-full bg-os-primary text-sdl-onAccent font-black hover:scale-105 active:scale-95 transition-all">Play Now</button>
+                               <button onClick={() => toggleLikeSong(MUSIC_DATA[0].id)} className="px-8 py-3 rounded-full bg-veil/5 border border-hairline/10 font-bold hover:bg-veil/10 transition-all flex items-center gap-2">
                                   <Heart size={18} fill={music.likedSongs?.includes(MUSIC_DATA[0].id) ? 'currentColor' : 'none'} className={music.likedSongs?.includes(MUSIC_DATA[0].id) ? 'text-os-primary' : ''} />
                                   {music.likedSongs?.includes(MUSIC_DATA[0].id) ? 'Saved' : 'Save to Library'}
                                </button>
@@ -190,13 +190,13 @@ const MusicApp = () => {
                         <motion.div 
                           key={track.id}
                           whileHover={{ y: -5 }}
-                          className="group relative bg-white/5 border border-white/5 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all"
+                          className="group relative bg-veil/5 border border-hairline/5 rounded-2xl p-4 cursor-pointer hover:bg-veil/10 transition-all"
                           onMouseDown={() => setMusicTrack(track)}
                         >
-                           <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                           <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-hairline/10 shadow-lg">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                 <div className="w-12 h-12 rounded-full bg-os-primary flex items-center justify-center text-black">
+                                 <div className="w-12 h-12 rounded-full bg-os-primary flex items-center justify-center text-sdl-onAccent">
                                     <Play size={24} fill="currentColor" />
                                  </div>
                               </div>
@@ -217,13 +217,13 @@ const MusicApp = () => {
                         <motion.div 
                           key={track.id}
                           whileHover={{ y: -5 }}
-                          className="group relative bg-white/5 border border-white/5 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all"
+                          className="group relative bg-veil/5 border border-hairline/5 rounded-2xl p-4 cursor-pointer hover:bg-veil/10 transition-all"
                           onMouseDown={() => setMusicTrack(track)}
                         >
-                           <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                           <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-hairline/10 shadow-lg">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                 <div className="w-12 h-12 rounded-full bg-os-secondary flex items-center justify-center text-black">
+                                 <div className="w-12 h-12 rounded-full bg-os-secondary flex items-center justify-center text-sdl-onAccent">
                                     <Play size={24} fill="currentColor" />
                                  </div>
                               </div>
@@ -245,18 +245,18 @@ const MusicApp = () => {
                 exit={{ opacity: 0, scale: 1.05 }}
                 className="space-y-10"
               >
-                <div className="relative h-48 md:h-64 rounded-3xl overflow-hidden border border-white/10 group">
+                <div className="relative h-48 md:h-64 rounded-3xl overflow-hidden border border-hairline/10 group">
                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/40 via-blue-500/40 to-cyan-400/40 group-hover:scale-110 transition-transform duration-700" />
                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/40 backdrop-blur-sm">
                       <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4">Discover Infinite Beats</h2>
                       <div className="relative w-full max-w-xl">
-                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/40" size={20} />
+                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-sdl-sec" size={20} />
                          <input 
                            type="text"
                            placeholder="Search for tracks, artists, or genres..."
                            value={searchQuery}
                            onChange={(e) => setSearchQuery(e.target.value)}
-                           className="w-full bg-white/10 border border-white/20 rounded-2xl pl-12 pr-4 py-4 text-lg font-bold focus:outline-none focus:bg-white/20 focus:border-os-primary/50 transition-all"
+                           className="w-full bg-veil/10 border border-hairline/20 rounded-2xl pl-12 pr-4 py-4 text-lg font-bold focus:outline-none focus:bg-veil/20 focus:border-os-primary/50 transition-all"
                          />
                       </div>
                    </div>
@@ -277,7 +277,7 @@ const MusicApp = () => {
                      >
                         <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-80 group-hover:scale-110 transition-transform duration-500`} />
                         <div className="absolute inset-0 flex flex-col p-6 justify-between">
-                           <cat.icon size={32} className="text-white/80" />
+                           <cat.icon size={32} className="text-sdl-ink/80" />
                            <h4 className="text-xl font-black text-left">{cat.name}</h4>
                         </div>
                      </motion.button>
@@ -295,9 +295,9 @@ const MusicApp = () => {
                           key={track.id} 
                           whileHover={{ scale: 1.05 }}
                           onMouseDown={() => setMusicTrack(track)} 
-                          className="cursor-pointer group bg-white/5 p-3 rounded-xl hover:bg-white/10 transition-all border border-white/5"
+                          className="cursor-pointer group bg-veil/5 p-3 rounded-xl hover:bg-veil/10 transition-all border border-hairline/5"
                         >
-                           <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-white/10">
+                           <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-hairline/10">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                  <Play size={20} fill="currentColor" />
@@ -328,9 +328,9 @@ const MusicApp = () => {
                           key={track.id} 
                           whileHover={{ scale: 1.05 }}
                           onMouseDown={() => setMusicTrack(track)} 
-                          className="cursor-pointer group bg-white/5 p-3 rounded-xl hover:bg-white/10 transition-all border border-white/5"
+                          className="cursor-pointer group bg-veil/5 p-3 rounded-xl hover:bg-veil/10 transition-all border border-hairline/5"
                         >
-                           <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-white/10">
+                           <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-hairline/10">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                  <Play size={20} fill="currentColor" />
@@ -354,7 +354,7 @@ const MusicApp = () => {
                 exit={{ opacity: 0, x: -20 }}
               >
                 <div className="flex items-end gap-8 mb-12">
-                   <div className="w-48 h-48 md:w-64 md:h-64 rounded-3xl bg-gradient-to-br from-os-primary to-os-secondary flex items-center justify-center shadow-2xl border border-white/10">
+                   <div className="w-48 h-48 md:w-64 md:h-64 rounded-3xl bg-gradient-to-br from-os-primary to-os-secondary flex items-center justify-center shadow-2xl border border-hairline/10">
                       <Heart size={80} fill="black" strokeWidth={0} />
                    </div>
                    <div className="flex flex-col gap-2">
@@ -366,7 +366,7 @@ const MusicApp = () => {
                           const firstLiked = MUSIC_DATA.find(t => music.likedSongs?.includes(t.id));
                           if (firstLiked) setMusicTrack(firstLiked);
                         }}
-                        className="mt-4 px-10 py-4 rounded-full bg-os-primary text-black font-black hover:scale-105 active:scale-95 transition-all w-fit"
+                        className="mt-4 px-10 py-4 rounded-full bg-os-primary text-sdl-onAccent font-black hover:scale-105 active:scale-95 transition-all w-fit"
                       >
                         Play All
                       </button>
@@ -374,7 +374,7 @@ const MusicApp = () => {
                 </div>
 
                 <div className="space-y-1">
-                  <div className={`grid ${isMobile ? 'grid-cols-[30px_1fr_60px]' : 'grid-cols-[30px_1fr_1fr_80px]'} px-4 py-2 text-[10px] font-black uppercase tracking-widest text-os-onSurfaceVariant border-b border-white/5 mb-2`}>
+                  <div className={`grid ${isMobile ? 'grid-cols-[30px_1fr_60px]' : 'grid-cols-[30px_1fr_1fr_80px]'} px-4 py-2 text-[10px] font-black uppercase tracking-widest text-os-onSurfaceVariant border-b border-hairline/5 mb-2`}>
                     <span>#</span>
                     <span>Title</span>
                     {!isMobile && <span>Album</span>}
@@ -384,11 +384,11 @@ const MusicApp = () => {
                     <div 
                       key={track.id}
                       onMouseDown={() => setMusicTrack(track)}
-                      className={`grid ${isMobile ? 'grid-cols-[30px_1fr_60px]' : 'grid-cols-[30px_1fr_1fr_80px]'} px-4 py-3 rounded-xl cursor-pointer transition-all group ${music.currentTrack.id === track.id ? 'bg-os-primary/10' : 'hover:bg-white/5'}`}
+                      className={`grid ${isMobile ? 'grid-cols-[30px_1fr_60px]' : 'grid-cols-[30px_1fr_1fr_80px]'} px-4 py-3 rounded-xl cursor-pointer transition-all group ${music.currentTrack.id === track.id ? 'bg-os-primary/10' : 'hover:bg-veil/5'}`}
                     >
                       <span className="text-xs flex items-center text-os-onSurfaceVariant">{i+1}</span>
                       <div className="flex flex-col">
-                        <span className={`text-sm font-bold truncate ${music.currentTrack.id === track.id ? 'text-os-primary' : 'text-white'}`}>{track.title}</span>
+                        <span className={`text-sm font-bold truncate ${music.currentTrack.id === track.id ? 'text-os-primary' : 'text-sdl-ink'}`}>{track.title}</span>
                         <span className="text-[10px] text-os-onSurfaceVariant font-bold truncate">{track.artist}</span>
                       </div>
                       {!isMobile && <span className="text-xs text-os-onSurfaceVariant font-medium flex items-center truncate">{track.album}</span>}
@@ -402,11 +402,11 @@ const MusicApp = () => {
         </div>
 
         {/* Player Bar */}
-        <div className={`h-24 bg-black/80 backdrop-blur-3xl border-t border-white/5 px-4 md:px-8 flex items-center justify-between z-20`}>
+        <div className={`h-24 bg-black/80 backdrop-blur-3xl border-t border-hairline/5 px-4 md:px-8 flex items-center justify-between z-20`}>
           <div className={`flex items-center gap-4 ${isMobile ? 'w-1/2' : 'w-1/3'}`}>
              <motion.div 
                whileHover={{ scale: 1.05 }}
-               className="w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border border-white/10 shrink-0 cursor-pointer"
+               className="w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border border-hairline/10 shrink-0 cursor-pointer"
                onClick={() => setIsFullScreen(true)}
              >
                 <img src={music.currentTrack.cover} alt="Cover" className="w-full h-full object-cover" />
@@ -421,33 +421,33 @@ const MusicApp = () => {
              <div className="flex items-center gap-4 md:gap-6">
                 <button 
                   onClick={toggleShuffle}
-                  className={`transition-colors ${music.shuffle ? 'text-os-primary' : 'text-os-onSurfaceVariant hover:text-white'}`}
+                  className={`transition-colors ${music.shuffle ? 'text-os-primary' : 'text-os-onSurfaceVariant hover:text-sdl-ink'}`}
                 >
                   <Shuffle size={18} />
                 </button>
-                <button className="text-os-onSurfaceVariant hover:text-white transition-colors" onClick={handlePrev}><SkipBack size={22} fill="currentColor" /></button>
+                <button className="text-os-onSurfaceVariant hover:text-sdl-ink transition-colors" onClick={handlePrev}><SkipBack size={22} fill="currentColor" /></button>
                 <button 
                   onClick={() => {
                     const nextState = !music.isPlaying;
                     setMusicIsPlaying(nextState);
                     if (nextState) unlockAchievement('audiophile');
                   }}
-                  className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                  className="w-10 h-10 rounded-full bg-white text-sdl-onAccent flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
                 >
                   {music.isPlaying ? <Pause size={20} fill="black" /> : <Play size={20} fill="black" className="translate-x-0.5" />}
                 </button>
-                <button className="text-os-onSurfaceVariant hover:text-white transition-colors" onClick={nextTrack}><SkipForward size={22} fill="currentColor" /></button>
+                <button className="text-os-onSurfaceVariant hover:text-sdl-ink transition-colors" onClick={nextTrack}><SkipForward size={22} fill="currentColor" /></button>
                 <button 
                   onClick={cycleRepeatMode}
-                  className={`relative transition-colors ${music.repeatMode !== 'none' ? 'text-os-primary' : 'text-os-onSurfaceVariant hover:text-white'}`}
+                  className={`relative transition-colors ${music.repeatMode !== 'none' ? 'text-os-primary' : 'text-os-onSurfaceVariant hover:text-sdl-ink'}`}
                 >
                   <Repeat size={18} />
-                  {music.repeatMode === 'one' && <span className="absolute -top-1 -right-1 text-[8px] font-black bg-os-primary text-black rounded-full w-3 h-3 flex items-center justify-center">1</span>}
+                  {music.repeatMode === 'one' && <span className="absolute -top-1 -right-1 text-[8px] font-black bg-os-primary text-sdl-onAccent rounded-full w-3 h-3 flex items-center justify-center">1</span>}
                 </button>
              </div>
              <div className="flex items-center gap-3 w-full max-w-[200px] md:max-w-md group">
                  <span className="text-[10px] font-mono text-os-onSurfaceVariant w-8">{formatTime(music.currentTime)}</span>
-                 <div className="flex-grow h-1.5 bg-white/10 rounded-full relative group/seek overflow-hidden">
+                 <div className="flex-grow h-1.5 bg-veil/10 rounded-full relative group/seek overflow-hidden">
                     <input 
                       type="range"
                       min="0"
@@ -470,7 +470,7 @@ const MusicApp = () => {
                <button onClick={() => setIsFullScreen(true)} className="text-os-onSurfaceVariant hover:text-os-primary transition-colors"><Maximize2 size={18} /></button>
                <div className="flex items-center gap-3">
                   <Volume2 size={18} className="text-os-onSurfaceVariant" />
-                  <div className="w-24 h-1 bg-white/10 rounded-full relative overflow-hidden group/vol">
+                  <div className="w-24 h-1 bg-veil/10 rounded-full relative overflow-hidden group/vol">
                      <input 
                         type="range" 
                         min="0" max="100" 
@@ -478,7 +478,7 @@ const MusicApp = () => {
                         onChange={handleVolumeChange}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                      />
-                     <div className="absolute top-0 left-0 h-full bg-white/60 group-hover/vol:bg-os-primary transition-colors" style={{ width: `${volume}%` }} />
+                     <div className="absolute top-0 left-0 h-full bg-veil/60 group-hover/vol:bg-os-primary transition-colors" style={{ width: `${volume}%` }} />
                   </div>
                </div>
             </div>
@@ -503,7 +503,7 @@ const MusicApp = () => {
 
             <button 
               onClick={() => setIsFullScreen(false)}
-              className="absolute top-8 right-8 p-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all z-20"
+              className="absolute top-8 right-8 p-4 rounded-full bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all z-20"
             >
               <Minimize2 size={24} />
             </button>
@@ -511,7 +511,7 @@ const MusicApp = () => {
             <div className="relative z-10 w-full max-w-6xl flex flex-col md:flex-row items-center gap-12 md:gap-20">
                <motion.div 
                  layoutId="track-cover"
-                 className="w-64 h-64 md:w-[500px] md:h-[500px] rounded-3xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden relative group"
+                 className="w-64 h-64 md:w-[500px] md:h-[500px] rounded-3xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-hairline/10 overflow-hidden relative group"
                >
                   <img src={music.currentTrack.cover} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s] linear" />
                   <div className="absolute inset-0 bg-gradient-to-tr from-os-primary/20 to-transparent pointer-events-none" />
@@ -540,7 +540,7 @@ const MusicApp = () => {
                   <div className="h-48 md:h-64 overflow-hidden mask-fade relative">
                      <div className="space-y-4 py-8">
                         <p className="text-lg md:text-2xl font-bold opacity-30">Yeah, we&apos;re living in the moment</p>
-                        <p className="text-xl md:text-3xl font-black text-white">Every heartbeat is a new song</p>
+                        <p className="text-xl md:text-3xl font-black text-sdl-ink">Every heartbeat is a new song</p>
                         <p className="text-lg md:text-2xl font-bold opacity-30">Lumina OS rhythm keeping us strong</p>
                         <p className="text-lg md:text-2xl font-bold opacity-30">Vibing with the particles, all night long</p>
                      </div>
@@ -549,7 +549,7 @@ const MusicApp = () => {
                   <div className="space-y-6">
                      <div className="flex items-center gap-4 w-full">
                         <span className="text-xs font-mono opacity-60">{formatTime(music.currentTime)}</span>
-                        <div className="flex-grow h-2 bg-white/10 rounded-full relative overflow-hidden">
+                        <div className="flex-grow h-2 bg-veil/10 rounded-full relative overflow-hidden">
                            <input 
                               type="range"
                               min="0" max="100"
@@ -567,7 +567,7 @@ const MusicApp = () => {
                         <button onClick={handlePrev} className="hover:scale-110 transition-transform"><SkipBack size={48} fill="currentColor" /></button>
                         <button 
                           onClick={() => setMusicIsPlaying(!music.isPlaying)}
-                          className="w-20 h-20 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl shadow-os-primary/20"
+                          className="w-20 h-20 rounded-full bg-white text-sdl-onAccent flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl shadow-os-primary/20"
                         >
                           {music.isPlaying ? <Pause size={40} fill="black" /> : <Play size={40} fill="black" className="translate-x-1" />}
                         </button>

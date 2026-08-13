@@ -7,7 +7,7 @@ import BootSequence from './BootSequence';
 const IS_PUTER_SHELL = import.meta.env.VITE_APP_MODE === 'puter-shell';
 
 // Define vibrant gradient for the boot button
-const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary bg-[length:200%_auto] hover:bg-[100%_0] text-white font-bold text-xs tracking-[0.3em] uppercase border border-white/20 backdrop-blur-sm transition-all duration-700 shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_40px_rgb(var(--os-primary-rgb)_/_0.5)]";
+const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary bg-[length:200%_auto] hover:bg-[100%_0] text-sdl-onAccent font-bold text-xs tracking-[0.3em] uppercase border border-hairline/20 backdrop-blur-sm transition-all duration-700 shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_40px_rgb(var(--os-primary-rgb)_/_0.5)]";
 
 /**
  * Login screen component for Lumina OS authentication.
@@ -58,9 +58,12 @@ const LoginScreen = () => {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#050505] overflow-hidden relative font-sans select-none">
+    <div className="h-screen w-screen bg-sdl-plane overflow-hidden relative font-sans select-none">
       {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#0a0a0a] via-[#050505] to-[#1a0a2e]" />
+      {/* Was a hardcoded near-black gradient (#0a0a0a / #050505 / #1a0a2e) — one of 67 sites forming a
+          second neutral ramp that ignored the theme entirely. On a light colorway it left dark ink on a
+          near-black plane: the login clock measured 1.5:1. Now it settles from the colorway's own plane. */}
+      <div className="absolute inset-0 bg-gradient-to-br from-sdl-plane via-sdl-plane to-sdl-sunken" />
       <div className="absolute top-1/4 left-1/4 w-[50vw] h-[50vw] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute bottom-1/4 right-1/4 w-[40vw] h-[40vw] bg-blue-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
 
@@ -76,10 +79,10 @@ const LoginScreen = () => {
             {/* Clock and Big Boot Button */}
             <div className="flex flex-col items-center gap-8">
                <motion.div className="flex flex-col items-center">
-                  <div className="text-8xl font-black text-white tracking-tighter mb-2">
+                  <div className="text-8xl font-black text-sdl-ink tracking-tighter mb-2">
                     {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
-                  <div className="text-sm font-bold text-white/40 uppercase tracking-[0.4em]">
+                  <div className="text-sm font-bold text-sdl-sec uppercase tracking-[0.4em]">
                     {time.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
                   </div>
                </motion.div>
@@ -106,27 +109,27 @@ const LoginScreen = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="h-full w-full flex items-center justify-center relative z-20"
           >
-             <div className="w-full max-w-md p-8 bg-[#0c0c0c]/80 backdrop-blur-3xl rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden relative group">
+             <div className="w-full max-w-md p-8 bg-[#0c0c0c]/80 backdrop-blur-3xl rounded-[2.5rem] border border-hairline/10 shadow-2xl overflow-hidden relative group">
                 <div className="absolute inset-0 bg-gradient-to-br from-os-primary/10 to-transparent pointer-events-none" />
                 
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-12">
                     <div>
-                      <h2 className="text-3xl font-black text-white italic tracking-tight">
+                      <h2 className="text-3xl font-black text-sdl-ink italic tracking-tight">
                         {IS_PUTER_SHELL ? 'Lumina OS' : 'Abhimanyu Saxena'}
                       </h2>
                       <p className="text-[10px] font-bold text-os-primary uppercase tracking-[0.3em]">
                         {IS_PUTER_SHELL ? 'Core Architecture' : 'System Authority'}
                       </p>
                     </div>
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-os-primary">
+                    <div className="w-12 h-12 rounded-2xl bg-veil/5 border border-hairline/10 flex items-center justify-center text-os-primary">
                       <ShieldCheck className="w-6 h-6" />
                     </div>
                   </div>
 
                   <form onSubmit={handleLogin} className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-white/30 uppercase tracking-[0.3em] ml-2">Access Key</label>
+                      <label className="text-[10px] font-bold text-sdl-sec uppercase tracking-[0.3em] ml-2">Access Key</label>
                       <div className="relative">
                         <input
                           autoFocus
@@ -134,7 +137,7 @@ const LoginScreen = () => {
                           placeholder="Type 'guest'"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className={`w-full bg-white/5 border ${error ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'border-white/10 focus:border-os-primary'} rounded-2xl py-5 px-6 text-white text-sm outline-none transition-all focus:bg-white/[0.08]`}
+                          className={`w-full bg-veil/5 border ${error ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'border-hairline/10 focus:border-os-primary'} rounded-2xl py-5 px-6 text-sdl-ink text-sm outline-none transition-all focus:bg-veil/[0.08]`}
                         />
                       </div>
                       {error && (
@@ -144,16 +147,16 @@ const LoginScreen = () => {
 
                     <button
                       type="submit"
-                      className="w-full bg-white text-black font-black py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
+                      className="w-full bg-white text-sdl-onAccent font-black py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
                     >
                       Authenticate
                       <ArrowRight className="w-4 h-4" />
                     </button>
 
                     <div className="flex items-center gap-4 py-2">
-                       <div className="h-[1px] flex-grow bg-white/5" />
-                       <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">or</span>
-                       <div className="h-[1px] flex-grow bg-white/5" />
+                       <div className="h-[1px] flex-grow bg-veil/5" />
+                       <span className="text-[10px] font-bold text-sdl-sec uppercase tracking-widest">or</span>
+                       <div className="h-[1px] flex-grow bg-veil/5" />
                     </div>
 
                     <button
@@ -162,7 +165,7 @@ const LoginScreen = () => {
                         login('guest');
                         unlockAchievement('first_login');
                       }}
-                      className="w-full bg-white/5 border border-white/10 text-white/60 font-bold py-4 rounded-2xl hover:bg-white/10 hover:text-white transition-all duration-300 uppercase text-[10px] tracking-[0.2em]"
+                      className="w-full bg-veil/5 border border-hairline/10 text-sdl-sec font-bold py-4 rounded-2xl hover:bg-veil/10 hover:text-sdl-ink transition-all duration-300 uppercase text-[10px] tracking-[0.2em]"
                     >
                       Enter as Guest
                     </button>
@@ -176,7 +179,7 @@ const LoginScreen = () => {
                         }
                       }}
                       disabled={isPuterConnecting}
-                      className="w-full mt-4 bg-gradient-to-r from-os-primary to-os-secondary text-black font-black py-4 rounded-2xl hover:brightness-110 active:scale-[0.98] transition-all duration-300 uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-4 bg-gradient-to-r from-os-primary to-os-secondary text-sdl-onAccent font-black py-4 rounded-2xl hover:brightness-110 active:scale-[0.98] transition-all duration-300 uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isPuterConnecting ? (
                         <>

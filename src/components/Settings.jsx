@@ -144,7 +144,7 @@ const Settings = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-[#cc97ff]/5 to-[#00d2fd]/5 opacity-50"></div>
         <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8 items-center">
 <div 
-              className={`w-full md:w-1/2 h-40 md:h-48 rounded-2xl shadow-2xl overflow-hidden relative border border-white/10 transition-all duration-700 ${!wallpaper.startsWith('data:image') && resolveWallpaper(wallpaper)?.type === 'live' ? resolveWallpaper(wallpaper).gradient : ''}`}
+              className={`w-full md:w-1/2 h-40 md:h-48 rounded-2xl shadow-2xl overflow-hidden relative border border-hairline/10 transition-all duration-700 ${!wallpaper.startsWith('data:image') && resolveWallpaper(wallpaper)?.type === 'live' ? resolveWallpaper(wallpaper).gradient : ''}`}
               style={
                 wallpaper.startsWith('data:image') 
                   ? { backgroundImage: `url(${wallpaper})`, backgroundSize: 'cover', backgroundPosition: 'center' }
@@ -154,12 +154,12 @@ const Settings = () => {
               }
             >
                 <div className="absolute top-4 left-4 right-4 flex gap-2">
-                    <div className="w-16 h-4 bg-white/20 backdrop-blur-md rounded-full"></div>
-                    <div className="w-8 h-4 bg-white/20 backdrop-blur-md rounded-full"></div>
+                    <div className="w-16 h-4 bg-veil/20 backdrop-blur-md rounded-full"></div>
+                    <div className="w-8 h-4 bg-veil/20 backdrop-blur-md rounded-full"></div>
                 </div>
-                <div className="absolute bottom-4 right-4 w-24 md:w-32 h-16 md:h-24 bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 flex flex-col p-2 gap-2">
-                     <div className="w-full h-1 md:h-2 bg-white/20 rounded-full"></div>
-                     <div className="w-3/4 h-1 md:h-2 bg-white/20 rounded-full"></div>
+                <div className="absolute bottom-4 right-4 w-24 md:w-32 h-16 md:h-24 bg-black/40 backdrop-blur-xl rounded-xl border border-hairline/10 flex flex-col p-2 gap-2">
+                     <div className="w-full h-1 md:h-2 bg-veil/20 rounded-full"></div>
+                     <div className="w-3/4 h-1 md:h-2 bg-veil/20 rounded-full"></div>
                 </div>
             </div>
             <div className="w-full md:w-1/2 space-y-4">
@@ -313,7 +313,7 @@ const Settings = () => {
               <RotateCcw size={20} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Reset Personalization</h3>
+              <h3 className="text-lg font-bold text-sdl-ink">Reset Personalization</h3>
               <p className="text-xs text-os-onSurfaceVariant">Restore all appearance settings to factory defaults</p>
             </div>
           </div>
@@ -459,7 +459,7 @@ const Settings = () => {
                 {getConnectionTypeIcon()}
                 <span className="text-[10px] font-bold uppercase tracking-widest">Type</span>
               </div>
-              <span className="block text-sm font-bold text-white capitalize">{network.connectionType}</span>
+              <span className="block text-sm font-bold text-sdl-ink capitalize">{network.connectionType}</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
@@ -467,7 +467,7 @@ const Settings = () => {
                 <Download size={16} className="text-os-secondary" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">Downlink</span>
               </div>
-              <span className="block text-sm font-bold text-white">{network.downlink > 0 ? network.downlink + ' Mbps' : '--'}</span>
+              <span className="block text-sm font-bold text-sdl-ink">{network.downlink > 0 ? network.downlink + ' Mbps' : '--'}</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
@@ -475,7 +475,7 @@ const Settings = () => {
                 <Zap size={16} className="text-os-tertiary" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">Latency</span>
               </div>
-              <span className="block text-sm font-bold text-white">{network.rtt > 0 ? network.rtt + ' ms' : '--'}</span>
+              <span className="block text-sm font-bold text-sdl-ink">{network.rtt > 0 ? network.rtt + ' ms' : '--'}</span>
             </div>
 
             <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
@@ -483,7 +483,7 @@ const Settings = () => {
                 <Shield size={16} className="text-os-primary" />
                 <span className="text-[10px] font-bold uppercase tracking-widest">Data Saver</span>
               </div>
-              <span className="block text-sm font-bold text-white">{network.saveData ? 'On' : 'Off'}</span>
+              <span className="block text-sm font-bold text-sdl-ink">{network.saveData ? 'On' : 'Off'}</span>
             </div>
           </div>
         </section>
@@ -512,11 +512,11 @@ const Settings = () => {
                 className={`flex items-center justify-between p-4 rounded-2xl transition-all ${net.connected ? 'bg-os-primary/10 border border-os-primary/20' : 'bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50'}`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-xl ${net.connected ? 'bg-os-primary/20 text-os-primary' : 'bg-white/5 text-os-onSurfaceVariant'}`}>
+                  <div className={`p-2 rounded-xl ${net.connected ? 'bg-os-primary/20 text-os-primary' : 'bg-veil/5 text-os-onSurfaceVariant'}`}>
                     {net.secure ? <Shield size={18} /> : <Wifi size={18} />}
                   </div>
                   <div>
-                    <span className={`block font-bold text-sm ${net.connected ? 'text-os-primary' : 'text-white'}`}>
+                    <span className={`block font-bold text-sm ${net.connected ? 'text-os-primary' : 'text-sdl-ink'}`}>
                       {net.name}
                       {net.connected && <span className="ml-2 text-[10px] font-normal opacity-60">(Connected)</span>}
                     </span>
@@ -632,12 +632,12 @@ const Settings = () => {
                   {isPuterSignedIn ? (
                     <div className="space-y-8">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-os-primary to-os-secondary border border-white/10 flex items-center justify-center text-4xl shadow-2xl text-black font-black uppercase">
+                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-os-primary to-os-secondary border border-hairline/10 flex items-center justify-center text-4xl shadow-2xl text-sdl-onAccent font-black uppercase">
                           {puterUser?.username?.[0] || 'P'}
                         </div>
                         <div className="flex-1 text-center sm:text-left space-y-1">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                            <h3 className="text-xl font-black text-white">{puterUser?.username || 'Puter Cloud User'}</h3>
+                            <h3 className="text-xl font-black text-sdl-ink">{puterUser?.username || 'Puter Cloud User'}</h3>
                             <span className="self-center px-2.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 text-[9px] font-black uppercase tracking-widest">
                               Connected
                             </span>
@@ -646,7 +646,7 @@ const Settings = () => {
                         </div>
                         <button
                           onClick={signOutPuter}
-                          className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-xs font-semibold uppercase tracking-wider transition-all duration-300"
+                          className="px-5 py-2 rounded-xl bg-veil/5 border border-hairline/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-xs font-semibold uppercase tracking-wider transition-all duration-300"
                         >
                           Disconnect
                         </button>
@@ -659,14 +659,14 @@ const Settings = () => {
                               <Cloud size={18} />
                             </div>
                             <div>
-                              <span className="block font-bold text-sm text-white">Puter Cloud Sync Active</span>
+                              <span className="block font-bold text-sm text-sdl-ink">Puter Cloud Sync Active</span>
                               <span className="block text-[10px] text-green-400/80 font-black uppercase tracking-widest">
                                 {lastSyncTime ? `Last Synced: ${new Date(lastSyncTime).toLocaleTimeString()}` : 'Connected and Synchronized'}
                               </span>
                             </div>
                           </div>
                         </div>
-                        <p className="text-xs text-white/40 leading-relaxed">
+                        <p className="text-xs text-sdl-sec leading-relaxed">
                           Your virtual file system, system settings, accent colors, and unlocked achievements are securely synced in the cloud. Changes made here are saved instantly.
                         </p>
                       </div>
@@ -685,7 +685,7 @@ const Settings = () => {
                             </button>
                             <button
                               onClick={loadFilesFromPuter}
-                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                              className="flex-1 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sdl-sec text-xs font-bold uppercase tracking-wider hover:bg-veil/10 hover:text-sdl-ink transition-all flex items-center justify-center gap-2"
                             >
                               <Download size={13} />
                               Pull Files
@@ -706,7 +706,7 @@ const Settings = () => {
                             </button>
                             <button
                               onClick={loadPrefsFromPuter}
-                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                              className="flex-1 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sdl-sec text-xs font-bold uppercase tracking-wider hover:bg-veil/10 hover:text-sdl-ink transition-all flex items-center justify-center gap-2"
                             >
                               <Download size={13} />
                               Pull Settings
@@ -718,11 +718,11 @@ const Settings = () => {
                   ) : (
                     <div className="space-y-6 text-center sm:text-left">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                        <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-2xl">
+                        <div className="w-20 h-20 rounded-3xl bg-veil/5 border border-hairline/10 flex items-center justify-center text-4xl shadow-2xl">
                           👤
                         </div>
                         <div className="flex-1 space-y-2">
-                          <h3 className="text-xl font-black text-white">Offline/Guest Mode</h3>
+                          <h3 className="text-xl font-black text-sdl-ink">Offline/Guest Mode</h3>
                           <p className="text-xs text-os-onSurfaceVariant">
                             You are logged in as a local guest. Your changes are saved to this browser&apos;s IndexedDB and will not persist across different browsers or machines.
                           </p>
@@ -736,14 +736,14 @@ const Settings = () => {
                               <Cloud size={18} />
                             </div>
                             <div>
-                              <span className="block font-bold text-sm text-white">Connect with Puter Cloud</span>
+                              <span className="block font-bold text-sm text-sdl-ink">Connect with Puter Cloud</span>
                               <span className="block text-[10px] text-os-onSurfaceVariant font-medium">Link your Puter.com account for cross-device sync.</span>
                             </div>
                           </div>
                           <button
                             onClick={signInWithPuter}
                             disabled={isPuterConnecting}
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.3)] disabled:opacity-50"
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-sdl-onAccent font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.3)] disabled:opacity-50"
                           >
                             {isPuterConnecting ? (
                               <RefreshCw size={14} className="animate-spin" />

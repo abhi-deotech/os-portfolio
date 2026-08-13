@@ -50,7 +50,7 @@ const ControlCenter = () => {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={isMobile ? { y: '100%', opacity: 0 } : { y: 20, opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`fixed ${isMobile ? 'inset-0 w-full h-full rounded-none pt-safe-top pb-safe-bottom' : 'bottom-24 left-8 w-[380px] rounded-[2.5rem] border'} bg-[#0e0e0e]/80 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-white/10 p-5 z-[70] shadow-[0_32px_64px_rgba(0,0,0,0.6)] flex flex-col space-y-4 select-none grayscale-0 overflow-hidden`}
+            className={`fixed ${isMobile ? 'inset-0 w-full h-full rounded-none pt-safe-top pb-safe-bottom' : 'bottom-24 left-8 w-[380px] rounded-[2.5rem] border'} bg-[#0e0e0e]/80 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-hairline/10 p-5 z-[70] shadow-[0_32px_64px_rgba(0,0,0,0.6)] flex flex-col space-y-4 select-none grayscale-0 overflow-hidden`}
           >
             {/* Ambient Lighting / Mica Effect Blob */}
             <div className="absolute -top-20 -right-20 w-[250px] h-[250px] bg-[#cc97ff]/20 blur-[80px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
@@ -60,7 +60,7 @@ const ControlCenter = () => {
             <div className="flex justify-between items-center px-2 pt-1 pb-2">
                 <div className="flex items-center space-x-2">
                   <CustomIcon icon={BatteryFull} size={16} color={metrics.ram > 80 ? "text-red-400" : "text-[#00f5a0]"} glow={metrics.ram > 80 ? "#f87171" : "#00f5a0"} />
-                  <span className="text-xs font-bold text-white tracking-wide">{100 - Math.round(metrics.cpu / 10)}%</span>
+                  <span className="text-xs font-bold text-sdl-ink tracking-wide">{100 - Math.round(metrics.cpu / 10)}%</span>
                 </div>
                <div className="flex items-center gap-4">
                   {!isPuterSignedIn ? (
@@ -71,7 +71,7 @@ const ControlCenter = () => {
                       Link Puter
                     </button>
                   ) : (
-                    <div className="flex flex-col items-end border-r border-white/5 pr-4">
+                    <div className="flex flex-col items-end border-r border-hairline/5 pr-4">
                       <span className="text-[10px] font-bold text-[#cc97ff] uppercase tracking-widest">Puter Cloud</span>
                       <div className="flex items-center space-x-1 text-green-400">
                         <Cloud size={12} />
@@ -83,12 +83,12 @@ const ControlCenter = () => {
                     <span className="text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest">Network</span>
                       <div className="flex items-center space-x-1">
                         <CustomIcon icon={Signal} size={12} color="text-[#00d2fd]" glow="#00d2fd" />
-                        <span className="text-xs font-bold text-white uppercase truncate max-w-[80px]">{network.isOnline ? 'Nexus-5G' : 'Offline'}</span>
+                        <span className="text-xs font-bold text-sdl-ink uppercase truncate max-w-[80px]">{network.isOnline ? 'Nexus-5G' : 'Offline'}</span>
                       </div>
                   </div>
                   {isMobile && (
-                    <button onClick={toggleControlCenter} className="p-2 bg-white/5 rounded-full">
-                       <X size={20} className="text-white" />
+                    <button onClick={toggleControlCenter} className="p-2 bg-veil/5 rounded-full">
+                       <X size={20} className="text-sdl-ink" />
                     </button>
                   )}
                </div>
@@ -110,7 +110,7 @@ const ControlCenter = () => {
                          <CustomIcon icon={Wifi} size={16} glow={toggles.wifi ? '#00d2fd' : false} />
                       </div>
                      <div>
-                        <span className="block text-sm font-bold text-white">Wi-Fi</span>
+                        <span className="block text-sm font-bold text-sdl-ink">Wi-Fi</span>
                         <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.wifi ? 'text-[#00d2fd]' : 'text-os-onSurfaceVariant'}`}>{toggles.wifi ? (network.isOnline ? 'Nexus-Home' : 'Connected') : 'Off'}</span>
                      </div>
                    </button>
@@ -127,7 +127,7 @@ const ControlCenter = () => {
                          <CustomIcon icon={Bluetooth} size={16} glow={toggles.bluetooth ? '#cc97ff' : false} />
                       </div>
                      <div>
-                        <span className="block text-sm font-bold text-white">Bluetooth</span>
+                        <span className="block text-sm font-bold text-sdl-ink">Bluetooth</span>
                         <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.bluetooth ? 'text-[#cc97ff]' : 'text-os-onSurfaceVariant'}`}>{toggles.bluetooth ? 'On' : 'Off'}</span>
                      </div>
                    </button>
@@ -151,7 +151,7 @@ const ControlCenter = () => {
                            />
                        </div>
                       <div className="text-center">
-                          <span className={`block text-xs font-bold ${toggles.airdrop ? 'text-white' : 'text-os-onSurfaceVariant'}`}>Focus</span>
+                          <span className={`block text-xs font-bold ${toggles.airdrop ? 'text-sdl-ink' : 'text-os-onSurfaceVariant'}`}>Focus</span>
                           <span className={`block text-[10px] uppercase font-bold tracking-widest ${toggles.airdrop ? 'text-[#00f5a0]' : 'text-os-onSurfaceVariant'}`}>{toggles.airdrop ? 'Do Not Disturb' : 'Off'}</span>
                       </div>
                    </button>
@@ -165,7 +165,7 @@ const ControlCenter = () => {
                         <span className="text-os-onSurfaceVariant flex items-center gap-2">
                           <CustomIcon icon={Sun} size={14} color="text-os-onSurfaceVariant" /> Display
                         </span>
-                        <span className="text-white">{brightness}%</span>
+                        <span className="text-sdl-ink">{brightness}%</span>
                     </div>
                    <div
                       role="slider"
@@ -229,10 +229,10 @@ const ControlCenter = () => {
                       >
                         <div className="w-14 h-14 bg-gradient-to-br from-[#cc97ff] to-[#00d2fd] rounded-2xl flex items-center justify-center shadow-lg relative overflow-hidden flex-shrink-0">
                             <img src={music.currentTrack.cover} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-                            <CustomIcon icon={music.isPlaying ? Pause : Play} size={20} color="text-white" glow="rgba(255,255,255,0.4)" className="relative z-10" />
+                            <CustomIcon icon={music.isPlaying ? Pause : Play} size={20} color="text-sdl-ink" glow="rgba(255,255,255,0.4)" className="relative z-10" />
                         </div>
                         <div className="flex-grow min-w-0">
-                          <h4 className="text-xs font-black text-white truncate">{music.currentTrack.title}</h4>
+                          <h4 className="text-xs font-black text-sdl-ink truncate">{music.currentTrack.title}</h4>
                           <p className="text-[10px] font-bold text-[#cc97ff] truncate uppercase tracking-wider mt-0.5">{music.currentTrack.artist}</p>
                         </div>
                       </button>
@@ -241,9 +241,9 @@ const ControlCenter = () => {
                         aria-label={music.isPlaying ? "Pause music" : "Play music"}
                         onClick={() => { setMusicIsPlaying(!music.isPlaying); }}
 
-                        className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 flex-shrink-0"
+                        className="w-10 h-10 rounded-full bg-veil/5 flex items-center justify-center cursor-pointer hover:bg-veil/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 flex-shrink-0"
                       >
-                        <CustomIcon icon={music.isPlaying ? Pause : Play} size={14} color="text-white" />
+                        <CustomIcon icon={music.isPlaying ? Pause : Play} size={14} color="text-sdl-ink" />
                       </button>
                    </div>
                 )}
@@ -263,11 +263,11 @@ const ControlCenter = () => {
                     <div className="w-14 h-14 bg-gradient-to-br from-[#cc97ff] to-[#00d2fd] rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-105 transition-transform duration-300 relative overflow-hidden flex-shrink-0">
                         <img src={music.currentTrack.cover} alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-50" />
                         <div className="absolute inset-0 bg-black/20 rounded-2xl" />
-                        <CustomIcon icon={music.isPlaying ? Pause : Play} size={20} color="text-white" glow="rgba(255,255,255,0.4)" className="relative z-10" />
+                        <CustomIcon icon={music.isPlaying ? Pause : Play} size={20} color="text-sdl-ink" glow="rgba(255,255,255,0.4)" className="relative z-10" />
                     </div>
 
                     <div className="flex-grow min-w-0">
-                      <h4 className="text-xs font-black text-white truncate">{music.currentTrack.title}</h4>
+                      <h4 className="text-xs font-black text-sdl-ink truncate">{music.currentTrack.title}</h4>
                       <p className="text-[10px] font-bold text-[#cc97ff] truncate uppercase tracking-wider mt-0.5">{music.currentTrack.artist}</p>
                     </div>
                   </button>
@@ -278,17 +278,17 @@ const ControlCenter = () => {
                         aria-label={music.isPlaying ? "Pause music" : "Play music"}
                         onClick={() => { setMusicIsPlaying(!music.isPlaying); }}
 
-                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                        className="w-10 h-10 rounded-full bg-veil/5 hover:bg-veil/10 flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                       >
-                        <CustomIcon icon={music.isPlaying ? Pause : Play} size={14} color="text-white" />
+                        <CustomIcon icon={music.isPlaying ? Pause : Play} size={14} color="text-sdl-ink" />
                       </button>
                       <button
                         type="button"
                         aria-label="Skip track"
-                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                        className="w-10 h-10 rounded-full bg-veil/5 hover:bg-veil/10 flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                         onClick={() => { nextTrack(); playSound('click'); }}
                       >
-                        <CustomIcon icon={SkipForward} size={14} color="text-white" />
+                        <CustomIcon icon={SkipForward} size={14} color="text-sdl-ink" />
                       </button>
                   </div>
               </div>
