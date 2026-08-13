@@ -10,7 +10,10 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "census": "node scripts/token-census.mjs",
+    "token-lint": "node scripts/token-lint.mjs",
+    "token-lint:strict": "node scripts/token-lint.mjs --strict"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
