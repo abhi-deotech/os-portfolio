@@ -11,7 +11,7 @@ import {
   useContextMenu,
 } from 'react-contexify';
 import 'react-contexify/ReactContexify.css';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, MotionConfig } from 'framer-motion';
 
 import Window from './components/Window';
 import ControlCenter from './components/ControlCenter';
@@ -30,6 +30,7 @@ import Taskbar from './components/Taskbar';
 import useSoundEffects from './hooks/useSoundEffects';
 import useOSStore from './store/osStore';
 import { applyTheme } from './theme/applyTheme';
+import './theme/grammar.css';
 import { attach as attachMusicEngine } from './utils/musicEngine';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { APPS } from './config/apps';
@@ -63,7 +64,6 @@ function App() {
   const openWindow = useOSStore(state => state.openWindow);
   const focusWindow = useOSStore(state => state.focusWindow);
   const closeWindow = useOSStore(state => state.closeWindow);
-  const activeAccent = useOSStore(state => state.activeAccent);
   const resetIconPositions = useOSStore(state => state.resetIconPositions);
   const createFolder = useOSStore(state => state.createFolder);
   const isAuthenticated = useOSStore(state => state.isAuthenticated);
@@ -72,6 +72,10 @@ function App() {
   const removeAchievementToast = useOSStore(state => state.removeAchievementToast);
   const brightness = useOSStore(state => state.brightness);
   const accentIntensity = useOSStore(state => state.accentIntensity);
+  const colorway = useOSStore(state => state.colorway);
+  const density = useOSStore(state => state.density);
+  const reducedMotion = useOSStore(state => state.reducedMotion);
+  const transparencyEffects = useOSStore(state => state.transparencyEffects);
   const resetSettingsToDefault = useOSStore(state => state.resetSettingsToDefault);
   const isBSOD = useOSStore(state => state.isBSOD);
   const activeRetroGame = useOSStore(state => state.activeRetroGame);
@@ -142,8 +146,8 @@ function App() {
   // Theme goes onto documentElement, not onto the JSX below. This hook sits ABOVE the early
   // returns at the end of this component, so boot, login and portaled context menus are themed too.
   useEffect(() => {
-    applyTheme({ accent: activeAccent, brightness, accentIntensity });
-  }, [activeAccent, brightness, accentIntensity]);
+    applyTheme({ colorway, density, transparencyEffects, brightness, accentIntensity, reducedMotion });
+  }, [colorway, density, transparencyEffects, brightness, accentIntensity, reducedMotion]);
 
   const handleDesktopContextMenu = (e) => {
     if (isMobile) return;

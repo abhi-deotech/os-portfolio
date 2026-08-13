@@ -1,0 +1,205 @@
+/**
+ * The colorway registry — the single source of truth for theming.
+ *
+ * Compiles vendored SDL tokens + viz palettes + this project's overrides + the legacy pack into 16
+ * fully-normalized records. Nothing outside src/theme/ should import the raw JSON.
+ *
+ * This module exists because design-tokens.json is NOT uniform, and a naive consumer crashes on it:
+ *   - Jewel colorways use `base` where every other theme uses `plane`
+ *   - `sunkSec` is absent on all of Steel and all of Jewel
+ *   - `chartInk` / `titleInk` / `btnGrad` / `btnInk` are absent on most colorways
+ *   - `radius` varies per COLORWAY (12/14/19/20/22), not per theme
+ *   - `wash` is prose-ish ("rgba(...) at 82% 0%"), not CSS
+ */
+import TOKENS from './sdl/design-tokens.json';
+import VIZ from './sdl/viz-palettes.json';
+import { LUMINA_NEON_LEGACY } from './legacy-lumina';
+import { THEME_TITLE_FACE, COLORWAY_TITLE_FACE, FONT_STACKS } from './overrides';
+
+export const SDL_VERSION = 'v2.0.0-rc';
+export const SDL_AUTHOR = 'Aditya Sarva';
+
+export const slug = (name) => name.toLowerCase().replace(/\s+/g, '-');
+
+/* ── colour helpers ─────────────────────────────────────────────────────────── */
+
+export function hexToRgb(hex) {
+  const h = hex.replace('#', '');
+  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+  return [parseInt(full.slice(0, 2), 16), parseInt(full.slice(2, 4), 16), parseInt(full.slice(4, 6), 16)];
+}
+
+/** Space-separated triple — required by `rgb(var(--x) / a)`. Commas silently break it. */
+export const rgbTriple = (hex) => hexToRgb(hex).join(' ');
+
+const channel = (c) => { const v = c / 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+
+/** WCAG relative luminance, 0..1. */
+export function relLuminance(hex) {
+  const [r, g, b] = hexToRgb(hex);
+  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+}
+
+/** HSL saturation as a percentage — used by the showcase to measure against SDL's locked band. */
+export function saturation(hex) {
+  const [r, g, b] = hexToRgb(hex).map((c) => c / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return 0;
+  const d = max - min;
+  return Math.round((l > 0.5 ? d / (2 - max - min) : d / (max + min)) * 100);
+}
+
+/**
+ * Ink to place ON an accent fill. Derived from the ACCENT's luminance, never from the page mode —
+ * black-on-teal is wrong on Honey Vivid even though its plane is light. This is the rule that stops
+ * buttons looking broken when a light colorway is applied.
+ */
+export function onAccentInk(accentHex, planeHex, inkHex) {
+  return relLuminance(accentHex) > 0.4 ? planeHex : inkHex;
+}
+
+/* ── wash: "rgba(232,104,168,0.14) at 82% 0%" → CSS radial-gradient layers ───── */
+
+function washToCss(wash) {
+  if (!Array.isArray(wash) || !wash.length) return null;
+  const layers = wash
+    .map((entry) => {
+      const m = String(entry).match(/^(.*?)\s+at\s+(.+)$/);
+      if (!m) return null;
+      return `radial-gradient(circle at ${m[2].trim()}, ${m[1].trim()}, transparent 60%)`;
+    })
+    .filter(Boolean);
+  return layers.length ? layers.join(', ') : null;
+}
+
+/* ── normalization ──────────────────────────────────────────────────────────── */
+
+const TEMPO_BINDING = TOKENS.global.motion.binding;
+
+function normalize(cw, theme) {
+  const id = slug(cw.name);
+  const mode = theme.mode;
+  // Jewel writes `base`; everything else writes `plane`.
+  const plane = cw.plane || cw.base;
+  const accent = cw.accent;
+  const ink = cw.ink;
+
+  const [hover, press, pane, ease] = TEMPO_BINDING[theme.id] || TEMPO_BINDING['steel-night'];
+
+  const roles = {
+    plane,
+    surface: cw.surface,
+    sunken: cw.sunken,
+    chart: cw.chart,
+    ink,
+    sec: cw.sec,
+    // Absent on all of Steel and all of Jewel — the deepened sunken ink is a light-theme concern.
+    sunkSec: cw.sunkSec || cw.sec,
+    accent,
+    soft: cw.soft,
+    aInk: cw.aInk,
+    barA: cw.barA,
+    barB: cw.barB,
+    // Present only on Cocoa (amber) and Emerald (deep green).
+    chartInk: cw.chartInk || cw.sec,
+    // Jewel names a solid accent-tone title ink; law 9 forbids gradient-clipped titles.
+    titleInk: cw.titleInk || cw.aInk,
+    btnInk: cw.btnInk || onAccentInk(accent, plane, ink),
+    onAccent: onAccentInk(accent, plane, ink),
+  };
+
+  return {
+    id,
+    name: cw.name,
+    theme: theme.id,
+    themeName: theme.name,
+    mode,
+    // dark themes lift with black shadows; light themes are paper-flat and move colour only
+    grammar: mode === 'dark' ? 'depth' : 'flat',
+    sdl: true,
+    radius: cw.radius,
+    roles,
+    // Gradient specials (Jewel). Fall back to a flat accent so consumers never branch.
+    btnGrad: cw.btnGrad || `linear-gradient(90deg, ${accent}, ${accent})`,
+    wash: washToCss(cw.wash),
+    // SDL ships motif DESCRIPTIONS, not SVGs. Authoring the four Botanical tiles + Garden Dawn's
+    // mural is real design work needing the owner's eye, so it is deferred; these colorways ship
+    // correct-but-quieter with plane + wash only. See sdl-notes.md.
+    motif: null,
+    motifNote: cw.motif || null,
+    tempo: { hover, press, pane, ease },
+    titleFace: COLORWAY_TITLE_FACE[id] || THEME_TITLE_FACE[theme.id] || 'system',
+    viz: VIZ.themes[theme.id]?.cws?.[id] || null,
+    note: cw.note || null,
+  };
+}
+
+/* ── the lineup ─────────────────────────────────────────────────────────────── */
+
+export const THEMES = TOKENS.themes.map((t) => ({
+  id: t.id,
+  name: t.name,
+  mode: t.mode,
+  grammar: t.grammar,
+  reserve: t.reserve || [],
+}));
+
+const SDL_COLORWAYS = TOKENS.themes.flatMap((t) => t.colorways.map((cw) => normalize(cw, t)));
+
+/** All 16: SDL's 15 locked colorways plus the preserved legacy pack. */
+export const COLORWAYS = [...SDL_COLORWAYS, LUMINA_NEON_LEGACY];
+
+const BY_ID = new Map(COLORWAYS.map((c) => [c.id, c]));
+
+export const DEFAULT_COLORWAY = 'rose-dusk';
+
+/** Never throws on an unknown id — a bad persisted value must not brick the shell. */
+export function resolveColorway(id) {
+  return BY_ID.get(id) || BY_ID.get(DEFAULT_COLORWAY);
+}
+
+export const isKnownColorway = (id) => BY_ID.has(id);
+
+/** Grouped for the Settings picker: theme families in SDL's own order, legacy last. */
+export function colorwaysByTheme() {
+  const groups = THEMES.map((t) => ({
+    id: t.id,
+    name: t.name,
+    mode: t.mode,
+    grammar: t.grammar,
+    colorways: COLORWAYS.filter((c) => c.theme === t.id),
+  }));
+  groups.push({
+    id: 'lumina-neon',
+    name: 'Legacy',
+    mode: 'dark',
+    grammar: ['the product\'s pre-SDL identity, preserved'],
+    colorways: COLORWAYS.filter((c) => c.theme === 'lumina-neon'),
+  });
+  return groups;
+}
+
+export const FONT_STACK = (key) => FONT_STACKS[key] || FONT_STACKS.system;
+
+/**
+ * SDL's locked accent band, measured across all 15 colorways. The showcase uses this to place any
+ * accent — including the legacy neon — against what the design language has actually approved.
+ * Cobalt #5387ee was PASSED as chrome at relLuminance 0.253 and demoted to a data bar; that is the
+ * precedent the legacy pack fails.
+ */
+export const accentBand = (() => {
+  const lums = SDL_COLORWAYS.map((c) => relLuminance(c.roles.accent));
+  const sats = SDL_COLORWAYS.map((c) => saturation(c.roles.accent));
+  return {
+    lum: { min: +Math.min(...lums).toFixed(3), max: +Math.max(...lums).toFixed(3) },
+    sat: { min: Math.min(...sats), max: Math.max(...sats) },
+    cobaltPassedAt: 0.253,
+  };
+})();
+
+/** SDL's ten laws, verbatim from the vendored tokens (the skill's own wording). */
+export const LAWS = TOKENS.laws;
+export const GLOBAL = TOKENS.global;
+export const STATES = TOKENS.states;

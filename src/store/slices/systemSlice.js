@@ -1,4 +1,21 @@
+import { readMirror } from '../../theme/applyTheme';
+import { DEFAULT_COLORWAY, isKnownColorway } from '../../theme/registry';
+
+// Seed the theme fields SYNCHRONOUSLY from the localStorage mirror. Persistence is IndexedDB, which
+// is async, so React's first render would otherwise disagree with the DOM the pre-paint script has
+// already stamped — visible on anything that branches on the colorway id in JS (the Settings
+// checkmark, chart palettes). A hydration gate would fix it too, but a blank frame is worse.
+const seed = readMirror() || {};
+
 export const createSystemSlice = (set, get) => ({
+  /** The SDL colorway id. This is the single source of truth for theming — mode, tempo, radius and
+   *  title face are all DERIVED from it (law 7: temperature decides mode), never stored. */
+  colorway: isKnownColorway(seed.cw) ? seed.cw : DEFAULT_COLORWAY,
+  density: seed.den === 'compact' ? 'compact' : 'comfortable',
+  reducedMotion: 'system', // 'system' | 'on' | 'off'
+  iconTheme: 'lumina',     // see src/theme/icons.js
+
+  /** Retained ONLY as a migration input for pre-SDL users; nothing reads it for rendering. */
   activeAccent: 'purple',
   wallpaper: 'linux-default',
   transparencyEffects: true,
@@ -76,10 +93,22 @@ export const createSystemSlice = (set, get) => ({
   setLowPerformance: (enabled) => set({ lowPerformance: enabled }),
   setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
 
+  setColorway: (id) => {
+    set({ colorway: isKnownColorway(id) ? id : DEFAULT_COLORWAY });
+    if (get().isPuterSignedIn) get().syncPrefsToPuter();
+  },
+  setDensity: (d) => set({ density: d === 'compact' ? 'compact' : 'comfortable' }),
+  setReducedMotion: (m) => set({ reducedMotion: ['system', 'on', 'off'].includes(m) ? m : 'system' }),
+  setIconTheme: (t) => set({ iconTheme: t }),
+
   resetSettingsToDefault: () => {
     set({
       wallpaper: 'linux-default',
       activeAccent: 'purple',
+      colorway: DEFAULT_COLORWAY,
+      density: 'comfortable',
+      reducedMotion: 'system',
+      iconTheme: 'lumina',
       transparencyEffects: true,
       brightness: 100,
       accentIntensity: 80,

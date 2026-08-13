@@ -32,7 +32,13 @@ function walk(dir, out = []) {
   return out;
 }
 
-const files = walk(SRC).map((p) => ({ path: relative(ROOT, p), text: readFileSync(p, 'utf8') }));
+// src/theme/ is the token layer — centralising every hex there is the GOAL, so counting it would
+// make the burndown go up as the migration succeeds. Same exemption token-lint uses.
+const EXEMPT_DIRS = ['src/theme/'];
+const files = walk(SRC)
+  .map((p) => relative(ROOT, p))
+  .filter((rel) => !EXEMPT_DIRS.some((d) => rel.startsWith(d)))
+  .map((rel) => ({ path: rel, text: readFileSync(join(ROOT, rel), 'utf8') }));
 
 /** Count regex matches across all files; returns { total, byFile: Map }. */
 function count(re) {

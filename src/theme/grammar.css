@@ -1,0 +1,173 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   SDL theme grammar.
+
+   Light and dark are STRUCTURALLY different in SDL, not merely differently coloured:
+     dark  — cards LIFT with black shadows; states move light AND elevation together
+     light — paper-FLAT, no shadows anywhere; states move COLOUR only
+
+   All of it keys off [data-mode] so components never branch in JS. A component writes
+   `box-shadow: var(--sdl-lift)`; under a light colorway that resolves to `none` and the
+   flat grammar enforces itself.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root[data-mode='dark'] {
+  --sdl-lift:        0 1px 2px rgb(0 0 0 / .50), 0 10px 26px rgb(0 0 0 / .35);
+  --sdl-lift-hover:  0 2px 4px rgb(0 0 0 / .55), 0 16px 36px rgb(0 0 0 / .45);
+  --sdl-lift-window: 0 2px 4px rgb(0 0 0 / .55), 0 32px 64px rgb(0 0 0 / .50);
+  --sdl-lift-press:  none;                                   /* the sink */
+  --sdl-hairline:    inset 0 1px 0 rgb(255 255 255 / .12);
+  --sdl-bar-shadow:  3px 0 5px rgb(0 0 0 / .95), 6px 0 16px rgb(0 0 0 / .6),
+                     inset 0 1px 0 rgb(255 255 255 / .18);
+
+  --sdl-hover-mix:   88%;
+  --sdl-press-mix:   88%;
+  --sdl-focus-alpha: .45;      /* SDL says .30; see the focus-ring deviation in overrides.js */
+  --sdl-disabled:    .40;
+
+  --sdl-glow:  rgb(var(--sdl-accent-rgb) / calc(.35 * var(--sdl-atmo, 1)));
+  --sdl-track: rgb(255 255 255 / .10);
+  --sdl-scrim: rgb(0 0 0 / .55);
+
+  /* The mode-aware alpha channel that replaces bare white/black literals.
+     In dark a veil LIFTS (white over a dark plane); the polarity flips in light below. */
+  --sdl-veil-rgb:     255 255 255;
+  --sdl-hairline-rgb: 255 255 255;
+}
+
+:root[data-mode='light'] {
+  /* Paper-flat. Every shadow role resolves to none, so "flat stays flat" is structural. */
+  --sdl-lift:        none;
+  --sdl-lift-hover:  none;
+  --sdl-lift-window: none;
+  --sdl-lift-press:  none;
+  --sdl-hairline:    none;
+  --sdl-bar-shadow:  none;
+
+  --sdl-hover-mix:   90%;
+  --sdl-press-mix:   92%;
+  --sdl-focus-alpha: .40;
+  --sdl-disabled:    .45;
+
+  --sdl-glow:  transparent;    /* kills every accent halo in one declaration */
+  --sdl-track: rgb(0 0 0 / .08);
+  /* Modal overlays are never pure black in light mode — tint them with the colorway's own ink. */
+  --sdl-scrim: rgb(var(--sdl-ink-rgb) / .28);
+
+  /* A veil DEEPENS in light mode. Crucially it uses the colorway's own INK, not pure black, so each
+     pack stays in its own register (Honey deepens warm, Periwinkle deepens violet). */
+  --sdl-veil-rgb:     var(--sdl-ink-rgb);
+  --sdl-hairline-rgb: var(--sdl-ink-rgb);
+}
+
+/* ── State layer ──────────────────────────────────────────────────────────────
+   ONE formula, both modes. Because `ink` inverts with the mode, mixing the base toward ink
+   LIGHTENS in dark and DARKENS in light — exactly what INTERACTION.md specifies for each —
+   with no branching anywhere. */
+:root {
+  --sdl-hover-surface: color-mix(in oklab, var(--sdl-surface) var(--sdl-hover-mix, 88%), var(--sdl-ink));
+  --sdl-press-surface: color-mix(in oklab, var(--sdl-surface) var(--sdl-press-mix, 88%), var(--sdl-ink));
+  --sdl-hover-plane:   color-mix(in oklab, var(--sdl-plane)   var(--sdl-hover-mix, 88%), var(--sdl-ink));
+}
+
+/* Degrade to "no hover tint", never to broken. color-mix needs Chrome 111 / Safari 16.2 / FF 113. */
+@supports not (color: color-mix(in oklab, red, blue)) {
+  :root {
+    --sdl-hover-surface: var(--sdl-surface);
+    --sdl-press-surface: var(--sdl-surface);
+    --sdl-hover-plane:   var(--sdl-plane);
+  }
+}
+
+/* ── Glass ────────────────────────────────────────────────────────────────────
+   Glass is a LIFT mechanism, and lift is dark grammar. In light mode it must NOT invert to
+   black-alpha — black on a light plane reads as a WELL, the opposite affordance. Instead the tint
+   source changes to the colorway's own surface, which is self-correcting: Hearth and Carbon DEEPEN
+   their surfaces while Botanical and Mono LIFT theirs, so one formula produces the right direction
+   per colorway.
+
+   `transparencyEffects` stays meaningful in both modes: OFF swaps the alpha fill for the opaque role
+   colour and drops the blur. */
+:root[data-mode='dark'][data-glass='on'] {
+  --sdl-glass-bg:     rgb(255 255 255 / .05);
+  --sdl-glass-bg-2:   rgb(255 255 255 / .10);
+  --sdl-glass-border: rgb(255 255 255 / .10);
+  --sdl-glass-blur:   blur(24px) saturate(160%);
+}
+:root[data-mode='dark'][data-glass='off'] {
+  --sdl-glass-bg:     var(--sdl-surface);
+  --sdl-glass-bg-2:   var(--sdl-surface-2);
+  --sdl-glass-border: rgb(255 255 255 / .10);
+  --sdl-glass-blur:   none;
+}
+:root[data-mode='light'][data-glass='on'] {
+  --sdl-glass-bg:     rgb(var(--sdl-surface-rgb) / .72);
+  --sdl-glass-bg-2:   rgb(var(--sdl-surface-rgb) / .88);
+  --sdl-glass-border: rgb(var(--sdl-sec-rgb) / .22);
+  --sdl-glass-blur:   blur(20px) saturate(120%);
+}
+:root[data-mode='light'][data-glass='off'] {
+  --sdl-glass-bg:     var(--sdl-surface);
+  --sdl-glass-bg-2:   var(--sdl-sunken);
+  --sdl-glass-border: rgb(var(--sdl-sec-rgb) / .22);
+  --sdl-glass-blur:   none;
+}
+
+/* ── Density ──────────────────────────────────────────────────────────────────
+   Compact steps every space token down one, body -1px, KPI -20%.
+   Radii, inks and accent voices NEVER change between densities. */
+:root[data-density='comfortable'] {
+  --sdl-s1: 4px;  --sdl-s2: 8px;  --sdl-s3: 12px; --sdl-s4: 16px; --sdl-s5: 24px;
+  --sdl-s6: 32px; --sdl-s7: 48px; --sdl-s8: 64px; --sdl-s9: 96px;
+  --sdl-card-pad: 14px 16px; --sdl-row-pad: 8px 14px;
+  --sdl-body: 13px; --sdl-kpi: 26px; --sdl-control-h: 36px;
+}
+:root[data-density='compact'] {
+  --sdl-s1: 4px;  --sdl-s2: 4px;  --sdl-s3: 8px;  --sdl-s4: 12px; --sdl-s5: 16px;
+  --sdl-s6: 24px; --sdl-s7: 32px; --sdl-s8: 48px; --sdl-s9: 64px;
+  --sdl-card-pad: 9px 12px; --sdl-row-pad: 5px 10px;
+  --sdl-body: 12px; --sdl-kpi: 21px; --sdl-control-h: 30px;
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────────
+   CSS half of reduced motion. Framer Motion springs cannot read CSS vars, so App also wraps the
+   tree in <MotionConfig reducedMotion="user"> — two mechanisms, unavoidable. */
+:root[data-motion='reduced'] {
+  --sdl-t-hover: 1ms; --sdl-t-press: 1ms; --sdl-t-pane: 1ms; --sdl-t-toast: 1ms;
+}
+:root[data-motion='reduced'] *,
+:root[data-motion='reduced'] *::before,
+:root[data-motion='reduced'] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+  scroll-behavior: auto !important;
+}
+:root[data-motion='reduced'] .scanline { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-motion='full']) *,
+  :root:not([data-motion='full']) *::before,
+  :root:not([data-motion='full']) *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ── Atmosphere ───────────────────────────────────────────────────────────────
+   The wash sits BELOW the wallpaper (z -21/-20). SDL's plane grammar assumes the designer owns the
+   background; this OS hands it to the user, so a photo legitimately hides the wash. The "Colorway"
+   wallpaper renders nothing so the plane shows through. Logged as drift in sdl-notes.md.
+   `background-image: none` is a valid no-op, so no per-theme selector is needed. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -21;
+  pointer-events: none;
+  background-image: var(--sdl-wash, none);
+  opacity: var(--sdl-atmo, 1);
+}
+
+/* The composite .glass / .lift utilities live in src/index.css, which owns the @tailwind directives.
+   This file is variable declarations only, so it can be imported standalone without a layer. */

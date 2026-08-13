@@ -2,53 +2,87 @@
  * applyTheme — the ONLY place that writes theme state to the DOM.
  *
  * Writes to `document.documentElement` (=== `:root`), never to a mid-tree element. Four independent
- * reasons this matters, all of which were live bugs before P1:
+ * reasons, all of which were live bugs before P1:
  *
  *  1. `App.jsx` returns early for BSOD / BootSequence / LoginScreen, so a mid-tree <div> style meant
- *     boot and login rendered with the :root defaults regardless of the user's saved accent.
+ *     boot and login rendered with the :root defaults regardless of the user's saved theme.
  *  2. react-contexify portals its menus to document.body — outside that div entirely.
- *  3. `--os-primary: rgb(var(--os-primary-rgb))` is declared on :root. Custom properties substitute
- *     at computed-value time ON THE DECLARING ELEMENT, so overriding the triple lower in the tree
- *     left the derived hex frozen at purple forever. Writing to :root is what un-freezes it.
- *  4. The old `filter: brightness()` on that div made it a containing block for every
- *     `position: fixed` descendant — Taskbar, ControlCenter, Spotlight and the toast stack. It only
- *     appeared to work because the div happened to be full-viewport at the origin. Brightness is now
- *     a `body::after` scrim (see index.css) which has no such side effect.
+ *  3. Derived vars like `--os-primary: rgb(var(--os-primary-rgb))` are declared on :root. Custom
+ *     properties substitute at computed-value time ON THE DECLARING ELEMENT, so overriding the
+ *     triple lower in the tree left the derived hex frozen at purple forever.
+ *  4. The old `filter: brightness()` made the app root a containing block for every
+ *     `position: fixed` descendant. Brightness is now a `body::after` scrim (see index.css).
  *
- * P2 replaces the accent map below with the SDL colorway registry; the write mechanism stays.
+ * It also mirrors the resolved variable map into localStorage so the pre-paint script in index.html
+ * can stamp it before first paint. That mirror exists because persistence is IndexedDB — which is
+ * ASYNC, so the first React render ALWAYS uses defaults. Harmless while everything was navy; the day
+ * a light colorway is selected it becomes a full-screen dark→white flash on every load.
  */
+import { resolveColorway, DEFAULT_COLORWAY, FONT_STACK } from './registry';
+import { roleVars, bridgeVars } from './cssVars';
 
-/** Space-separated triples. Comma triples break `rgb(var(--x) / a)` — see the header in index.css. */
-export const ACCENTS = {
-  purple: { primary: '204 151 255', secondary: '0 210 253', tertiary: '0 245 160' },
-  cyan: { primary: '0 210 253', secondary: '204 151 255', tertiary: '255 104 240' },
-  magenta: { primary: '255 104 240', secondary: '204 151 255', tertiary: '0 210 253' },
-  green: { primary: '0 245 160', secondary: '0 210 253', tertiary: '204 151 255' },
-};
-
-export const DEFAULT_ACCENT = 'purple';
-
-export function resolveAccent(id) {
-  return ACCENTS[id] || ACCENTS[DEFAULT_ACCENT];
-}
+/** Mirror holds only what the first painted frame needs; everything else stays in IndexedDB. */
+export const MIRROR_KEY = 'lumina.theme.v1';
 
 /**
- * @param {{accent?: string, brightness?: number, accentIntensity?: number}} state
+ * @param {{colorway?: string, density?: string, transparencyEffects?: boolean,
+ *          brightness?: number, accentIntensity?: number, reducedMotion?: string}} state
  */
-export function applyTheme({ accent, brightness = 100, accentIntensity = 80 } = {}) {
-  if (typeof document === 'undefined') return;
+export function applyTheme(state = {}) {
+  if (typeof document === 'undefined') return null;
+
+  const {
+    colorway = DEFAULT_COLORWAY,
+    density = 'comfortable',
+    transparencyEffects = true,
+    brightness = 100,
+    accentIntensity = 80,
+    reducedMotion = 'system',
+  } = state;
+
+  const cw = resolveColorway(colorway);
   const root = document.documentElement;
-  const a = resolveAccent(accent);
 
-  root.style.setProperty('--os-primary-rgb', a.primary);
-  root.style.setProperty('--os-secondary-rgb', a.secondary);
-  root.style.setProperty('--os-tertiary-rgb', a.tertiary);
+  const vars = { ...roleVars(cw), ...bridgeVars(cw) };
+  vars['--sdl-font-title'] = FONT_STACK(cw.titleFace);
+  // Brightness as a scrim opacity rather than a filter.
+  vars['--os-dim'] = String(Math.max(0, Math.min(100, 100 - brightness)) / 100);
+  // Atmosphere dial: multiplies wash alpha, motif opacity and glow alpha. This is what the
+  // previously-inert "Accent Intensity" slider now drives (law 8: atmosphere whispers).
+  vars['--sdl-atmo'] = String(accentIntensity / 100);
 
-  // Brightness as a dimming scrim rather than a filter. Not mathematically identical to
-  // `brightness()` (composite vs multiplicative) but lossless over the 0-100 range the slider
-  // exposes, where 100 means "no change".
-  root.style.setProperty('--os-dim', String(Math.max(0, Math.min(100, 100 - brightness)) / 100));
+  for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v);
 
-  // Consumed from P3 as the atmosphere dial (wash alpha / motif opacity / glow alpha).
-  root.style.setProperty('--os-accent-intensity', String(accentIntensity / 100));
+  // Attributes drive the grammar (see grammar.css). Single-valued by construction, so light and
+  // dark can never both be active and `[data-mode][data-density]` composes without specificity wars.
+  root.setAttribute('data-theme', cw.theme);
+  root.setAttribute('data-colorway', cw.id);
+  root.setAttribute('data-mode', cw.mode); // derived from the colorway — law 7, never free-floating
+  root.setAttribute('data-grammar', cw.grammar);
+  root.setAttribute('data-density', density);
+  root.setAttribute('data-glass', transparencyEffects ? 'on' : 'off');
+  root.setAttribute(
+    'data-motion',
+    reducedMotion === 'on' ? 'reduced'
+      : reducedMotion === 'off' ? 'full'
+        : (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full'),
+  );
+
+  try {
+    localStorage.setItem(MIRROR_KEY, JSON.stringify({
+      cw: cw.id, th: cw.theme, mode: cw.mode, grammar: cw.grammar,
+      den: density, glass: transparencyEffects ? 1 : 0, bright: brightness, v: vars,
+    }));
+  } catch { /* private mode — the app still works, it just flashes on reload */ }
+
+  return cw;
+}
+
+/** Read the synchronous mirror. Used to seed the store so React's first render matches the DOM. */
+export function readMirror() {
+  try {
+    return JSON.parse(localStorage.getItem(MIRROR_KEY)) || null;
+  } catch {
+    return null;
+  }
 }

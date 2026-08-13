@@ -35,15 +35,27 @@ const useOSStore = create(
       // theme fields change shape (P2), every existing user silently lands on defaults.
       // NOTE: this store uses a custom async `storage` object rather than createJSONStorage; verify
       // against a real IndexedDB payload that `migrate` fires before relying on it in P2.
-      version: 1,
+      version: 2,
       // Verified in-browser against a real v0 IndexedDB payload: this hook DOES fire despite the
-      // custom async `storage` object (zustand's docs assume createJSONStorage). P2's colorway
-      // migration depends on that, so it was worth proving rather than assuming.
+      // custom async `storage` object (zustand's docs assume createJSONStorage).
       migrate: (persistedState, fromVersion) => {
-        // v0 → v1 is intentionally an identity migration. P2 maps `activeAccent` onto an SDL
-        // colorway here; keeping the hook in place from the start is the point.
-        if (fromVersion >= 1) return persistedState;
-        return persistedState;
+        if (!persistedState) return persistedState;
+        const next = { ...persistedState };
+
+        // v1 → v2: adopt SDL colorways.
+        //
+        // Every pre-SDL user lands on Lumina Neon (Legacy) rather than being mapped hue-by-hue onto
+        // the nearest SDL colorway. All four legacy accents ARE the same neon identity, so mapping
+        // them individually would silently change returning visitors' look on upgrade — and one of
+        // them (green) has no locked SDL counterpart at all. Legacy preserves exactly what they had;
+        // SDL is opt-in from the Appearance pane.
+        if (fromVersion < 2 && next.colorway === undefined) {
+          next.colorway = next.activeAccent ? 'lumina-neon' : 'rose-dusk';
+          next.density = 'comfortable';
+          next.reducedMotion = 'system';
+          next.iconTheme = 'lumina';
+        }
+        return next;
       },
       merge: (persistedState, currentState) => {
         const merged = { ...currentState, ...persistedState };
@@ -74,6 +86,10 @@ const useOSStore = create(
         accentIntensity: state.accentIntensity,
         soundEnabled: state.soundEnabled,
         lowPerformance: state.lowPerformance,
+        colorway: state.colorway,
+        density: state.density,
+        reducedMotion: state.reducedMotion,
+        iconTheme: state.iconTheme,
         terminalHistory: state.terminalHistory,
         openWindows: state.openWindows,
         minimizedWindows: state.minimizedWindows,

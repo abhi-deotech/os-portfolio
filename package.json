@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "census": "node scripts/token-census.mjs",
     "token-lint": "node scripts/token-lint.mjs",
-    "token-lint:strict": "node scripts/token-lint.mjs --strict"
+    "token-lint:strict": "node scripts/token-lint.mjs --strict",
+    "sdl:check": "node scripts/sdl-sync-check.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

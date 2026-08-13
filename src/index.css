@@ -119,9 +119,28 @@
   }
 }
 
+@layer components {
+  /* Mode-aware glass. Collapses `bg-white/5 backdrop-blur-2xl border border-white/10` — the pattern
+     repeated across ~386 sites — into one token that inverts correctly in light mode. The variables
+     are defined in src/theme/grammar.css. */
+  .glass {
+    background-color: var(--sdl-glass-bg);
+    backdrop-filter: var(--sdl-glass-blur);
+    border: 1px solid var(--sdl-glass-border);
+  }
+  .glass-2 {
+    background-color: var(--sdl-glass-bg-2);
+    backdrop-filter: var(--sdl-glass-blur);
+    border: 1px solid var(--sdl-glass-border);
+  }
+  .lift { box-shadow: var(--sdl-lift); }
+  .lift-hover:hover { box-shadow: var(--sdl-lift-hover); }
+}
+
 @layer utilities {
+  /* Legacy alias — kept so existing markup keeps working; prefer .glass-2 in new code. */
   .glass-panel {
-    @apply bg-os-surfaceContainerHighest/50 backdrop-blur-2xl border border-os-outline/10 shadow-2xl;
+    @apply glass-2 shadow-2xl;
   }
   
   /* Custom Scrollbar - Glassmorphic */

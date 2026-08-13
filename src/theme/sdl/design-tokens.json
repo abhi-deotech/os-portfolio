@@ -1,0 +1,81 @@
+{
+  "name": "Aditya Dashboard Design Language",
+  "version": "1.0",
+  "source": "Distilled from sales-automation Appearance ratings (35 rated combos) + 5 review rounds",
+  "states": {
+    "light": { "hover": "color-mix(in oklab, base 90%, ink)", "quietHover": "accent-soft at 55% alpha", "primaryHover": "brightness(1.10) + 4px accent halo (~25%) + translateY(-1px)", "chipHover": "solid accent fill + contrast text + scale(1.05)", "pressed": "color-mix 92% base + scale(0.97), no shadow gain", "selected": "accent-soft fill + accent-ink text + 3px accent inset", "focus": "3px ring, accent 20-22%", "disabled": "opacity 0.45, shadows off", "rule": "flat stays flat - states move color, never elevation" },
+    "dark": { "hover": "color-mix(in oklab, base 88%, ink) - lightens", "primaryHover": "brightness(1.12-1.15) + 4px accent halo (~35%) + shadow grows one step", "chipHover": "solid accent fill + contrast text + scale(1.05)", "pressed": "scale(0.97) + shadow collapses to none (the sink)", "selected": "accent-soft + accent inset + brighter top hairline", "focus": "3px ring, accent 30%", "disabled": "opacity 0.40", "gradientSpecials": "hover brightness 1.07-1.10 + halo, press brightness 0.93", "rule": "depth speaks in dark - states move light and elevation together" },
+    "tempo": "all state transitions run at the theme's motion binding; press = hover/2"
+  },
+  "laws": [
+    "Undertoned planes: the page itself is tinted (vivid), never paper-default",
+    "Two voices: chrome speaks quietly (desaturated accent), data speaks sharply (saturated bar channel)",
+    "Bold accent-ink readability: lighten + desaturate aInk before bolding",
+    "Chart wells must demarcate: dark themes → darker desaturated well; light themes → surface-white lift (or deeper well when the plane is too pale: emerald, mono)",
+    "Status chips (light): plane bg + accent dot + 50%-aInk hairline; (dark): accent-soft fill",
+    "Brightness ceiling: dim before glare; saturated yellow never a plane in light mode",
+    "Temperature decides mode: cool/deep packs live dark, warm/earthy packs live light",
+    "Atmosphere is whisper-quiet: washes 10-22% alpha, motifs 11-16% stroke, photos are per-project ingredients layered under the same wash recipe",
+    "Attention pops: page titles may take accent tone (solid, never gradient-clipped); gradients live only on special buttons with dark ink",
+    "Completed = neutral grey, never green beside red; amber never carries meaning alone"
+  ],
+  "global": {
+    "type": { "hero": 76, "title": 34, "h2": 24, "h3": 19, "body": 16, "small": 14, "label": 12, "weights": { "nav": 550, "button": 600, "title": 650 }, "titleTracking": "-0.02em" },
+    "space": [4, 8, 12, 16, 24, 32, 48, 64, 96],
+    "motion": { "fast": 140, "normal": 260, "slow": 420, "binding": { "steel-night": [150, 80, 210, "cubic-bezier(0.2,0,0,1)"], "carbon-day": [150, 80, 210, "cubic-bezier(0.2,0,0,1)"], "hearth-light": [240, 120, 340, "cubic-bezier(0.3,0,0.2,1)"], "botanical-day": [260, 130, 360, "cubic-bezier(0.3,0,0.2,1)"], "jewel-night": [320, 140, 420, "cubic-bezier(0.4,0,0.1,1)"], "rule": "values are [hover, press, pane, ease]; press = hover/2, pane = hover*1.4, one tempo per theme" } },
+    "density": { "comfortable": { "cardPad": "14px 16px", "rowPad": "8px 14px", "gap": 14, "body": 13, "kpi": 26, "controlH": 36 }, "compact": { "cardPad": "9px 12px", "rowPad": "5px 10px", "gap": 10, "body": 12, "kpi": 21, "controlH": 30 }, "rule": "compact steps every space token down one, body -1px, KPI -20%; radii, inks, accents never change. Tables may default compact while the shell stays comfortable." },
+    "radiusPill": 999,
+    "barHeights": "chart bars 6px 6px 2px 2px, side-only black shadow on dark themes"
+  },
+  "themes": [
+    {
+      "id": "steel-night", "name": "Steel Night", "mode": "dark",
+      "grammar": ["night-sky or black planes", "cards lift with black shadows", "chart = flat desaturated well, never tinted", "bar channel brighter than chrome (cobalt lesson)", "bar shadow side-only: 3px 0 5px rgba(0,0,0,.95), 6px 0 16px .6 + inset top hairline rgba(255,255,255,.18)"],
+      "colorways": [
+        { "name": "Carbon Vivid", "font": "system", "radius": 12, "plane": "#090d16", "surface": "#131d2f", "sunken": "#0d131f", "chart": "#12161d", "ink": "#ffffff", "sec": "#bcc0c7", "accent": "#6287d0", "soft": "#31446b", "aInk": "#7a9bdc", "barA": "#5387ee", "barB": "#3457ab" },
+        { "name": "Graphite Bold", "font": "system", "radius": 12, "plane": "#0d0d0d", "surface": "#1d1d24", "sunken": "#141417", "chart": "#121215", "ink": "#ffffff", "sec": "#bcbcc7", "accent": "#8484d2", "soft": "#32325c", "aInk": "#9595dd", "barA": "#8d8df1", "barB": "#4d4da6" }
+      ],
+      "reserve": ["Cobalt (accent #5387ee — too loud as chrome, reborn as carbon's bars)", "Studio (untinted; calm folded into carbon)"]
+    },
+    {
+      "id": "hearth-light", "name": "Hearth Light", "mode": "light",
+      "grammar": ["warm tinted planes; surfaces may DEEPEN (honey, tangerine)", "paper-flat: no shadows on cards or bars", "status chips: plane bg + accent dot + hairline", "sunken-tile secondary ink deepened", "sea-teal voice family (clay's slate the one exception)"],
+      "colorways": [
+        { "name": "Honey Vivid", "font": "system", "radius": 22, "plane": "#fff1d9", "surface": "#fee5b8", "sunken": "#ffda99", "chart": "#f6ead3", "ink": "#443b2c", "sec": "#695f4f", "sunkSec": "#5a4a2d", "accent": "#358278", "soft": "#c7efea", "aInk": "#287167", "barA": "#159d8b", "barB": "#4fae9e" },
+        { "name": "Moss Vivid", "font": "system", "radius": 22, "plane": "#ecfae8", "surface": "#f9fcf8", "sunken": "#d9f2d1", "chart": "#edf2ea", "ink": "#32442c", "sec": "#5a6e53", "sunkSec": "#41523a", "accent": "#358276", "soft": "#c7efe9", "aInk": "#287165", "barA": "#2c8a77", "barB": "#a6d9c9" },
+        { "name": "Tangerine Vivid", "font": "Avenir Next", "radius": 14, "plane": "#ffebd9", "surface": "#fcd9ba", "sunken": "#ffc999", "chart": "#f6e7d5", "ink": "#382d24", "sec": "#63564b", "sunkSec": "#544138", "accent": "#188191", "soft": "#bdf2fa", "aInk": "#10707f", "barA": "#c2551d", "barB": "#e0a173", "note": "rust data bars against teal chrome" },
+        { "name": "Clay Vivid", "font": "system", "radius": 22, "plane": "#fcede5", "surface": "#fdf9f7", "sunken": "#f7dbcd", "chart": "#f3e8e1", "ink": "#44342c", "sec": "#6e5c53", "sunkSec": "#5b463c", "accent": "#427c9a", "soft": "#c8e2ef", "aInk": "#2f647f", "barA": "#2e86b5", "barB": "#6ba3bd" }
+      ],
+      "reserve": ["Hyper Orange (plane #feecda, accent #226681)"]
+    },
+    {
+      "id": "jewel-night", "name": "Jewel Night", "mode": "dark",
+      "grammar": ["tonal double-radial wash planes: accent glow top-right + deeper counterglow bottom-left on near-black", "photos = per-project ingredients under the same wash", "Steel's depth grammar (lift shadows, desat wells, side bar shadows)", "special buttons: colorway gradient + dark ink", "page titles: SOLID accent tone (gradient titles rejected)", "wash hue must differ from tile cast (fuchsia lesson)"],
+      "colorways": [
+        { "name": "Rose Dusk", "was": "Kajol night", "font": "Gill Sans", "radius": 20, "base": "#0d0c0c", "wash": ["rgba(232,104,168,0.14) at 82% 0%", "rgba(122,58,92,0.22) at 8% 100%"], "surface": "#261b21", "sunken": "#1f161b", "chart": "#1a1417", "ink": "#f0e7e2", "sec": "#c7bcbf", "accent": "#e868a8", "soft": "#46162e", "aInk": "#eb5ca3", "barA": "#f2479d", "barB": "#93365f", "btnGrad": "linear-gradient(90deg, #f0954f, #e868a8)", "btnInk": "#2a0f1a", "titleInk": "#eb5ca3" },
+        { "name": "Fuchsia Bold", "font": "Avenir Next", "radius": 14, "base": "#0d0b10", "wash": ["rgba(104,70,190,0.16) at 82% 0%", "rgba(58,40,118,0.20) at 8% 100%"], "surface": "#221420", "sunken": "#261627", "chart": "#1b1219", "ink": "#ffffff", "sec": "#c7bcc6", "accent": "#ee53d9", "soft": "#4d1646", "aInk": "#f0a1e0", "barA": "#e358cd", "barB": "#93408c", "btnGrad": "linear-gradient(90deg, #8a5cf0, #ee53d9)", "btnInk": "#1c0b1e", "titleInk": "#f0a1e0" },
+        { "name": "Cocoa Relit", "font": "system", "radius": 22, "base": "#140e09", "wash": ["rgba(239,111,142,0.13) at 82% 0%", "rgba(201,135,63,0.14) at 8% 100%"], "surface": "#261a10", "sunken": "#211710", "chart": "#1b130c", "chartInk": "#dfa964", "ink": "#f5ece2", "sec": "#d5c3ae", "accent": "#ef6f8e", "soft": "#57202c", "aInk": "#f79bb0", "barA": "#d9b98c", "barB": "#a9763f", "btnGrad": "linear-gradient(90deg, #ef6f8e, #d9903f)", "btnInk": "#2b1208", "titleInk": "#dfa964", "note": "cappuccino bars: latte cream + amber" }
+      ],
+      "reserve": ["Plum Bold", "Orchid Vivid dark (discarded: redundant with fuchsia)"]
+    },
+    {
+      "id": "botanical-day", "name": "Botanical Day", "mode": "light",
+      "grammar": ["dense outline botanical motif layer in accent family: wallpaper density, whisper opacity (11-16% stroke)", "one realistic multi-tonal mural allowed per theme (Garden Dawn)", "flat light grammar + dot-chips", "chart wells surface-white (emerald exception: deeper well on pale plane)", "sunken wells deepened for demarcation against patterns"],
+      "colorways": [
+        { "name": "Garden Dawn", "was": "Kajol day", "font": "Gill Sans", "radius": 20, "plane": "#f8f6f2", "wash": ["rgba(46,132,115,0.10) at 82% 0%", "rgba(196,156,108,0.16) at 8% 100%"], "motif": "realistic sketch garden: sage stems 20%, tan umbels + 5-petal blooms w/ 10% fills, teal leaf sprigs w/ 7% fills, grey grasses 12% — 560px tile", "surface": "#fbfaf9", "sunken": "#e2dbc8", "chart": "#fdfcf9", "ink": "#3e3928", "sec": "#6c6551", "sunkSec": "#57503a", "accent": "#2e8473", "soft": "#d2f4ed", "aInk": "#237665", "barA": "#1d8f7a", "barB": "#7bbfae" },
+        { "name": "Periwinkle Vivid", "font": "system", "radius": 19, "plane": "#ebeafe", "motif": "dense floret pattern: wavy 5-petal blooms, crossed 4-petal florets, clover trios, veined leaves — 280px tile, 13% stroke #3831c4", "surface": "#f7f7fd", "sunken": "#d2d0f9", "chart": "#f8f8fd", "ink": "#252438", "sec": "#575671", "sunkSec": "#454463", "accent": "#3831c4", "soft": "#c4c2f5", "aInk": "#2721a1", "barA": "#5a51ec", "barB": "#8d88e8" },
+        { "name": "Emerald Bold", "font": "Avenir Next", "radius": 14, "plane": "#eaf8f1", "motif": "dense leaf-vine tile: 8 winding stems, ~46 outline leaves — 300px tile, 16% stroke #1d8666", "surface": "#f5faf7", "sunken": "#dcf2e7", "chart": "#d2e9dc", "chartInk": "#157558", "ink": "#24382e", "sec": "#536e61", "sunkSec": "#3f5a4c", "accent": "#1d8666", "soft": "#c2f7e7", "aInk": "#157558", "barA": "#12996f", "barB": "#7cc4a8" },
+        { "name": "Orchid Bold", "font": "system", "radius": 19, "plane": "#f8e2f8", "motif": "delicate fine-line florals: 16-petal layered bloom, dandelion bursts, umbel sprays — 320px tile, 1.3px stroke 14% #ba3bba", "surface": "#f8eff8", "sunken": "#ecc3ec", "chart": "#fcf3fc", "ink": "#382438", "sec": "#715671", "sunkSec": "#5c3f5c", "accent": "#ba3bba", "soft": "#f3c7f3", "aInk": "#952895", "barA": "#c944c9", "barB": "#d183d1" }
+      ]
+    },
+    {
+      "id": "carbon-day", "name": "Carbon Day", "mode": "light",
+      "grammar": ["steel-blue tints, motif-free by design (Focused discipline)", "surfaces DEEPEN on carbon (like honey)", "flat light grammar + dot-chips", "white-lift chart wells (mono exception: deeper well)", "mono = the no-color utility colorway: grey accent, only data is colored"],
+      "colorways": [
+        { "name": "Carbon Dimmed", "font": "system", "radius": 12, "plane": "#e1e5eb", "planeNote": "dimmed from #e9ebef — brightness ceiling", "surface": "#d2d6dd", "sunken": "#c0c6d0", "chart": "#f1f3f7", "ink": "#242b38", "sec": "#4b5363", "sunkSec": "#3c4454", "accent": "#586f9d", "soft": "#cdd7ea", "aInk": "#405682", "barA": "#3f6f9f", "barB": "#93aec6", "note": "bars inherited from slate (user-directed)" },
+        { "name": "Mono Soft", "font": "system", "radius": 12, "plane": "#f5f5f5", "surface": "#fafafa", "sunken": "#ececec", "chart": "#e4e5e8", "ink": "#282f3e", "sec": "#5c667a", "sunkSec": "#4a5468", "accent": "#73767d", "soft": "#dee1e7", "aInk": "#575e6b", "barA": "#5b6377", "barB": "#a7aebb" }
+      ],
+      "reserve": ["Slate Bold (passed; its bar palette lives in Carbon Dimmed)"]
+    }
+  ]
+}

@@ -26,7 +26,6 @@ const ALLOWANCE = join(ROOT, 'scripts', '.token-allowance.json');
 
 /** Colour here is CONTENT. Rewriting it breaks something the user reads or a third-party identity. */
 export const DENYLIST = {
-  'src/theme/wallpapers.js': 'wallpaper gradients ARE the content — the picture, not the chrome painting it',
   'src/data/fileSystem.js': 'ships STYLING.md/TERMINAL.md as in-app readable text, incl. literal CSS var declarations',
   'src/hooks/useTerminal.js': '8 third-party terminal palettes (dracula, solarized, monokai) — shipped feature + others\' brand identities',
   'src/config/apps.jsx': 'app icon colours are brand identity; a real OS keeps them (icon THEMES handle this instead)',
@@ -54,10 +53,17 @@ const RULES = [
   { id: 'stock', label: 'stock Tailwind colour', re: /(?:text|bg|border|ring|from|to|via)-(?:red|green|yellow|blue|purple|cyan|orange|pink|indigo|rose|emerald|violet|teal|sky|amber)-[0-9]{2,3}/g },
 ];
 
+/**
+ * Directory-level exemptions. `src/theme/` IS the token layer — centralising every hex there is the
+ * entire goal of the migration, so linting it would punish the fix. Everything else in src/ must
+ * consume roles, not literals.
+ */
+export const DENY_DIRS = ['src/theme/'];
+
 const files = walk(SRC).map((p) => relative(ROOT, p)).sort();
 const current = {};
 for (const rel of files) {
-  if (DENYLIST[rel]) continue;
+  if (DENYLIST[rel] || DENY_DIRS.some((d) => rel.startsWith(d))) continue;
   const text = readFileSync(join(ROOT, rel), 'utf8');
   const counts = {};
   let any = 0;
