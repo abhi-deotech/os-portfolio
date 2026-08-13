@@ -33,10 +33,10 @@ export const APPS = [
   { 
     id: 'aichat',     
     title: IS_PUTER_SHELL ? 'Lumina Assistant' : 'Lumina AI',  
-    icon: (size) => <CustomIcon icon={Brain} size={size} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} />,
+    icon: (size) => <CustomIcon icon={Brain} size={size} color="text-os-primary" glow="rgb(var(--os-primary-rgb) / 0.3)" strokeWidth={2.5} />,
     featured: true,
     pinned: true,
-    shadow: 'rgba(var(--os-primary-rgb), 1)'
+    shadow: 'rgb(var(--os-primary-rgb) / 1)'
   },
   { 
     id: 'settings', 
@@ -51,7 +51,7 @@ export const APPS = [
     { 
       id: 'about',    
       title: 'About Me',     
-      icon: (size, color) => <CustomIcon icon={User} size={size} color={color || "text-os-primary"} glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} />,
+      icon: (size, color) => <CustomIcon icon={User} size={size} color={color || "text-os-primary"} glow="rgb(var(--os-primary-rgb) / 0.3)" strokeWidth={2.5} />,
       featured: true,
       pinned: false 
     },
@@ -71,7 +71,7 @@ export const APPS = [
     { 
       id: 'projects', 
       title: 'Projects',     
-      icon: (size, color) => <CustomIcon icon={Code} size={size} color={color || "text-os-secondary"} glow="rgba(var(--os-secondary-rgb), 0.3)" strokeWidth={2.5} />,
+      icon: (size, color) => <CustomIcon icon={Code} size={size} color={color || "text-os-secondary"} glow="rgb(var(--os-secondary-rgb) / 0.3)" strokeWidth={2.5} />,
       featured: true,
       pinned: true,
       shadow: '#00d2fd'
@@ -94,16 +94,16 @@ export const APPS = [
   { 
     id: 'games',    
     title: 'Game Center',  
-    icon: (size) => <CustomIcon icon={Gamepad2} size={size} color="text-os-tertiary" glow="rgba(var(--os-tertiary-rgb), 0.3)" strokeWidth={2.5} />,
+    icon: (size) => <CustomIcon icon={Gamepad2} size={size} color="text-os-tertiary" glow="rgb(var(--os-tertiary-rgb) / 0.3)" strokeWidth={2.5} />,
     pinned: true,
-    shadow: 'rgba(var(--os-tertiary-rgb), 1)'
+    shadow: 'rgb(var(--os-tertiary-rgb) / 1)'
   },
   { 
     id: 'music',    
     title: 'Music',        
-    icon: (size) => <CustomIcon icon={Music} size={size} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} />,
+    icon: (size) => <CustomIcon icon={Music} size={size} color="text-os-primary" glow="rgb(var(--os-primary-rgb) / 0.3)" strokeWidth={2.5} />,
     pinned: true,
-    shadow: 'rgba(var(--os-primary-rgb), 1)'
+    shadow: 'rgb(var(--os-primary-rgb) / 1)'
   },
   { 
     id: 'browser',    
@@ -118,7 +118,7 @@ export const APPS = [
   { 
     id: 'retroarcade', 
     title: 'Retro Arcade', 
-    icon: (size) => <CustomIcon icon={Gamepad2} size={size} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> 
+    icon: (size) => <CustomIcon icon={Gamepad2} size={size} color="text-os-primary" glow="rgb(var(--os-primary-rgb) / 0.3)" strokeWidth={2.5} /> 
   },
   { 
     id: 'notepad',  
@@ -128,7 +128,7 @@ export const APPS = [
   { 
     id: 'taskmanager', 
     title: 'Monitor',   
-    icon: (size) => <CustomIcon icon={Activity} size={size} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> 
+    icon: (size) => <CustomIcon icon={Activity} size={size} color="text-os-primary" glow="rgb(var(--os-primary-rgb) / 0.3)" strokeWidth={2.5} /> 
   },
   { 
     id: 'achievements', 

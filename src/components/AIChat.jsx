@@ -118,7 +118,7 @@ const AIChat = () => {
     <div className="flex flex-col h-full bg-[#0c0c0c]">
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5 bg-white/[0.02]">
-        <div className="w-10 h-10 rounded-2xl bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.2)]">
+        <div className="w-10 h-10 rounded-2xl bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.2)]">
           <Brain size={20} />
         </div>
         <div>
@@ -136,7 +136,7 @@ const AIChat = () => {
                Sign In
              </button>
            )}
-           <div className={`w-2 h-2 rounded-full ${isPuterSignedIn ? 'bg-os-primary shadow-[0_0_10px_rgba(var(--os-primary-rgb),0.5)]' : 'bg-green-500 animate-pulse'}`} />
+           <div className={`w-2 h-2 rounded-full ${isPuterSignedIn ? 'bg-os-primary shadow-[0_0_10px_rgb(var(--os-primary-rgb)_/_0.5)]' : 'bg-green-500 animate-pulse'}`} />
         </div>
       </div>
 

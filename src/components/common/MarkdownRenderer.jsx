@@ -40,7 +40,7 @@ const MarkdownRenderer = ({ content, className = '' }) => {
                     margin: 0,
                     padding: '1.5rem',
                     fontSize: '0.85rem',
-                    backgroundColor: 'rgba(var(--os-surface-container-low-rgb, 13, 17, 23), 0.8)',
+                    backgroundColor: 'rgb(var(--os-surface-container-low-rgb, 9 19 40) / 0.8)',
                     backdropBlur: '12px',
                   }}
                   {...props}

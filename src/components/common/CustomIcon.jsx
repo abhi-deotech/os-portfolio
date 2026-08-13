@@ -26,7 +26,7 @@ const CustomIcon = ({
   if (!Icon) return null;
 
   const glowStyle = glow 
-    ? { filter: `drop-shadow(0 0 8px ${typeof glow === 'string' ? glow : 'rgba(var(--os-primary-rgb), 0.5)'})` }
+    ? { filter: `drop-shadow(0 0 8px ${typeof glow === 'string' ? glow : 'rgb(var(--os-primary-rgb) / 0.5)'})` }
     : {};
 
   const motionProps = animate ? {

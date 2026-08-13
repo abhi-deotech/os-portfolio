@@ -133,7 +133,7 @@ const ArcadeAI = ({ game }) => {
       {/* Header */}
       <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_15px_rgba(var(--os-primary-rgb),0.3)]">
+          <div className="w-8 h-8 rounded-lg bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_15px_rgb(var(--os-primary-rgb)_/_0.3)]">
             <Gamepad2 size={16} />
           </div>
           <div>
@@ -144,7 +144,7 @@ const ArcadeAI = ({ game }) => {
           </div>
         </div>
         {isPuterSignedIn && (
-          <div className="w-2 h-2 rounded-full bg-os-primary animate-pulse shadow-[0_0_10px_rgba(var(--os-primary-rgb),0.5)]" />
+          <div className="w-2 h-2 rounded-full bg-os-primary animate-pulse shadow-[0_0_10px_rgb(var(--os-primary-rgb)_/_0.5)]" />
         )}
       </div>
 

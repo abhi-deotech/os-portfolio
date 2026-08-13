@@ -4,6 +4,11 @@ export const createSystemSlice = (set, get) => ({
   transparencyEffects: true,
   brightness: 100,
   accentIntensity: 80,
+  // Both of these had setters but no declared default, so they started as `undefined` and were
+  // absent from `partialize` — soundEnabled made muting impossible (useSoundEffects.js read it with
+  // a `?? true` fallback that always won), and lowPerformance reset on every reload.
+  soundEnabled: true,
+  lowPerformance: false,
   isDragging: false,
   isBSOD: false,
   achievements: [],
@@ -69,6 +74,7 @@ export const createSystemSlice = (set, get) => ({
     if (get().isPuterSignedIn) get().syncPrefsToPuter();
   },
   setLowPerformance: (enabled) => set({ lowPerformance: enabled }),
+  setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
 
   resetSettingsToDefault: () => {
     set({
@@ -77,6 +83,11 @@ export const createSystemSlice = (set, get) => ({
       transparencyEffects: true,
       brightness: 100,
       accentIntensity: 80,
+      // terminalTheme is a personalization field that syncs to Puter but was previously left out
+      // of the reset, so "Reset Personalization" silently spared it.
+      terminalTheme: 'default',
+      soundEnabled: true,
+      lowPerformance: false,
     });
     if (get().isPuterSignedIn) get().syncPrefsToPuter();
   },

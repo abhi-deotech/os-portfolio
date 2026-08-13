@@ -7,7 +7,7 @@ import BootSequence from './BootSequence';
 const IS_PUTER_SHELL = import.meta.env.VITE_APP_MODE === 'puter-shell';
 
 // Define vibrant gradient for the boot button
-const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary bg-[length:200%_auto] hover:bg-[100%_0] text-white font-bold text-xs tracking-[0.3em] uppercase border border-white/20 backdrop-blur-sm transition-all duration-700 shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_40px_rgba(var(--os-primary-rgb),0.5)]";
+const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary bg-[length:200%_auto] hover:bg-[100%_0] text-white font-bold text-xs tracking-[0.3em] uppercase border border-white/20 backdrop-blur-sm transition-all duration-700 shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_40px_rgb(var(--os-primary-rgb)_/_0.5)]";
 
 /**
  * Login screen component for Lumina OS authentication.
@@ -176,7 +176,7 @@ const LoginScreen = () => {
                         }
                       }}
                       disabled={isPuterConnecting}
-                      className="w-full mt-4 bg-gradient-to-r from-os-primary to-os-secondary text-black font-black py-4 rounded-2xl hover:brightness-110 active:scale-[0.98] transition-all duration-300 uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-4 bg-gradient-to-r from-os-primary to-os-secondary text-black font-black py-4 rounded-2xl hover:brightness-110 active:scale-[0.98] transition-all duration-300 uppercase text-[10px] tracking-[0.2em] flex items-center justify-center gap-2 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isPuterConnecting ? (
                         <>

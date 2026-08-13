@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { Tree } from 'react-arborist';
 import { 
   Folder, FolderOpen, FileText, Plus, Trash2, Edit3, 

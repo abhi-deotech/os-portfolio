@@ -26,6 +26,7 @@ const ALLOWANCE = join(ROOT, 'scripts', '.token-allowance.json');
 
 /** Colour here is CONTENT. Rewriting it breaks something the user reads or a third-party identity. */
 export const DENYLIST = {
+  'src/theme/wallpapers.js': 'wallpaper gradients ARE the content — the picture, not the chrome painting it',
   'src/data/fileSystem.js': 'ships STYLING.md/TERMINAL.md as in-app readable text, incl. literal CSS var declarations',
   'src/hooks/useTerminal.js': '8 third-party terminal palettes (dracula, solarized, monokai) — shipped feature + others\' brand identities',
   'src/config/apps.jsx': 'app icon colours are brand identity; a real OS keeps them (icon THEMES handle this instead)',

@@ -128,12 +128,14 @@ const sdlVars = count(/var\(--sdl-[a-z0-9-]+\)/g).total;
 const census = {
   generatedFrom: `${files.length} files under src/`,
   tokens: {
-    'os-* DEAD (slash-form keys, comma vars)': slash.total,
-    'os-* renders (plain var, no alpha possible)': plain.total,
-    'hand-written rgba(var(--os-*), N) — works today': legacyRgba,
-    'var(--sdl-*) — migrated': sdlVars,
+    // Pre-P1 these two rows meant "dead" vs "renders but can't do alpha". P1 repaired both, so they
+    // now simply measure how much still rides the legacy --os-* bridge rather than SDL roles.
+    'os-* bridge — accent/outline/container keys': slash.total,
+    'os-* bridge — surface/ink keys': plain.total,
+    'legacy rgba(var(--os-*), N) — must be 0': legacyRgba,
+    'var(--sdl-*) — migrated to roles': sdlVars,
   },
-  tokensDetail: { dead: slash.rows, renders: plain.rows },
+  tokensDetail: { accentKeys: slash.rows, surfaceInkKeys: plain.rows },
   whiteBlack: {
     'hairline  border-white|black/N': hairline,
     'ink       text-white': inkFull,
@@ -161,7 +163,7 @@ const census = {
 
 const whiteBlackTotal = hairline + inkFull + inkAlpha + veil + scrimAlpha + deviceBlack + onAccent;
 census.headline = {
-  deadTokenSites: slash.total,
+  bridgeSites: slash.total + plain.total,
   whiteBlackTotal,
   untokenizedTotal: whiteBlackTotal + accentHex.total + surfaceHex.total + nearBlackHex.total + stock.total,
 };
@@ -196,7 +198,7 @@ table('white / black literals', 'whiteBlack', census.whiteBlack);
 table('Hardcoded hexes', 'hexes', census.hexes);
 table('Structure', 'structure', census.structure);
 console.log(`\n\x1b[1mHeadline\x1b[0m`);
-console.log(`  dead token sites          ${String(census.headline.deadTokenSites).padStart(5)}${delta('headline', 'deadTokenSites', census.headline.deadTokenSites)}`);
+console.log(`  os-* bridge sites         ${String(census.headline.bridgeSites).padStart(5)}${delta('headline', 'bridgeSites', census.headline.bridgeSites)}`);
 console.log(`  white/black literals      ${String(census.headline.whiteBlackTotal).padStart(5)}${delta('headline', 'whiteBlackTotal', census.headline.whiteBlackTotal)}`);
 console.log(`  untokenized colour sites  ${String(census.headline.untokenizedTotal).padStart(5)}${delta('headline', 'untokenizedTotal', census.headline.untokenizedTotal)}`);
 

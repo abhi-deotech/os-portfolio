@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { WALLPAPERS, resolveWallpaper } from '../theme/wallpapers';
 import { 
   Settings as SettingsIcon, 
   ImageIcon, 
@@ -100,17 +101,9 @@ const Settings = () => {
     }
   };
 
-  const wallpapers = [
-    { id: 'neon-nebula', name: 'Neon Nebula', type: 'live', color: 'from-[#cc97ff] to-[#00d2fd]' },
-    { id: 'cyber-grid', name: 'Cyber Grid', type: 'live', color: 'from-[#00f5a0] to-[#00d2fd]' },
-    { id: 'abstract-blue', name: 'Abstract Blue', type: 'image', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=40&w=400&auto=format&fit=crop' },
-    { id: 'dark-mountain', name: 'Dark Mountain', type: 'image', url: 'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=40&w=400&auto=format&fit=crop' },
-    { id: 'cyber-vibes', name: 'Cyber Vibes', type: 'image', url: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=40&w=400&auto=format&fit=crop' },
-    { id: 'tech-minimal', name: 'Minimal Tech', type: 'image', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=40&w=400&auto=format&fit=crop' },
-    { id: 'sunset-glow', name: 'Sunset Glow', type: 'live', color: 'from-[#ff4d4d] to-[#ffaf40]' },
-    { id: 'quantum-flow', name: 'Quantum Flow', type: 'live', color: 'from-[#cc97ff] to-[#60a5fa]' },
-    { id: 'linux-default', name: 'Linux Default', type: 'live', color: 'from-[#4e1a3d] via-[#772953] to-[#e95420]' }
-  ];
+  // Wallpaper library imported from src/theme/wallpapers.js — this file used to hold a third copy
+  // with its own thumbnail URLs, which drifted from the two in LiveWallpaper.jsx.
+  const wallpapers = WALLPAPERS;
 
   const accentColors = [
     { id: 'purple', shadow: 'rgba(204,151,255,0.4)', hex: '#cc97ff' },
@@ -151,12 +144,12 @@ const Settings = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-[#cc97ff]/5 to-[#00d2fd]/5 opacity-50"></div>
         <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8 items-center">
 <div 
-              className={`w-full md:w-1/2 h-40 md:h-48 rounded-2xl shadow-2xl overflow-hidden relative border border-white/10 transition-all duration-700 ${!wallpaper.startsWith('data:image') && wallpapers.find(w => w.id === wallpaper)?.type === 'live' ? `bg-gradient-to-br ${wallpapers.find(w => w.id === wallpaper)?.color}` : ''}`}
+              className={`w-full md:w-1/2 h-40 md:h-48 rounded-2xl shadow-2xl overflow-hidden relative border border-white/10 transition-all duration-700 ${!wallpaper.startsWith('data:image') && resolveWallpaper(wallpaper)?.type === 'live' ? resolveWallpaper(wallpaper).gradient : ''}`}
               style={
                 wallpaper.startsWith('data:image') 
                   ? { backgroundImage: `url(${wallpaper})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                  : wallpapers.find(w => w.id === wallpaper)?.type === 'image' 
-                    ? { backgroundImage: `url(${wallpapers.find(w => w.id === wallpaper)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                  : resolveWallpaper(wallpaper)?.type === 'image' 
+                    ? { backgroundImage: `url(${resolveWallpaper(wallpaper).url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
                     : {}
               }
             >
@@ -192,9 +185,9 @@ const Settings = () => {
                       }`}
                     >
                       {wp.type === 'live' ? (
-                        <div className={`absolute inset-0 bg-gradient-to-br ${wp.color} opacity-80`} />
+                        <div className={`absolute inset-0 ${wp.gradient} opacity-80`} />
                       ) : (
-                        <img src={wp.url} alt={wp.name} className="absolute inset-0 w-full h-full object-cover" />
+                        <img src={wp.thumb} alt={wp.name} className="absolute inset-0 w-full h-full object-cover" />
                       )}
                       
                       {wallpaper === wp.id && (
@@ -238,7 +231,7 @@ const Settings = () => {
 
                 <div className="flex items-center justify-between p-3 rounded-xl bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50 transition-colors border border-os-outline/5">
                     <div className="flex items-center gap-3">
-                        <CustomIcon icon={Zap} size={16} color="text-os-secondary" glow="rgba(var(--os-secondary-rgb), 0.3)" />
+                        <CustomIcon icon={Zap} size={16} color="text-os-secondary" glow="rgb(var(--os-secondary-rgb) / 0.3)" />
                         <div>
                             <span className="block font-semibold text-sm">Performance Mode</span>
                             <span className="block text-xs text-os-onSurfaceVariant">Disable 3D wallpaper & effects</span>
@@ -357,7 +350,7 @@ const Settings = () => {
                         <span className="text-xs md:text-sm font-semibold text-os-onSurfaceVariant">Version 2026.1 (Build 8821)</span>
                       </div>
                       <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-os-primary/20 to-os-secondary/20 border border-os-outline/10 flex items-center justify-center shadow-[0_0_30px_rgba(204,151,255,0.15)]">
-                          <CustomIcon icon={Cpu} size={isMobile ? 24 : 28} color="text-os-onSurface" glow="rgba(var(--os-primary-rgb), 0.3)" />
+                          <CustomIcon icon={Cpu} size={isMobile ? 24 : 28} color="text-os-onSurface" glow="rgb(var(--os-primary-rgb) / 0.3)" />
                       </div>
                   </div>
 
@@ -564,7 +557,7 @@ const Settings = () => {
       <div className={`${isMobile ? (showSidebar ? 'w-full absolute inset-0' : 'hidden') : 'w-64 border-r'} bg-os-surfaceContainerLow/50 backdrop-blur-3xl border-os-outline/10 flex flex-col p-4 shadow-xl z-20 transition-all`}>
         <div className="flex items-center space-x-3 mb-8 md:mb-10 px-2 mt-2">
           <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-os-surfaceContainerHighest to-os-surfaceContainerLow flex items-center justify-center border border-os-outline/10 shadow-inner">
-            <CustomIcon icon={SettingsIcon} size={16} color="text-os-onSurface" className="relative z-10" glow="rgba(var(--os-primary-rgb), 0.5)" />
+            <CustomIcon icon={SettingsIcon} size={16} color="text-os-onSurface" className="relative z-10" glow="rgb(var(--os-primary-rgb) / 0.5)" />
             <div className="absolute inset-0 bg-[#cc97ff]/20 blur-md rounded-lg"></div>
           </div>
           <span className="font-display font-bold text-lg tracking-wide">Settings</span>
@@ -750,7 +743,7 @@ const Settings = () => {
                           <button
                             onClick={signInWithPuter}
                             disabled={isPuterConnecting}
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.3)] disabled:opacity-50"
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.3)] disabled:opacity-50"
                           >
                             {isPuterConnecting ? (
                               <RefreshCw size={14} className="animate-spin" />

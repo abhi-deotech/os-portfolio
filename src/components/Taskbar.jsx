@@ -54,7 +54,7 @@ const Taskbar = () => {
             title="App Launcher"
             className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-white/10 ${isAppLauncherOpen ? 'bg-os-primary/10 border border-os-primary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
           >
-            <CustomIcon icon={isMobile && openWindows.length > 0 ? Home : LayoutGrid} size={20} color={isAppLauncherOpen ? 'text-os-primary' : 'text-os-onSurface group-hover:text-os-primary'} glow={isAppLauncherOpen ? 'rgba(var(--os-primary-rgb), 0.5)' : false} />
+            <CustomIcon icon={isMobile && openWindows.length > 0 ? Home : LayoutGrid} size={20} color={isAppLauncherOpen ? 'text-os-primary' : 'text-os-onSurface group-hover:text-os-primary'} glow={isAppLauncherOpen ? 'rgb(var(--os-primary-rgb) / 0.5)' : false} />
             {isAppLauncherOpen && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-os-primary shadow-[0_0_8px_#cc97ff]" />}
           </button>
 
@@ -66,7 +66,7 @@ const Taskbar = () => {
               title="About Me"
               className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-secondary/50 focus-visible:bg-white/10 ${openWindows.includes('about') ? 'bg-os-secondary/10 border border-os-secondary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
             >
-              <CustomIcon icon={User} size={20} color={openWindows.includes('about') ? 'text-os-secondary' : 'text-os-onSurface group-hover:text-os-secondary'} glow={openWindows.includes('about') ? 'rgba(var(--os-secondary-rgb), 0.5)' : false} />
+              <CustomIcon icon={User} size={20} color={openWindows.includes('about') ? 'text-os-secondary' : 'text-os-onSurface group-hover:text-os-secondary'} glow={openWindows.includes('about') ? 'rgb(var(--os-secondary-rgb) / 0.5)' : false} />
             </button>
           )}
 
@@ -78,7 +78,7 @@ const Taskbar = () => {
             className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-tertiary/50 focus-visible:bg-white/10 ${isControlCenterOpen ? 'bg-os-tertiary/10 border border-os-tertiary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
           >
             {isControlCenterOpen ? (
-              <CustomIcon icon={ChevronDown} size={20} color="text-os-tertiary" glow="rgba(var(--os-tertiary-rgb), 0.5)" />
+              <CustomIcon icon={ChevronDown} size={20} color="text-os-tertiary" glow="rgb(var(--os-tertiary-rgb) / 0.5)" />
             ) : (
               <CustomIcon icon={ChevronUp} size={20} color="text-os-onSurface group-hover:text-os-tertiary" />
             )}
@@ -120,8 +120,8 @@ const Taskbar = () => {
                 {isOpen && (
                   <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full transition-all duration-500 ${isActive ? 'w-2 h-1 animate-pulse' : 'w-1 h-1'}`}
                     style={{ 
-                      backgroundColor: app.shadow || 'rgba(var(--os-primary-rgb), 1)', 
-                      boxShadow: `0 0 10px ${app.shadow || 'rgba(var(--os-primary-rgb), 1)'}`,
+                      backgroundColor: app.shadow || 'rgb(var(--os-primary-rgb) / 1)', 
+                      boxShadow: `0 0 10px ${app.shadow || 'rgb(var(--os-primary-rgb) / 1)'}`,
                       opacity: 0.8
                     }} 
                   />

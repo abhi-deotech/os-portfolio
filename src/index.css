@@ -4,60 +4,96 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   EVERY rgb triple below is SPACE-separated. This is load-bearing, not style.
+
+   Tailwind emits `rgb(var(--os-primary-rgb) / <alpha-value>)`. With a COMMA
+   triple that resolves to `rgb(204, 151, 255 / 1)`, which matches neither the
+   legacy nor the modern rgb() grammar, so the declaration is dropped and the
+   class renders transparent. That bug made 778 token call sites invisible —
+   including `.bg-os-primary` with no opacity modifier at all — which is why the
+   codebase grew 925 white/black literals and 327 hardcoded hexes to compensate.
+
+   Consequence: hand-written CSS must use the SLASH form, `rgb(var(--x) / .3)`.
+   The legacy `rgba(var(--x), .3)` form only works with comma triples and is now
+   invalid everywhere. Both forms cannot coexist on one variable.
+   ───────────────────────────────────────────────────────────────────────────── */
 :root {
   --os-background: #060e20;
+  --os-background-rgb: 6 14 32;
   --os-surface: #060e20;
+  --os-surface-rgb: 6 14 32;
+  --os-surface-container-lowest: #050c1a;
+  --os-surface-container-lowest-rgb: 5 12 26;
   --os-surface-container-low: #091328;
-  --os-surface-container-low-rgb: 9, 19, 40;
+  --os-surface-container-low-rgb: 9 19 40;
   --os-surface-container-high: #141f38;
-  --os-surface-container-high-rgb: 20, 31, 56;
+  --os-surface-container-high-rgb: 20 31 56;
   --os-surface-container-highest: #192540;
-  --os-surface-container-highest-rgb: 25, 37, 64;
-  
-  /* RGB components for opacity support */
-  --os-primary-rgb: 204, 151, 255;
-  --os-secondary-rgb: 0, 210, 253;
-  --os-tertiary-rgb: 0, 245, 160;
-  --blue-500-rgb: 59, 130, 246;
-  --red-500-rgb: 239, 68, 68;
-  --yellow-500-rgb: 234, 179, 8;
-  
+  --os-surface-container-highest-rgb: 25 37 64;
+
+  /* Accents. Overridden at runtime on documentElement — see src/theme/applyTheme.js.
+     The derived hex vars below resolve correctly ONLY because the override and the
+     declaration now live on the same element (:root === documentElement). */
+  --os-primary-rgb: 204 151 255;
+  --os-secondary-rgb: 0 210 253;
+  --os-tertiary-rgb: 0 245 160;
+  --os-primary-dim-rgb: 156 72 234;
+  --os-secondary-dim-rgb: 0 195 235;
+
   --os-primary: rgb(var(--os-primary-rgb));
-  --os-primary-dim: #9c48ea;
+  --os-primary-dim: rgb(var(--os-primary-dim-rgb));
   --os-secondary: rgb(var(--os-secondary-rgb));
-  --os-secondary-dim: #00c3eb;
+  --os-secondary-dim: rgb(var(--os-secondary-dim-rgb));
   --os-tertiary: rgb(var(--os-tertiary-rgb));
+
   --os-on-surface: #dee5ff;
+  --os-on-surface-rgb: 222 229 255;
   --os-on-surface-variant: #a3aac4;
-  --os-outline-rgb: 109, 117, 140;
+  --os-on-surface-variant-rgb: 163 170 196;
+  --os-outline-rgb: 109 117 140;
   --os-outline: rgb(var(--os-outline-rgb));
+
   --desktop-gradient: radial-gradient(circle at 50% -20%, #1a103c 0%, #060e20 60%, #030712 100%);
 }
 
+/* Placeholder light palette. Still unreachable — nothing applies `.light-mode`, and
+   real light mode arrives in P3 as `[data-mode="light"]` driven by the SDL colorway
+   (law 7: temperature decides mode). Kept only so the two blocks stay in sync; delete
+   it when grammar.css lands rather than letting two light systems coexist. */
 .light-mode {
   --os-background: #f8fafc;
+  --os-background-rgb: 248 250 252;
   --os-surface: #ffffff;
+  --os-surface-rgb: 255 255 255;
+  --os-surface-container-lowest: #e8edf5;
+  --os-surface-container-lowest-rgb: 232 237 245;
   --os-surface-container-low: #f1f5f9;
-  --os-surface-container-low-rgb: 241, 245, 249;
+  --os-surface-container-low-rgb: 241 245 249;
   --os-surface-container-high: #e2e8f0;
-  --os-surface-container-high-rgb: 226, 232, 240;
+  --os-surface-container-high-rgb: 226 232 240;
   --os-surface-container-highest: #cbd5e1;
-  --os-surface-container-highest-rgb: 203, 213, 225;
-  
-  /* Light mode RGB components */
-  --os-primary-rgb: 124, 58, 237;
-  --os-secondary-rgb: 14, 165, 233;
-  --os-tertiary-rgb: 5, 150, 105;
+  --os-surface-container-highest-rgb: 203 213 225;
+
+  --os-primary-rgb: 124 58 237;
+  --os-secondary-rgb: 14 165 233;
+  --os-tertiary-rgb: 5 150 105;
+  --os-primary-dim-rgb: 91 33 182;
+  --os-secondary-dim-rgb: 3 105 161;
 
   --os-primary: rgb(var(--os-primary-rgb));
-  --os-primary-dim: #5b21b6;
+  --os-primary-dim: rgb(var(--os-primary-dim-rgb));
   --os-secondary: rgb(var(--os-secondary-rgb));
-  --os-secondary-dim: #0369a1;
+  --os-secondary-dim: rgb(var(--os-secondary-dim-rgb));
   --os-tertiary: rgb(var(--os-tertiary-rgb));
+
   --os-on-surface: #0f172a;
+  --os-on-surface-rgb: 15 23 42;
   --os-on-surface-variant: #475569;
-  --os-outline-rgb: 148, 163, 184;
+  --os-on-surface-variant-rgb: 71 85 105;
+  --os-outline-rgb: 148 163 184;
   --os-outline: rgb(var(--os-outline-rgb));
+
   --desktop-gradient: radial-gradient(circle at 50% -20%, #e0e7ff 0%, #f8fafc 60%, #f1f5f9 100%);
 }
 
@@ -66,6 +102,20 @@
     @apply bg-os-background text-os-onSurface font-sans antialiased overflow-hidden m-0 p-0 select-none;
     background: var(--desktop-gradient);
     transition: background 0.5s ease, color 0.5s ease;
+  }
+
+  /* Brightness dimmer. Replaces `filter: brightness()` on the app root, which made that element a
+     containing block for every `position: fixed` descendant (Taskbar, ControlCenter, Spotlight,
+     toasts). A scrim has no such side effect, costs less to composite, and — unlike a filter on a
+     mid-tree div — also covers the boot and login screens. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: rgb(0 0 0 / var(--os-dim, 0));
+    transition: background 200ms linear;
   }
 }
 
@@ -130,7 +180,7 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(var(--os-primary-rgb), 0.3);
+    background: rgb(var(--os-primary-rgb) / 0.3);
   }
 
   .mask-fade {
@@ -162,7 +212,7 @@
   .scanline {
     width: 100%;
     height: 2px;
-    background: linear-gradient(to right, transparent, rgba(var(--os-primary-rgb), 0.2), transparent);
+    background: linear-gradient(to right, transparent, rgb(var(--os-primary-rgb) / 0.2), transparent);
     position: absolute;
     left: 0;
     top: 0;
@@ -177,11 +227,11 @@
   }
 
   .text-glow {
-    text-shadow: 0 0 10px rgba(var(--os-primary-rgb), 0.5), 0 0 20px rgba(var(--os-primary-rgb), 0.2);
+    text-shadow: 0 0 10px rgb(var(--os-primary-rgb) / 0.5), 0 0 20px rgb(var(--os-primary-rgb) / 0.2);
   }
 
   .text-glow-secondary {
-    text-shadow: 0 0 10px rgba(var(--os-secondary-rgb), 0.5), 0 0 20px rgba(var(--os-secondary-rgb), 0.2);
+    text-shadow: 0 0 10px rgb(var(--os-secondary-rgb) / 0.5), 0 0 20px rgb(var(--os-secondary-rgb) / 0.2);
   }
 
 /* ===========================
@@ -215,7 +265,7 @@
 .os-context-menu .contexify_item.contexify_item-active > .contexify_itemContent,
 .os-context-menu .contexify_item:hover,
 .os-context-menu .contexify_item.contexify_item-active {
-  background: rgba(var(--os-primary-rgb), 0.15) !important;
+  background: rgb(var(--os-primary-rgb) / 0.15) !important;
   color: white !important;
 }
 

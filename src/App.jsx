@@ -29,6 +29,7 @@ import Taskbar from './components/Taskbar';
 
 import useSoundEffects from './hooks/useSoundEffects';
 import useOSStore from './store/osStore';
+import { applyTheme } from './theme/applyTheme';
 import { attach as attachMusicEngine } from './utils/musicEngine';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { APPS } from './config/apps';
@@ -38,13 +39,8 @@ import './index.css';
 const DESKTOP_MENU_ID = 'desktop-context-menu';
 const ICON_MENU_ID = 'icon-context-menu';
 
-// Accents map hoisted to prevent unnecessary re-creation on every render
-const ACCENT_COLORS_MAP = {
-  purple:  { primary: '204, 151, 255', secondary: '0, 210, 253',   tertiary: '0, 245, 160'   },
-  cyan:    { primary: '0, 210, 253',   secondary: '204, 151, 255', tertiary: '255, 104, 240' },
-  magenta: { primary: '255, 104, 240', secondary: '204, 151, 255', tertiary: '0, 210, 253'   },
-  green:   { primary: '0, 245, 160',   secondary: '0, 210, 253',   tertiary: '204, 151, 255' },
-};
+// The accent map now lives in src/theme/applyTheme.js — it was previously duplicated in five places
+// with three different encodings (here, Settings.jsx, Window.jsx, QuantumWidget.jsx, puterSlice.js).
 
 /**
  * Main application component for Lumina OS.
@@ -143,7 +139,12 @@ function App() {
       };
       }, [isAuthenticated]);
 
-      const currentAccent = ACCENT_COLORS_MAP[activeAccent] || ACCENT_COLORS_MAP.purple;
+  // Theme goes onto documentElement, not onto the JSX below. This hook sits ABOVE the early
+  // returns at the end of this component, so boot, login and portaled context menus are themed too.
+  useEffect(() => {
+    applyTheme({ accent: activeAccent, brightness, accentIntensity });
+  }, [activeAccent, brightness, accentIntensity]);
+
   const handleDesktopContextMenu = (e) => {
     if (isMobile) return;
     e.preventDefault();
@@ -173,13 +174,6 @@ function App() {
   return (
     <div
       className="h-screen w-screen overflow-hidden font-sans select-none flex flex-col relative text-os-onSurface transition-all duration-500"
-      style={{
-        '--os-primary-rgb':   currentAccent.primary,
-        '--os-secondary-rgb': currentAccent.secondary,
-        '--os-tertiary-rgb':  currentAccent.tertiary,
-        '--os-accent-intensity': accentIntensity / 100,
-        filter: `brightness(${brightness}%)`,
-      }}
       onContextMenu={handleDesktopContextMenu}
     >
       <LiveWallpaper />

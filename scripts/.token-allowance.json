@@ -57,7 +57,6 @@
     "stock": 1
   },
   "src/components/LiveWallpaper.jsx": {
-    "hex": 23,
     "white": 1
   },
   "src/components/LoginScreen.jsx": {
@@ -104,7 +103,7 @@
     "stock": 3
   },
   "src/components/Settings.jsx": {
-    "hex": 43,
+    "hex": 32,
     "white": 40,
     "stock": 21
   },

@@ -30,6 +30,21 @@ const useOSStore = create(
     }),
     {
       name: 'os-settings',
+      // Stamp a version NOW, before any shape change needs one. Without it, zustand treats an
+      // existing payload as version 0 and there is no hook to migrate it — so the first time the
+      // theme fields change shape (P2), every existing user silently lands on defaults.
+      // NOTE: this store uses a custom async `storage` object rather than createJSONStorage; verify
+      // against a real IndexedDB payload that `migrate` fires before relying on it in P2.
+      version: 1,
+      // Verified in-browser against a real v0 IndexedDB payload: this hook DOES fire despite the
+      // custom async `storage` object (zustand's docs assume createJSONStorage). P2's colorway
+      // migration depends on that, so it was worth proving rather than assuming.
+      migrate: (persistedState, fromVersion) => {
+        // v0 → v1 is intentionally an identity migration. P2 maps `activeAccent` onto an SDL
+        // colorway here; keeping the hook in place from the start is the point.
+        if (fromVersion >= 1) return persistedState;
+        return persistedState;
+      },
       merge: (persistedState, currentState) => {
         const merged = { ...currentState, ...persistedState };
         if (merged.music) {
@@ -57,6 +72,8 @@ const useOSStore = create(
         transparencyEffects: state.transparencyEffects,
         brightness: state.brightness,
         accentIntensity: state.accentIntensity,
+        soundEnabled: state.soundEnabled,
+        lowPerformance: state.lowPerformance,
         terminalHistory: state.terminalHistory,
         openWindows: state.openWindows,
         minimizedWindows: state.minimizedWindows,

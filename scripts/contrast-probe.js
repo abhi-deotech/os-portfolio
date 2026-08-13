@@ -108,7 +108,7 @@
     console.log(`  UI failures       ${by('UI').length}`);
     console.log(`  VANISHED surfaces ${by('VANISHED').length}`);
     const worst = findings.sort((a, b) => a.ratio - b.ratio).slice(0, opts.all ? findings.length : 25);
-    if (worst.length) console.table(worst.map(({ el, ...r }) => r));
+    if (worst.length) console.table(worst.map((f) => ({ type: f.type, ratio: f.ratio, need: f.need, label: f.label, text: f.text })));
     return { colorway: cw, mode, total: findings.length, text: by('TEXT').length, ui: by('UI').length, vanished: by('VANISHED').length, findings };
   };
 

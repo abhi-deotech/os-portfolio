@@ -114,7 +114,7 @@ const ProjectCard = ({ project }) => {
         </div>
         <div className="flex items-center gap-4">
            {project.featured && (
-             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-os-primary/10 border border-os-primary/20 text-[10px] font-black uppercase tracking-widest text-os-primary shadow-[0_0_15px_rgba(var(--os-primary-rgb),0.2)]">
+             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-os-primary/10 border border-os-primary/20 text-[10px] font-black uppercase tracking-widest text-os-primary shadow-[0_0_15px_rgb(var(--os-primary-rgb)_/_0.2)]">
                 <Sparkles size={10} />
                 Featured
              </div>

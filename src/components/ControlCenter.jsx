@@ -22,6 +22,9 @@ const ControlCenter = () => {
   const setMusicVolume = useOSStore(state => state.setMusicVolume);
   const isPuterSignedIn = useOSStore(state => state.isPuterSignedIn);
   const puterUser = useOSStore(state => state.puterUser);
+  // Was called in the "Link Puter" onClick without ever being pulled from the store, so the button
+  // threw a ReferenceError — and it renders whenever signed out, which is the default state.
+  const signInWithPuter = useOSStore(state => state.signInWithPuter);
   
   const isMobile = useIsMobile();
   const metrics = useSystemMetrics();

@@ -1,15 +1,15 @@
 {
   "savedAt": "2026-08-13",
-  "generatedFrom": "79 files under src/",
+  "generatedFrom": "80 files under src/",
   "tokens": {
-    "os-* DEAD (slash-form keys, comma vars)": 778,
-    "os-* renders (plain var, no alpha possible)": 242,
-    "hand-written rgba(var(--os-*), N) — works today": 37,
-    "var(--sdl-*) — migrated": 0
+    "os-* bridge — accent/outline/container keys": 779,
+    "os-* bridge — surface/ink keys": 242,
+    "legacy rgba(var(--os-*), N) — must be 0": 0,
+    "var(--sdl-*) — migrated to roles": 0
   },
   "tokensDetail": {
-    "dead": {
-      "primary": 455,
+    "accentKeys": {
+      "primary": 456,
       "secondary": 120,
       "tertiary": 54,
       "outline": 76,
@@ -17,7 +17,7 @@
       "surfaceContainerHigh": 22,
       "surfaceContainerHighest": 22
     },
-    "renders": {
+    "surfaceInkKeys": {
       "background": 1,
       "surface": 9,
       "onSurface": 42,
@@ -36,20 +36,20 @@
     "onAccent  text-black": 49
   },
   "hexes": {
-    "accent-duplicating": 158,
-    "surface-duplicating": 24,
+    "accent-duplicating": 148,
+    "surface-duplicating": 23,
     "near-black second ramp": 67,
-    "all 6-digit hexes": 421
+    "all 6-digit hexes": 395
   },
   "hexesDetail": {
     "accent": {
-      "#cc97ff": 73,
-      "#00d2fd": 57,
-      "#00f5a0": 24,
+      "#cc97ff": 69,
+      "#00d2fd": 53,
+      "#00f5a0": 22,
       "#ff68f0": 4
     },
     "surface": {
-      "#060e20": 16,
+      "#060e20": 15,
       "#091328": 4,
       "#141f38": 2,
       "#192540": 2
@@ -90,8 +90,8 @@
     "prefers-reduced-motion": 0
   },
   "headline": {
-    "deadTokenSites": 778,
+    "bridgeSites": 1021,
     "whiteBlackTotal": 925,
-    "untokenizedTotal": 1339
+    "untokenizedTotal": 1328
   }
 }

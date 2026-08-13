@@ -168,7 +168,7 @@ const Benchmark = () => {
           {status !== 'running' ? (
             <button 
               onClick={startBenchmark}
-              className="group relative px-6 py-2.5 rounded-xl bg-os-primary text-black font-black uppercase tracking-widest text-[10px] overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.4)]"
+              className="group relative px-6 py-2.5 rounded-xl bg-os-primary text-black font-black uppercase tracking-widest text-[10px] overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.4)]"
             >
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
               <span className="relative flex items-center gap-2">
@@ -202,7 +202,7 @@ const Benchmark = () => {
                 transition={{ delay: idx * 0.1 }}
                 className={`p-4 rounded-2xl border transition-all duration-300 ${
                   isActive 
-                    ? 'bg-os-primary/10 border-os-primary/40 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.1)]' 
+                    ? 'bg-os-primary/10 border-os-primary/40 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.1)]' 
                     : 'bg-white/[0.02] border-white/5'
                 }`}
               >
@@ -264,7 +264,7 @@ const Benchmark = () => {
         {/* Right Side: Primary Visualizer & IPS */}
         <div className="lg:col-span-8 flex flex-col gap-6">
           <div className="flex-grow rounded-[2.5rem] bg-white/[0.01] border border-white/5 p-8 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(var(--os-primary-rgb),0.05),transparent)] pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgb(var(--os-primary-rgb)_/_0.05),transparent)] pointer-events-none" />
             
             {/* Quantum Core Animation */}
             <div className="absolute inset-0 flex items-center justify-center">
