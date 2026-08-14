@@ -82,9 +82,9 @@ const LuminaChat = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#080808] text-white font-sans overflow-hidden border border-white/5 shadow-2xl">
+    <div className="flex flex-col h-full bg-sdl-plane text-sdl-ink font-sans overflow-hidden border border-hairline/5 shadow-2xl">
       {/* App Header */}
-      <div className="px-6 py-4 border-b border-white/5 bg-white/[0.02] flex justify-between items-center">
+      <div className="px-6 py-4 border-b border-hairline/5 bg-veil/[0.02] flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-os-primary/20 rounded-lg text-os-primary animate-pulse">
             <Globe size={18} />
@@ -92,8 +92,8 @@ const LuminaChat = () => {
           <div>
             <h2 className="text-sm font-black uppercase tracking-tight italic">Lumina Guestbook</h2>
             <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`} />
-              <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">
+              <div className={`w-1.5 h-1.5 rounded-full ${isConnecting ? 'bg-sdl-warn animate-pulse' : 'bg-sdl-done'}`} />
+              <span className="text-[9px] font-bold text-sdl-sec uppercase tracking-widest">
                 {isConnecting ? 'Establishing Link...' : 'Global Node: Connected'}
               </span>
             </div>
@@ -116,7 +116,7 @@ const LuminaChat = () => {
           </div>
         ) : (
           <>
-            <div className="flex flex-col items-center justify-center pb-8 border-b border-white/5 space-y-2 opacity-30">
+            <div className="flex flex-col items-center justify-center pb-8 border-b border-hairline/5 space-y-2 opacity-30">
                <Shield size={24} strokeWidth={1} />
                <p className="text-[10px] font-bold uppercase tracking-widest text-center max-w-[200px]">
                  Encrypted global channel. Messages are broadcasted to all active nodes.
@@ -140,7 +140,7 @@ const LuminaChat = () => {
                         <span className={`text-[10px] font-black uppercase tracking-widest ${isMe ? 'text-os-primary' : 'text-os-secondary'}`}>
                           {msg.user}
                         </span>
-                        <span className="text-[9px] font-bold text-white/10 italic">
+                        <span className="text-[9px] font-bold text-sdl-sec italic">
                           {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
@@ -148,9 +148,9 @@ const LuminaChat = () => {
 
                     <div className={`
                       max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-medium leading-relaxed
-                      ${isSystem ? 'bg-white/[0.03] text-os-primary/60 border border-os-primary/10 text-[11px] font-bold italic text-center' : 
-                        isMe ? 'bg-os-primary text-black rounded-tr-none shadow-[0_4px_20px_rgba(204,151,255,0.2)]' : 
-                        'bg-white/5 border border-white/5 rounded-tl-none text-white/80'}
+                      ${isSystem ? 'bg-veil/[0.03] text-os-primary/60 border border-os-primary/10 text-[11px] font-bold italic text-center' : 
+                        isMe ? 'bg-os-primary text-sdl-onAccent rounded-tr-none shadow-[0_4px_20px_rgb(var(--sdl-accent-rgb)_/_0.2)]' :
+                        'bg-veil/5 border border-hairline/5 rounded-tl-none text-sdl-ink/80'}
                     `}>
                       {msg.text}
                     </div>
@@ -163,7 +163,7 @@ const LuminaChat = () => {
       </div>
 
       {/* Input Area */}
-      <div className="p-4 bg-white/[0.02] border-t border-white/5">
+      <div className="p-4 bg-veil/[0.02] border-t border-hairline/5">
         <form onSubmit={handleSend} className="flex gap-2">
           <div className="flex-grow relative group">
             <div className="absolute inset-0 bg-os-primary/5 rounded-xl blur-sm opacity-0 group-focus-within:opacity-100 transition-opacity" />
@@ -173,13 +173,14 @@ const LuminaChat = () => {
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder={isConnecting ? "Establishing neural link..." : "Type your signal to the world..."}
-              className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-os-primary/50 transition-all relative z-10 disabled:opacity-50"
+              className="w-full bg-veil/5 border border-hairline/10 rounded-xl py-3 px-4 text-sm focus:border-os-primary/50 transition-all relative z-10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             />
           </div>
-          <button 
+          <button
             disabled={isConnecting || !input.trim()}
             type="submit"
-            className="p-3 bg-os-primary text-black rounded-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-[0_0_15px_rgba(204,151,255,0.2)]"
+            aria-label="Send message"
+            className="p-3 bg-os-primary text-sdl-onAccent rounded-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-[0_0_15px_var(--sdl-glow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
           >
             <Send size={20} />
           </button>
@@ -189,7 +190,7 @@ const LuminaChat = () => {
               <User size={10} />
               <span className="text-[9px] font-bold uppercase tracking-widest">Active as {username}</span>
            </div>
-           <div className="text-[8px] font-black text-white/10 uppercase tracking-[0.2em]">Nexus Protocol v4.2</div>
+           <div className="text-[8px] font-black text-sdl-sec uppercase tracking-[0.2em]">Nexus Protocol v4.2</div>
         </div>
       </div>
     </div>

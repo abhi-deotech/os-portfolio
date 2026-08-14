@@ -1,51 +1,42 @@
 import React from 'react';
 import useOSStore from '../store/osStore';
+import { resolveWallpaper, isCustomWallpaper } from '../theme/wallpapers';
 
+/**
+ * The desktop plane's ingredient layer.
+ *
+ * Previously this file declared the wallpaper library twice — and the copy that produced the
+ * className was missing all four image ids, so any photo wallpaper resolved to a hardcoded navy
+ * fill instead of the intended fallback. Both copies now come from src/theme/wallpapers.js.
+ */
 const Wallpaper = () => {
-  const { wallpaper } = useOSStore();
+  const wallpaper = useOSStore((state) => state.wallpaper);
 
-  const getWallpaperStyles = () => {
-    // Custom uploaded image
-    if (wallpaper.startsWith('data:image')) {
-      return { backgroundImage: `url(${wallpaper})`, backgroundSize: 'cover', backgroundPosition: 'center' };
-    }
+  let gradientClass = '';
+  let backgroundStyle;
+  let isColorwayPlane = false;
 
-    // Wallpaper Library
-    const library = {
-      'neon-nebula': 'bg-gradient-to-br from-[#cc97ff] to-[#00d2fd]',
-      'cyber-grid': 'bg-gradient-to-br from-[#00f5a0] to-[#00d2fd]',
-      'sunset-glow': 'bg-gradient-to-br from-[#ff4d4d] to-[#ffaf40]',
-      'quantum-flow': 'bg-gradient-to-br from-[#cc97ff] to-[#60a5fa]',
-      'abstract-blue': 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=70&w=1200&auto=format&fit=crop',
-      'dark-mountain': 'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=70&w=1200&auto=format&fit=crop',
-      'cyber-vibes': 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=70&w=1200&auto=format&fit=crop',
-      'tech-minimal': 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=70&w=1200&auto=format&fit=crop',
-      'linux-default': 'bg-gradient-to-br from-[#4e1a3d] via-[#772953] to-[#e95420]'
-    };
+  if (isCustomWallpaper(wallpaper)) {
+    backgroundStyle = { backgroundImage: `url(${wallpaper})` };
+  } else {
+    const wp = resolveWallpaper(wallpaper);
+    if (wp.type === 'none') isColorwayPlane = true;
+    else if (wp.type === 'image') backgroundStyle = { backgroundImage: `url(${wp.url})` };
+    else gradientClass = wp.gradient;
+  }
 
-    const value = library[wallpaper] || library['sunset-glow'];
-
-    if (value.startsWith('http')) {
-      return { backgroundImage: `url(${value})`, backgroundSize: 'cover', backgroundPosition: 'center' };
-    }
-
-    // Default to gradient class handled via className
-    return null;
-  };
-
-  const styles = getWallpaperStyles();
-  const library = {
-    'neon-nebula': 'bg-gradient-to-br from-[#cc97ff] to-[#00d2fd]',
-    'cyber-grid': 'bg-gradient-to-br from-[#00f5a0] to-[#00d2fd]',
-    'sunset-glow': 'bg-gradient-to-br from-[#ff4d4d] to-[#ffaf40]',
-    'quantum-flow': 'bg-gradient-to-br from-[#cc97ff] to-[#60a5fa]',
-    'linux-default': 'bg-gradient-to-br from-[#4e1a3d] via-[#772953] to-[#e95420]'
-  };
+  // "Colorway" renders nothing at all, so body's plane + wash (body::before in grammar.css) is what
+  // the user sees. A readability scrim over an already-designed plane would only mute it.
+  if (isColorwayPlane) return null;
 
   return (
-    <div className={`absolute inset-0 -z-20 transition-all duration-1000 ${!styles ? (library[wallpaper] || 'bg-[#060e20]') : ''}`} style={styles}>
-      {/* Overlay to ensure readability */}
-      <div className="absolute inset-0 bg-black/10 backdrop-brightness-[0.85]" />
+    <div
+      className={`absolute inset-0 -z-20 transition-all duration-1000 ${gradientClass}`}
+      style={backgroundStyle ? { ...backgroundStyle, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
+    >
+      {/* Readability scrim for user-supplied ingredients, tinted by mode rather than always black —
+          over a light colorway a black scrim reads as grime. */}
+      <div className="absolute inset-0" style={{ background: 'var(--sdl-scrim)', opacity: 0.35 }} />
     </div>
   );
 };

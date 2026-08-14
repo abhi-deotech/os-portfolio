@@ -1,148 +1,208 @@
-import React from 'react';
-import { 
-  User, FileText, Code, HardDrive, Gamepad2, Monitor, Music, Image as Wallpaper, 
-  Activity, Mail, MessageSquare, Settings as SettingsIcon, Trophy, Globe, Brain, Book, SlidersHorizontal 
+import {
+  User, FileText, Code, HardDrive, Gamepad2, Music, Joystick, Monitor, Image as Wallpaper,
+  Activity, Mail, MessageSquare, Settings as SettingsIcon, Trophy, Globe, Brain, Book,
 } from 'lucide-react';
-import CustomIcon from '../components/common/CustomIcon';
 
 /**
  * Centralized application configuration for Lumina OS.
- * All apps should be defined here to ensure consistency across Desktop, Taskbar, and App Launcher.
+ *
+ * ── Why this file is data and no longer JSX closures ───────────────────────────────────────────
+ *
+ * Every entry used to carry its own render function with a literal colour baked in
+ * (`color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)"`). Those hexes are the *legacy Lumina Neon*
+ * palette, so the icon set was permanently pinned to one colorway's temperament: #00f5a0 sits at
+ * OKLCH L=0.855 and measures 1.14:1 on Carbon Dimmed's plane — invisible. That is also why this
+ * file sat on the codemod DENYLIST: there was no way to retint it without eighteen hand edits.
+ *
+ * Identity now lives in `hue`, not in a hex. `src/theme/icons.js` re-renders that hue at the ACTIVE
+ * colorway's chroma and lightness, and `AppIcon` draws it. You can still find Music by its purple;
+ * it is simply as muted as Carbon wants it, or as loud as the legacy neon wants it.
+ *
+ * ── Fields ────────────────────────────────────────────────────────────────────────────────────
+ *
+ *   glyph      Lucide component (or `mono` for a text mark, which Terminal uses)
+ *   hue        OKLCH hue angle 0–360. Identity. See the spacing note below.
+ *   legacyHex  the exact colour this app rendered before SDL — used ONLY by the "Lumina Neon"
+ *              icon theme, so choosing it reproduces the old dock byte for byte
+ *   badge      a small pulsing dot overlay (Resume advertises itself)
+ *
+ * ── Hue spacing ───────────────────────────────────────────────────────────────────────────────
+ *
+ * The old palette had five apps on the same purple and three on the same green, which is a real
+ * wayfinding loss: colour is the fastest way to hit a dock target. These entries are spread around
+ * the wheel with a ~13° minimum gap, kept near each app's historical hue wherever it had a distinct
+ * one (Files stays amber at 80°, Resume stays pink at 352°, Browser stays cyan at 216°).
+ *
+ * Media, Photos and Benchmark were added on master after this file's SDL rewrite forked off; they're
+ * ported into the same hue/glyph shape here rather than left on the old literal-color render-function
+ * shape, and given clear-of-collision hues near their historical color (cyan, pink, spring-green).
  */
 export const APPS = [
-  { 
-    id: 'about',    
-    title: 'About Me',     
-    icon: (size, color) => <CustomIcon icon={User} size={size} color={color || "text-os-primary"} glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} />,
-    featured: true,
-    pinned: false 
-  },
-  { 
-    id: 'cv',       
-    title: 'Resume',       
-    icon: (size) => (
-      <div className="relative">
-        <CustomIcon icon={FileText} size={size} color="text-[#ff86c3]" glow="rgba(255,134,195,0.6)" strokeWidth={2.5} />
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-os-primary rounded-full border-2 border-os-surfaceContainerLow animate-pulse"></div>
-      </div>
-    ),
-    featured: true,
+  // --- CORE SYSTEM APPS ---
+  {
+    id: 'files',
+    title: 'Files',
+    glyph: HardDrive,
+    hue: 80,            // amber — was #ffc86b
+    legacyHex: '#ffc86b',
     pinned: true,
-    shadow: '#ff86c3'
+    featured: true,
   },
-  { 
-    id: 'projects', 
-    title: 'Projects',     
-    icon: (size, color) => <CustomIcon icon={Code} size={size} color={color || "text-os-secondary"} glow="rgba(var(--os-secondary-rgb), 0.3)" strokeWidth={2.5} />,
+  {
+    id: 'terminal',
+    title: 'Terminal',
+    // A text mark rather than a Lucide glyph. It used to be a bare div in
+    // `text-os-onSurfaceVariant`, which meant Terminal was the one app that participated in no icon
+    // theme at all; routing it through `mono` keeps the character and gains the theming.
+    mono: '>_',
+    hue: 234,           // steel — the neutral app, so a low-temperature blue
+    legacyHex: '#a3aac4',
     featured: true,
     pinned: true,
-    shadow: '#00d2fd'
   },
-  { 
-    id: 'terminal', 
-    title: 'Terminal',     
-    icon: (size) => <div className={`font-mono font-bold text-os-onSurfaceVariant ${size > 28 ? 'text-2xl' : 'text-xl'}`}>{'>_'}</div>,
+  {
+    id: 'aichat',
+    title: 'Lumina AI',
+    glyph: Brain,
+    hue: 316,           // violet — was os-primary
+    legacyHex: '#cc97ff',
     featured: true,
     pinned: true,
-    shadow: '#ffffff'
   },
-  { 
-    id: 'files',    
-    title: 'Files',        
-    icon: (size) => <CustomIcon icon={HardDrive} size={size} color="text-[#ffc86b]" glow="rgba(255,200,107,0.3)" strokeWidth={2.5} />,
+  {
+    id: 'settings',
+    title: 'Settings',
+    glyph: SettingsIcon,
+    hue: 200,           // teal — was #9effc8
+    legacyHex: '#9effc8',
     pinned: true,
-    shadow: '#f59e0b'
   },
-  { 
-    id: 'games',    
-    title: 'Game Center',  
-    icon: (size) => <CustomIcon icon={Gamepad2} size={size} color="text-os-tertiary" glow="rgba(var(--os-tertiary-rgb), 0.3)" strokeWidth={2.5} />,
+
+  // --- PORTFOLIO APPS ---
+  {
+    id: 'about',
+    title: 'About Me',
+    glyph: User,
+    hue: 16,          // rose — was os-primary, one of five apps sharing it
+    legacyHex: '#cc97ff',
+    featured: true,
+    pinned: false,
+  },
+  // NOTE — `cv` (Resume) and `skills` used to be declared here, `cv` even pinned and badged.
+  // Neither has ever had an implementing component: WindowContentRenderer has no case for either,
+  // so both fell through to `default: return null` and opened an empty, undismissable-looking
+  // window from the dock. They are removed rather than stubbed because the repo holds no resume
+  // or skills DATA to render, and inventing a career history is not a decision code should make.
+  // Re-add both entries (and the matching cases) once real content exists.
+  {
+    id: 'projects',
+    title: 'Projects',
+    glyph: Code,
+    hue: 252,         // azure — was os-secondary
+    legacyHex: '#00d2fd',
+    featured: true,
     pinned: true,
-    shadow: 'rgba(var(--os-tertiary-rgb), 1)'
   },
-  { 
-    id: 'media',    
-    title: 'Media',        
-    icon: (size) => <CustomIcon icon={Monitor} size={size} color="text-[#00d2fd]" glow="rgba(0,210,253,0.3)" strokeWidth={2.5} />,
+  {
+    id: 'mail',
+    title: 'Mail',
+    glyph: Mail,
+    hue: 160,         // spring green — closest to its historical #00f5a0
+    legacyHex: '#00f5a0',
+  },
+
+  // --- PRODUCTIVITY & APPS ---
+  {
+    id: 'games',
+    title: 'Game Center',
+    glyph: Gamepad2,
+    hue: 332,           // magenta — was os-tertiary green
+    legacyHex: '#00f5a0',
     pinned: true,
-    shadow: '#0ea5e9'
   },
-  { 
-    id: 'music',    
-    title: 'Music',        
-    icon: (size) => <CustomIcon icon={Music} size={size} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} />,
+  {
+    id: 'media',
+    title: 'Media',
+    glyph: Monitor,
+    hue: 188,           // cyan — was #00d2fd
+    legacyHex: '#00d2fd',
     pinned: true,
-    shadow: 'rgba(var(--os-primary-rgb), 1)'
   },
-  { 
-    id: 'photos',   
-    title: 'Photos',       
-    icon: (size) => <CustomIcon icon={Wallpaper} size={size} color="text-[#ff86c3]" glow="rgba(255,134,195,0.3)" strokeWidth={2.5} />,
+  {
+    id: 'music',
+    title: 'Music',
+    glyph: Music,
+    hue: 300,           // purple — was os-primary, and the one that keeps it
+    legacyHex: '#cc97ff',
     pinned: true,
-    shadow: '#f472b6'
   },
-  { 
-    id: 'benchmark', 
-    title: 'Benchmark',    
-    icon: (size) => <CustomIcon icon={Activity} size={size} color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> 
-  },
-  { 
-    id: 'mail',     
-    title: 'Mail',         
-    icon: (size) => <CustomIcon icon={Mail} size={size} color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} /> 
-  },
-  { 
-    id: 'chat',     
-    title: 'Guestbook',    
-    icon: (size) => <CustomIcon icon={MessageSquare} size={size} color="text-[#cc97ff]" glow="rgba(204,151,255,0.3)" strokeWidth={2.5} /> 
-  },
-  { 
-    id: 'retroarcade', 
-    title: 'Retro Arcade', 
-    icon: (size) => <CustomIcon icon={Gamepad2} size={size} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> 
-  },
-  { 
-    id: 'settings', 
-    title: 'Settings',     
-    icon: (size) => <CustomIcon icon={SettingsIcon} size={size} color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} />,
+  {
+    id: 'photos',
+    title: 'Photos',
+    glyph: Wallpaper,
+    hue: 354,           // pink — was #ff86c3
+    legacyHex: '#ff86c3',
     pinned: true,
-    shadow: '#10b981'
   },
-  { 
-    id: 'notepad',  
-    title: 'Notepad',      
-    icon: (size) => <CustomIcon icon={FileText} size={size} color="text-cyan-400" glow="rgba(34,211,238,0.3)" strokeWidth={2.5} /> 
+  {
+    id: 'benchmark',
+    title: 'Benchmark',
+    glyph: Activity,
+    hue: 145,           // spring green — was #00f5a0
+    legacyHex: '#00f5a0',
   },
-  { 
-    id: 'taskmanager', 
-    title: 'Monitor',   
-    icon: (size) => <CustomIcon icon={Activity} size={size} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> 
+  {
+    id: 'browser',
+    title: 'Flow-Net',
+    glyph: Globe,
+    hue: 216,           // cyan — was #00d2fd
+    legacyHex: '#00d2fd',
   },
-  { 
-    id: 'achievements', 
-    title: 'Honors',   
-    icon: (size) => <CustomIcon icon={Trophy} size={size} color="text-yellow-400" glow="rgba(250,204,21,0.3)" strokeWidth={2.5} /> 
+  {
+    id: 'chat',
+    title: 'Guestbook',
+    glyph: MessageSquare,
+    hue: 56,            // orange — warm, social
+    legacyHex: '#cc97ff',
   },
-  { 
-    id: 'browser',    
-    title: 'Flow-Net',   
-    icon: (size) => <CustomIcon icon={Globe} size={size} color="text-[#00d2fd]" glow="rgba(0,210,253,0.3)" strokeWidth={2.5} /> 
+  {
+    id: 'retroarcade',
+    title: 'Retro Arcade',
+    // Was a second Gamepad2, identical to Game Center in both glyph AND colour — two dock targets
+    // you could not tell apart.
+    glyph: Joystick,
+    hue: 34,            // vermilion
+    legacyHex: '#cc97ff',
   },
-  { 
-    id: 'aichat',     
-    title: 'Lumina AI',  
-    icon: (size) => <CustomIcon icon={Brain} size={size} color="text-os-primary" glow="rgba(var(--os-primary-rgb), 0.3)" strokeWidth={2.5} /> 
+  {
+    id: 'notepad',
+    title: 'Notepad',
+    glyph: FileText,
+    hue: 122,           // leaf — was cyan-400, which collided with Flow-Net
+    legacyHex: '#22d3ee',
   },
-  { 
-    id: 'documentation', 
-    title: 'Documentation', 
-    icon: (size) => <CustomIcon icon={Book} size={size} color="text-[#9effc8]" glow="rgba(158,255,200,0.3)" strokeWidth={2.5} /> 
+  {
+    id: 'taskmanager',
+    title: 'Monitor',
+    glyph: Activity,
+    hue: 176,           // teal-green
+    legacyHex: '#cc97ff',
   },
-  { 
-    id: 'skills',     
-    title: 'Skills',      
-    icon: (size) => <CustomIcon icon={SlidersHorizontal} size={size} color="text-[#00f5a0]" glow="rgba(0,245,160,0.3)" strokeWidth={2.5} />,
-    pinned: true,
-    shadow: '#10b981'
+  {
+    id: 'achievements',
+    title: 'Honors',
+    glyph: Trophy,
+    hue: 96,            // gold — was yellow-400
+    legacyHex: '#facc15',
+  },
+  {
+    id: 'documentation',
+    title: 'Docs',
+    glyph: Book,
+    hue: 272,           // indigo — was #9effc8, which collided with Settings
+    legacyHex: '#9effc8',
   },
 ];
+
+/** Lookup used by the dock, launcher and desktop; ids are unique by construction. */
+export const APP_BY_ID = Object.fromEntries(APPS.map((a) => [a.id, a]));

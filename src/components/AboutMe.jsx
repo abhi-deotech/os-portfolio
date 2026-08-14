@@ -22,15 +22,17 @@ const TwitterIcon = ({ size = 20, className = "" }) => (
 );
 
 const AboutMe = () => {
+  // No `color` field: the marks render in currentColor so the tile's hover state can hand them the
+  // accent. The hexes that used to sit here were third-party brand identities, and nothing read them.
   const socialLinks = [
-    { icon: GithubIcon, label: 'GitHub', href: 'https://github.com/abhi-deotech', color: '#ffffff' },
-    { icon: LinkedinIcon, label: 'LinkedIn', href: 'https://linkedin.com/in/abhimanyu-saxena-b656a4183', color: '#0077b5' },
-    { icon: TwitterIcon, label: 'Twitter', href: 'https://twitter.com/abhi_deotech', color: '#1da1f2' },
-    { icon: Mail, label: 'Email', href: 'mailto:contact@abhi.dev', color: '#ea4335' }
+    { icon: GithubIcon, label: 'GitHub', href: 'https://github.com/abhi-deotech' },
+    { icon: LinkedinIcon, label: 'LinkedIn', href: 'https://linkedin.com/in/abhimanyu-saxena-b656a4183' },
+    { icon: TwitterIcon, label: 'Twitter', href: 'https://twitter.com/abhi_deotech' },
+    { icon: Mail, label: 'Email', href: 'mailto:contact@abhi.dev' }
   ];
 
   return (
-    <div className="h-full w-full bg-[#060e20]/60 text-os-onSurface overflow-y-auto scrollbar-hide">
+    <div className="h-full w-full bg-sdl-plane/60 text-os-onSurface overflow-y-auto scrollbar-hide">
       <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-12">
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
@@ -40,12 +42,14 @@ const AboutMe = () => {
             className="relative"
           >
             <div className="w-40 h-40 md:w-56 md:h-56 rounded-[3rem] bg-gradient-to-br from-os-primary to-os-secondary p-1 shadow-2xl shadow-os-primary/20">
-              <div className="w-full h-full rounded-[2.8rem] bg-[#091328] flex items-center justify-center overflow-hidden">
+              <div className="w-full h-full rounded-[2.8rem] bg-sdl-sunken flex items-center justify-center overflow-hidden">
                 <User size={80} className="text-os-primary/40" />
               </div>
             </div>
-            <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-green-500 border-4 border-[#091328] flex items-center justify-center shadow-lg">
-              <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
+            {/* Availability badge. Grey, not green — law 10 keeps "steady" neutral. Its cutout ring
+                matches the avatar well it overlaps. */}
+            <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-sdl-done border-4 border-sdl-sunken flex items-center justify-center shadow-lg">
+              <div className="w-3 h-3 rounded-full bg-veil animate-pulse" />
             </div>
           </motion.div>
 
@@ -55,7 +59,7 @@ const AboutMe = () => {
               animate={{ x: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
             >
-              <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white mb-2 underline decoration-os-primary/30 underline-offset-8">
+              <h1 className="text-4xl md:text-6xl font-black tracking-tight text-sdl-ink mb-2 underline decoration-os-primary/30 underline-offset-8">
                 ABHIMANYU <span className="text-os-primary">SAXENA</span>
               </h1>
               <p className="text-xl md:text-2xl font-bold text-os-onSurfaceVariant">
@@ -69,11 +73,11 @@ const AboutMe = () => {
               transition={{ delay: 0.2 }}
               className="flex flex-wrap justify-center md:justify-start gap-4"
             >
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sm font-medium">
                 <MapPin size={16} className="text-os-secondary" />
                 <span>Kota, Rajasthan, India</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sm font-medium">
                 <Briefcase size={16} className="text-os-tertiary" />
                 <span>Team Lead @ Deotechsolutions</span>
               </div>
@@ -91,10 +95,10 @@ const AboutMe = () => {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-os-primary/20 hover:border-os-primary/40 hover:scale-110 transition-all group"
+                  className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-os-primary/20 hover:border-os-primary/40 hover:scale-110 transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                   title={link.label}
                 >
-                  <link.icon size={20} className="group-hover:text-white transition-colors" />
+                  <link.icon size={20} className="group-hover:text-sdl-ink transition-colors" />
                 </a>
               ))}
             </motion.div>
@@ -126,7 +130,7 @@ const AboutMe = () => {
             initial={{ x: -30, opacity: 0 }}
             whileInView={{ x: 0, opacity: 1 }}
             viewport={{ once: true }}
-            className="space-y-6 p-8 rounded-3xl bg-white/[0.03] border border-white/5 shadow-xl"
+            className="space-y-6 p-8 rounded-3xl bg-veil/[0.03] border border-hairline/5 shadow-xl"
           >
             <div className="flex items-center gap-3 text-os-secondary">
               <Briefcase size={24} />
@@ -138,8 +142,8 @@ const AboutMe = () => {
                 { title: 'Software Engineer', company: 'LendFoundry', year: 'Sep 2021 - July 2024', desc: 'Developed and maintained web-based applications using modern JavaScript frameworks.' }
               ].map((job, idx) => (
                 <div key={idx} className="relative pl-6 border-l-2 border-os-secondary/20 group hover:border-os-secondary transition-colors">
-                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-secondary shadow-[0_0_10px_rgba(0,210,253,0.5)] scale-0 group-hover:scale-100 transition-transform" />
-                  <h4 className="font-bold text-white">{job.title}</h4>
+                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-secondary shadow-[0_0_10px_rgb(var(--os-secondary-rgb)_/_0.5)] scale-0 group-hover:scale-100 transition-transform" />
+                  <h4 className="font-bold text-sdl-ink">{job.title}</h4>
                   <p className="text-sm text-os-onSurfaceVariant font-medium">{job.company}</p>
                   <p className="text-[10px] text-os-onSurfaceVariant/50 font-black tracking-widest mt-1 uppercase">{job.year}</p>
                   <p className="text-xs text-os-onSurfaceVariant/70 mt-2 line-clamp-2">{job.desc}</p>
@@ -152,7 +156,7 @@ const AboutMe = () => {
             initial={{ x: 30, opacity: 0 }}
             whileInView={{ x: 0, opacity: 1 }}
             viewport={{ once: true }}
-            className="space-y-6 p-8 rounded-3xl bg-white/[0.03] border border-white/5 shadow-xl"
+            className="space-y-6 p-8 rounded-3xl bg-veil/[0.03] border border-hairline/5 shadow-xl"
           >
             <div className="flex items-center gap-3 text-os-tertiary">
               <GraduationCap size={24} />
@@ -164,8 +168,8 @@ const AboutMe = () => {
                 { title: 'Full Stack Web Development', school: 'Udacity Nanodegree', year: 'Jan 2021' }
               ].map((edu, idx) => (
                 <div key={idx} className="relative pl-6 border-l-2 border-os-tertiary/20 group hover:border-os-tertiary transition-colors">
-                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-tertiary shadow-[0_0_10px_rgba(0,245,160,0.5)] scale-0 group-hover:scale-100 transition-transform" />
-                  <h4 className="font-bold text-white">{edu.title}</h4>
+                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-tertiary shadow-[0_0_10px_rgb(var(--os-tertiary-rgb)_/_0.5)] scale-0 group-hover:scale-100 transition-transform" />
+                  <h4 className="font-bold text-sdl-ink">{edu.title}</h4>
                   <p className="text-sm text-os-onSurfaceVariant font-medium">{edu.school}</p>
                   <p className="text-[10px] text-os-onSurfaceVariant/50 font-black tracking-widest mt-1 uppercase">{edu.year}</p>
                 </div>
@@ -193,7 +197,7 @@ const AboutMe = () => {
               { label: 'Tools & IoT', skills: ['Docker', 'Git', 'IoT', 'Linux'] },
               { label: 'Competencies', skills: ['Requirement Analysis', 'API Integration', 'Full Stack', 'Agile'] }
             ].map((cat, idx) => (
-              <div key={idx} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
+              <div key={idx} className="p-6 rounded-2xl bg-veil/[0.02] border border-hairline/5 hover:bg-veil/[0.05] transition-colors">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-os-secondary mb-4">{cat.label}</h4>
                 <ul className="space-y-2">
                   {cat.skills.map((skill, sIdx) => (
@@ -214,7 +218,7 @@ const AboutMe = () => {
               initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               viewport={{ once: true }}
-              className="p-8 rounded-3xl bg-white/[0.03] border border-white/5 space-y-6"
+              className="p-8 rounded-3xl bg-veil/[0.03] border border-hairline/5 space-y-6"
             >
                 <div className="flex items-center gap-3 text-os-primary">
                     <Award size={24} />
@@ -236,7 +240,7 @@ const AboutMe = () => {
               initial={{ y: 30, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               viewport={{ once: true }}
-              className="p-8 rounded-3xl bg-white/[0.03] border border-white/5 space-y-6"
+              className="p-8 rounded-3xl bg-veil/[0.03] border border-hairline/5 space-y-6"
             >
                 <div className="flex items-center gap-3 text-os-tertiary">
                     <Languages size={24} />
@@ -244,16 +248,16 @@ const AboutMe = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">D.O.B</p>
-                        <p className="text-sm font-bold text-white">17 Feb 1998</p>
+                        <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">D.O.B</p>
+                        <p className="text-sm font-bold text-sdl-ink">17 Feb 1998</p>
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">Languages</p>
-                        <p className="text-sm font-bold text-white">English, Hindi</p>
+                        <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">Languages</p>
+                        <p className="text-sm font-bold text-sdl-ink">English, Hindi</p>
                     </div>
                     <div className="col-span-2">
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">Location</p>
-                        <p className="text-sm font-bold text-white">1-C-27 S.F.S Talwandi, Kota, RJ</p>
+                        <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">Location</p>
+                        <p className="text-sm font-bold text-sdl-ink">1-C-27 S.F.S Talwandi, Kota, RJ</p>
                     </div>
                 </div>
             </motion.div>
@@ -268,7 +272,7 @@ const AboutMe = () => {
           <p className="text-os-onSurfaceVariant font-bold uppercase tracking-widest text-xs mb-8">Ready to sync workflows?</p>
           <button 
             onClick={() => useOSStore.getState().openWindow('mail')}
-            className="px-12 py-5 bg-gradient-to-r from-os-primary to-os-secondary text-[#060e20] font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all"
+            className="px-12 py-5 bg-sdl-accent text-sdl-onAccent font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
           >
             Initiate Contact
           </button>

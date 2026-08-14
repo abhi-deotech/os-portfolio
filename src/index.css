@@ -1,64 +1,65 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@400;500;700;800&display=swap');
+/* Inter as a VARIABLE font. The old import was wght@400;500;600, which meant SDL's
+   micro-stepped weights (550/620/650/750) were physically unrenderable — 125 of the 126
+   font-bold/font-black declarations in this codebase all font-matched to the 600 cut and
+   rendered identically. The variable axis is also smaller over the wire than the old three
+   static cuts. Manrope stays for the Lumina Neon (Legacy) title face only. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Manrope:wght@400..800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   EVERY rgb triple below is SPACE-separated. This is load-bearing, not style.
+
+   Tailwind emits `rgb(var(--os-primary-rgb) / <alpha-value>)`. With a COMMA
+   triple that resolves to `rgb(204, 151, 255 / 1)`, which matches neither the
+   legacy nor the modern rgb() grammar, so the declaration is dropped and the
+   class renders transparent. That bug made 778 token call sites invisible —
+   including `.bg-os-primary` with no opacity modifier at all — which is why the
+   codebase grew 925 white/black literals and 327 hardcoded hexes to compensate.
+
+   Consequence: hand-written CSS must use the SLASH form, `rgb(var(--x) / .3)`.
+   The legacy `rgba(var(--x), .3)` form only works with comma triples and is now
+   invalid everywhere. Both forms cannot coexist on one variable.
+   ───────────────────────────────────────────────────────────────────────────── */
 :root {
   --os-background: #060e20;
+  --os-background-rgb: 6 14 32;
   --os-surface: #060e20;
+  --os-surface-rgb: 6 14 32;
+  --os-surface-container-lowest: #050c1a;
+  --os-surface-container-lowest-rgb: 5 12 26;
   --os-surface-container-low: #091328;
-  --os-surface-container-low-rgb: 9, 19, 40;
+  --os-surface-container-low-rgb: 9 19 40;
   --os-surface-container-high: #141f38;
-  --os-surface-container-high-rgb: 20, 31, 56;
+  --os-surface-container-high-rgb: 20 31 56;
   --os-surface-container-highest: #192540;
-  --os-surface-container-highest-rgb: 25, 37, 64;
-  
-  /* RGB components for opacity support */
-  --os-primary-rgb: 204, 151, 255;
-  --os-secondary-rgb: 0, 210, 253;
-  --os-tertiary-rgb: 0, 245, 160;
-  --blue-500-rgb: 59, 130, 246;
-  --red-500-rgb: 239, 68, 68;
-  --yellow-500-rgb: 234, 179, 8;
-  
+  --os-surface-container-highest-rgb: 25 37 64;
+
+  /* Accents. Overridden at runtime on documentElement — see src/theme/applyTheme.js.
+     The derived hex vars below resolve correctly ONLY because the override and the
+     declaration now live on the same element (:root === documentElement). */
+  --os-primary-rgb: 204 151 255;
+  --os-secondary-rgb: 0 210 253;
+  --os-tertiary-rgb: 0 245 160;
+  --os-primary-dim-rgb: 156 72 234;
+  --os-secondary-dim-rgb: 0 195 235;
+
   --os-primary: rgb(var(--os-primary-rgb));
-  --os-primary-dim: #9c48ea;
+  --os-primary-dim: rgb(var(--os-primary-dim-rgb));
   --os-secondary: rgb(var(--os-secondary-rgb));
-  --os-secondary-dim: #00c3eb;
+  --os-secondary-dim: rgb(var(--os-secondary-dim-rgb));
   --os-tertiary: rgb(var(--os-tertiary-rgb));
+
   --os-on-surface: #dee5ff;
+  --os-on-surface-rgb: 222 229 255;
   --os-on-surface-variant: #a3aac4;
-  --os-outline-rgb: 109, 117, 140;
+  --os-on-surface-variant-rgb: 163 170 196;
+  --os-outline-rgb: 109 117 140;
   --os-outline: rgb(var(--os-outline-rgb));
+
   --desktop-gradient: radial-gradient(circle at 50% -20%, #1a103c 0%, #060e20 60%, #030712 100%);
-}
-
-.light-mode {
-  --os-background: #f8fafc;
-  --os-surface: #ffffff;
-  --os-surface-container-low: #f1f5f9;
-  --os-surface-container-low-rgb: 241, 245, 249;
-  --os-surface-container-high: #e2e8f0;
-  --os-surface-container-high-rgb: 226, 232, 240;
-  --os-surface-container-highest: #cbd5e1;
-  --os-surface-container-highest-rgb: 203, 213, 225;
-  
-  /* Light mode RGB components */
-  --os-primary-rgb: 124, 58, 237;
-  --os-secondary-rgb: 14, 165, 233;
-  --os-tertiary-rgb: 5, 150, 105;
-
-  --os-primary: rgb(var(--os-primary-rgb));
-  --os-primary-dim: #5b21b6;
-  --os-secondary: rgb(var(--os-secondary-rgb));
-  --os-secondary-dim: #0369a1;
-  --os-tertiary: rgb(var(--os-tertiary-rgb));
-  --os-on-surface: #0f172a;
-  --os-on-surface-variant: #475569;
-  --os-outline-rgb: 148, 163, 184;
-  --os-outline: rgb(var(--os-outline-rgb));
-  --desktop-gradient: radial-gradient(circle at 50% -20%, #e0e7ff 0%, #f8fafc 60%, #f1f5f9 100%);
 }
 
 @layer base {
@@ -67,11 +68,67 @@
     background: var(--desktop-gradient);
     transition: background 0.5s ease, color 0.5s ease;
   }
+
+  /* Brightness dimmer. Replaces `filter: brightness()` on the app root, which made that element a
+     containing block for every `position: fixed` descendant (Taskbar, ControlCenter, Spotlight,
+     toasts). A scrim has no such side effect, costs less to composite, and — unlike a filter on a
+     mid-tree div — also covers the boot and login screens. */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: rgb(0 0 0 / var(--os-dim, 0));
+    transition: background 200ms linear;
+  }
+}
+
+@layer components {
+  /* Mode-aware glass. Collapses `bg-white/5 backdrop-blur-2xl border border-white/10` — the pattern
+     repeated across ~386 sites — into one token that inverts correctly in light mode. The variables
+     are defined in src/theme/grammar.css. */
+  .glass {
+    background-color: var(--sdl-glass-bg);
+    backdrop-filter: var(--sdl-glass-blur);
+    border: 1px solid var(--sdl-glass-border);
+  }
+  .glass-2 {
+    background-color: var(--sdl-glass-bg-2);
+    backdrop-filter: var(--sdl-glass-blur);
+    border: 1px solid var(--sdl-glass-border);
+  }
+  .lift { box-shadow: var(--sdl-lift); }
+  .lift-hover:hover { box-shadow: var(--sdl-lift-hover); }
+
+  /* Range thumb. `appearance: none` strips the native thumb along with the track, so without this
+     the Appearance sliders would render as a bare filled bar with nothing to grab. Both vendor
+     pseudo-elements are required — a comma-joined selector is invalid in one of them and browsers
+     drop the whole rule. */
+  input[type='range'].sdl-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--sdl-accent);
+    border: 2px solid var(--sdl-plane);
+    cursor: pointer;
+  }
+  input[type='range'].sdl-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    background: var(--sdl-accent);
+    border: 2px solid var(--sdl-plane);
+    cursor: pointer;
+  }
 }
 
 @layer utilities {
+  /* Legacy alias — kept so existing markup keeps working; prefer .glass-2 in new code. */
   .glass-panel {
-    @apply bg-os-surfaceContainerHighest/50 backdrop-blur-2xl border border-os-outline/10 shadow-2xl;
+    @apply glass-2 shadow-2xl;
   }
   
   /* Custom Scrollbar - Glassmorphic */
@@ -83,7 +140,7 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-os-outline/20 rounded-full border border-white/5;
+    @apply bg-os-outline/20 rounded-full border border-hairline/5;
     backdrop-filter: blur(4px);
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -125,12 +182,12 @@
     background: transparent;
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgb(var(--sdl-veil-rgb) / 0.14);
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid rgb(var(--sdl-hairline-rgb) / 0.06);
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: rgba(var(--os-primary-rgb), 0.3);
+    background: rgb(var(--os-primary-rgb) / 0.3);
   }
 
   .mask-fade {
@@ -162,7 +219,7 @@
   .scanline {
     width: 100%;
     height: 2px;
-    background: linear-gradient(to right, transparent, rgba(var(--os-primary-rgb), 0.2), transparent);
+    background: linear-gradient(to right, transparent, rgb(var(--os-primary-rgb) / 0.2), transparent);
     position: absolute;
     left: 0;
     top: 0;
@@ -177,58 +234,67 @@
   }
 
   .text-glow {
-    text-shadow: 0 0 10px rgba(var(--os-primary-rgb), 0.5), 0 0 20px rgba(var(--os-primary-rgb), 0.2);
+    text-shadow: 0 0 10px rgb(var(--os-primary-rgb) / 0.5), 0 0 20px rgb(var(--os-primary-rgb) / 0.2);
   }
 
   .text-glow-secondary {
-    text-shadow: 0 0 10px rgba(var(--os-secondary-rgb), 0.5), 0 0 20px rgba(var(--os-secondary-rgb), 0.2);
+    text-shadow: 0 0 10px rgb(var(--os-secondary-rgb) / 0.5), 0 0 20px rgb(var(--os-secondary-rgb) / 0.2);
   }
 
 /* ===========================
    react-contexify OS Theme
+
+   Every right-click surface in the OS renders through this one block, and until now every
+   declaration in it was a raw literal — a near-black panel with #a3aac4 ink, pinned to the
+   pre-SDL palette and identical under all sixteen colorways. On any light colorway it was a
+   black slab floating over a paper-white plane.
+
+   react-contexify portals its menus to document.body, OUTSIDE the app tree, which is one of the
+   four reasons applyTheme.js writes to documentElement — so the roles below do resolve here.
+   `!important` is required throughout: the library ships its own stylesheet at equal specificity.
    =========================== */
 .os-context-menu.contexify {
-  background: rgba(14, 14, 22, 0.75) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 1rem !important;
+  background: var(--sdl-glass-bg) !important;
+  backdrop-filter: var(--sdl-glass-blur) !important;
+  border: 1px solid var(--sdl-glass-border) !important;
+  border-radius: var(--sdl-radius) !important;
   padding: 6px !important;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  box-shadow: var(--sdl-lift), var(--sdl-hairline) !important;
   min-width: 200px !important;
   font-family: 'Inter', sans-serif !important;
   font-size: 13px !important;
 }
 
 .os-context-menu .contexify_item {
-  border-radius: 0.6rem !important;
-  color: #a3aac4 !important;
+  border-radius: var(--sdl-radius-sm) !important;
   transition: background 0.1s ease, color 0.1s ease !important;
   display: flex !important;
   align-items: center !important;
   padding: 8px 12px !important;
 }
 
-.os-context-menu .contexify_item:hover > .contexify_itemContent {
-  color: white !important;
-}
-
-.os-context-menu .contexify_item.contexify_item-active > .contexify_itemContent,
-.os-context-menu .contexify_item:hover,
-.os-context-menu .contexify_item.contexify_item-active {
-  background: rgba(var(--os-primary-rgb), 0.15) !important;
-  color: white !important;
-}
-
+/* Rest state is `sec`, hover/active promotes to full `ink` — the same two-step the rest of the
+   shell uses, rather than the old grey-to-pure-white jump that only worked on a dark plane. */
 .os-context-menu .contexify_itemContent {
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
-  color: #c4c8d8 !important;
+  color: var(--sdl-sec) !important;
   transition: color 0.1s ease !important;
 }
 
+.os-context-menu .contexify_item:hover > .contexify_itemContent,
+.os-context-menu .contexify_item.contexify_item-active > .contexify_itemContent {
+  color: var(--sdl-aink) !important;
+}
+
+.os-context-menu .contexify_item:hover,
+.os-context-menu .contexify_item.contexify_item-active {
+  background: var(--sdl-soft) !important;
+}
+
 .os-context-menu .contexify_separator {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: rgb(var(--sdl-hairline-rgb) / 0.12) !important;
   margin: 4px 8px !important;
 }
 

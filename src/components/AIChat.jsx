@@ -90,18 +90,18 @@ const AIChat = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0c0c0c]">
+    <div className="flex flex-col h-full bg-sdl-plane">
       {/* Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5 bg-white/[0.02]">
-        <div className="w-10 h-10 rounded-2xl bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.2)]">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-hairline/5 bg-veil/[0.02]">
+        <div className="w-10 h-10 rounded-2xl bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_20px_var(--sdl-glow)]">
           <Brain size={20} />
         </div>
         <div>
-          <h3 className="text-sm font-black text-white italic">Lumina AI</h3>
+          <h3 className="text-sm font-black text-sdl-ink italic">Lumina AI</h3>
           <p className="text-[10px] font-bold text-os-primary uppercase tracking-widest">Neural Link Active</p>
         </div>
         <div className="ml-auto flex gap-2">
-           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+           <div className="w-2 h-2 rounded-full bg-sdl-done animate-pulse" />
         </div>
       </div>
 
@@ -123,7 +123,7 @@ const AIChat = () => {
               {msg.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
             </div>
             <div className={`max-w-[80%] rounded-2xl p-4 text-xs leading-relaxed ${
-              msg.role === 'assistant' ? 'bg-white/[0.03] text-white/80' : 'bg-os-secondary/20 text-white border border-os-secondary/20'
+              msg.role === 'assistant' ? 'bg-veil/[0.03] text-sdl-ink/80' : 'bg-os-secondary/20 text-sdl-ink border border-os-secondary/20'
             }`}>
               {msg.text}
             </div>
@@ -134,10 +134,10 @@ const AIChat = () => {
             <div className="w-8 h-8 rounded-xl bg-os-primary/10 text-os-primary flex items-center justify-center">
               <Bot size={16} />
             </div>
-            <div className="bg-white/[0.03] rounded-2xl p-4 flex gap-1">
-              <span className="w-1.5 h-1.5 bg-os-primary/40 rounded-full animate-bounce" />
-              <span className="w-1.5 h-1.5 bg-os-primary/40 rounded-full animate-bounce [animation-delay:0.2s]" />
-              <span className="w-1.5 h-1.5 bg-os-primary/40 rounded-full animate-bounce [animation-delay:0.4s]" />
+            <div className="bg-veil/[0.06] rounded-2xl px-4 py-3 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-os-primary rounded-full animate-bounce [animation-duration:0.8s]" />
+              <span className="w-1.5 h-1.5 bg-os-primary rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.2s]" />
+              <span className="w-1.5 h-1.5 bg-os-primary rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:0.4s]" />
             </div>
           </div>
         )}
@@ -153,11 +153,12 @@ const AIChat = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about Abhimanyu, his stack, or projects..."
-              className="w-full bg-[#1a1a1a] border border-white/10 rounded-2xl py-4 px-6 text-xs text-white outline-none focus:border-os-primary/50 transition-all"
+              className="w-full bg-sdl-sunken border border-hairline/10 rounded-2xl py-4 px-6 text-xs text-sdl-ink focus:border-os-primary/50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             />
-            <button 
+            <button
               type="submit"
-              className="px-6 bg-os-primary text-black rounded-2xl font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg"
+              aria-label="Send message"
+              className="px-6 bg-os-primary text-sdl-onAccent rounded-2xl font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             >
               <Send size={16} />
             </button>

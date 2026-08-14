@@ -1,0 +1,97 @@
+{
+  "savedAt": "2026-08-13",
+  "generatedFrom": "83 files under src/",
+  "tokens": {
+    "os-* bridge — accent/outline/container keys": 747,
+    "os-* bridge — surface/ink keys": 228,
+    "legacy rgba(var(--os-*), N) — must be 0": 0,
+    "var(--sdl-*) — migrated to roles": 135
+  },
+  "tokensDetail": {
+    "accentKeys": {
+      "primary": 445,
+      "secondary": 118,
+      "tertiary": 52,
+      "outline": 72,
+      "surfaceContainerLow": 27,
+      "surfaceContainerHigh": 13,
+      "surfaceContainerHighest": 20
+    },
+    "surfaceInkKeys": {
+      "background": 1,
+      "surface": 9,
+      "onSurface": 40,
+      "onSurfaceVariant": 175,
+      "primaryDim": 2,
+      "secondaryDim": 1
+    }
+  },
+  "whiteBlack": {
+    "hairline  border-white|black/N": 34,
+    "ink       text-white": 23,
+    "ink muted text-white/N": 38,
+    "veil      bg-white/N": 65,
+    "scrim     bg-black/N": 48,
+    "device    bg-black (bare)": 9,
+    "onAccent  text-black": 9
+  },
+  "hexes": {
+    "accent-duplicating": 138,
+    "surface-duplicating": 23,
+    "near-black second ramp": 66,
+    "all 6-digit hexes": 370
+  },
+  "hexesDetail": {
+    "accent": {
+      "#cc97ff": 63,
+      "#00d2fd": 50,
+      "#00f5a0": 21,
+      "#ff68f0": 4
+    },
+    "surface": {
+      "#060e20": 15,
+      "#091328": 4,
+      "#141f38": 2,
+      "#192540": 2
+    },
+    "nearBlack": {
+      "#050505": 19,
+      "#080808": 3,
+      "#0a0a0a": 12,
+      "#0c0c0c": 7,
+      "#0e0e0e": 6,
+      "#121212": 2,
+      "#131313": 13,
+      "#1a1a1a": 4
+    }
+  },
+  "stockSemantic": {
+    "total": 160,
+    "red": 55,
+    "green": 28,
+    "yellow": 21,
+    "blue": 15,
+    "purple": 10,
+    "cyan": 7,
+    "orange": 6,
+    "pink": 4,
+    "indigo": 4,
+    "rose": 3,
+    "emerald": 3,
+    "violet": 1,
+    "teal": 1,
+    "sky": 1,
+    "amber": 1
+  },
+  "structure": {
+    "rounded-* occurrences": 551,
+    "rounded-[arbitrary]": 43,
+    "backdrop-blur": 71,
+    "prefers-reduced-motion": 0
+  },
+  "headline": {
+    "bridgeSites": 975,
+    "whiteBlackTotal": 226,
+    "untokenizedTotal": 613
+  }
+}

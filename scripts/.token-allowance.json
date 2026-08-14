@@ -1,0 +1,164 @@
+{
+  "src/components/AIChat.jsx": {
+    "hex": 2,
+    "stock": 1
+  },
+  "src/components/AboutMe.jsx": {
+    "hex": 8,
+    "white": 1,
+    "stock": 1
+  },
+  "src/components/AchievementToast.jsx": {
+    "white": 1
+  },
+  "src/components/ArcadeAI.jsx": {
+    "hex": 1,
+    "white": 3
+  },
+  "src/components/Benchmark.jsx": {
+    "hex": 1,
+    "stock": 7
+  },
+  "src/components/BootSequence.jsx": {
+    "white": 1,
+    "stock": 2
+  },
+  "src/components/Browser.jsx": {
+    "hex": 6,
+    "white": 31,
+    "stock": 9
+  },
+  "src/components/ControlCenter.jsx": {
+    "hex": 58,
+    "white": 7,
+    "stock": 2
+  },
+  "src/components/Desktop.jsx": {
+    "white": 2
+  },
+  "src/components/DocumentationApp.jsx": {
+    "hex": 1,
+    "stock": 8
+  },
+  "src/components/FileExplorer.jsx": {
+    "hex": 1,
+    "stock": 10
+  },
+  "src/components/Games.jsx": {
+    "hex": 68,
+    "white": 1,
+    "stock": 1
+  },
+  "src/components/LoginScreen.jsx": {
+    "hex": 4,
+    "white": 1,
+    "stock": 5
+  },
+  "src/components/LuminaChat.jsx": {
+    "hex": 1,
+    "stock": 2
+  },
+  "src/components/MailApp.jsx": {
+    "hex": 2,
+    "white": 3,
+    "stock": 3
+  },
+  "src/components/MediaPlayer.jsx": {
+    "hex": 1,
+    "white": 44,
+    "stock": 1
+  },
+  "src/components/MusicApp.jsx": {
+    "hex": 6,
+    "white": 16,
+    "stock": 11
+  },
+  "src/components/Notepad.jsx": {
+    "hex": 1,
+    "white": 1,
+    "stock": 3
+  },
+  "src/components/PhotoViewer.jsx": {
+    "hex": 1,
+    "white": 33
+  },
+  "src/components/Projects.jsx": {
+    "hex": 10,
+    "white": 1
+  },
+  "src/components/RetroArcade.jsx": {
+    "hex": 5,
+    "white": 51,
+    "stock": 3
+  },
+  "src/components/Settings.jsx": {
+    "hex": 27,
+    "white": 5,
+    "stock": 16
+  },
+  "src/components/SocialWidget.jsx": {
+    "hex": 14,
+    "white": 2,
+    "stock": 4
+  },
+  "src/components/Spotlight.jsx": {
+    "white": 2
+  },
+  "src/components/SystemDashboard.jsx": {
+    "hex": 1,
+    "white": 3
+  },
+  "src/components/SystemMetricsWidget.jsx": {
+    "hex": 7,
+    "white": 4,
+    "stock": 1
+  },
+  "src/components/TaskManager.jsx": {
+    "hex": 2,
+    "white": 1,
+    "stock": 12
+  },
+  "src/components/Taskbar.jsx": {
+    "hex": 1,
+    "white": 1,
+    "stock": 3
+  },
+  "src/components/Window.jsx": {
+    "hex": 15,
+    "white": 3
+  },
+  "src/components/common/MarkdownRenderer.jsx": {
+    "stock": 3
+  },
+  "src/components/games/Game2048.jsx": {
+    "hex": 11,
+    "white": 5
+  },
+  "src/components/games/MemoryGame.jsx": {
+    "hex": 12,
+    "white": 2
+  },
+  "src/components/games/Snake.jsx": {
+    "hex": 4,
+    "white": 1
+  },
+  "src/components/games/Sudoku.jsx": {
+    "hex": 1,
+    "white": 1,
+    "stock": 2
+  },
+  "src/components/games/TriviaGame.jsx": {
+    "hex": 7,
+    "white": 2,
+    "stock": 9
+  },
+  "src/components/sdl/DesignLanguage.jsx": {
+    "hex": 3
+  },
+  "src/components/widgets/NowPlayingWidget.jsx": {
+    "white": 3
+  },
+  "src/components/widgets/QuantumWidget.jsx": {
+    "hex": 4
+  }
+}

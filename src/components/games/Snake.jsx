@@ -125,9 +125,9 @@ const Snake = ({ onBack }) => {
   };
 
   return (
-    <div className="h-full w-full bg-[#050505] text-white flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
+    <div className="h-full w-full bg-sdl-plane text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
       {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(204,151,255,0.05)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgb(var(--sdl-accent-rgb)/0.05)_0%,transparent_70%)] pointer-events-none" />
       
       {/* Header */}
       <div className="w-full max-w-lg flex justify-between items-center mb-8 relative z-10">
@@ -135,20 +135,21 @@ const Snake = ({ onBack }) => {
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack}
-          className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/40 hover:text-white"
+          aria-label="Back"
+          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <CustomIcon icon={ArrowLeft} size={20} />
         </Motion.button>
         
         <div className="flex gap-8">
            <div className="text-center">
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">Current Sync</p>
+              <p className="text-[10px] font-black text-sdl-sec uppercase tracking-[0.3em] mb-1">Current Sync</p>
               <p className="text-2xl font-black italic text-os-primary tracking-tighter tabular-nums leading-none">
                 {score.toString().padStart(3, '0')}
               </p>
            </div>
            <div className="text-center">
-              <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] mb-1">Peak Load</p>
+              <p className="text-[10px] font-black text-sdl-sec uppercase tracking-[0.3em] mb-1">Peak Load</p>
               <p className="text-2xl font-black italic text-os-secondary tracking-tighter tabular-nums leading-none">
                 {highScore.toString().padStart(3, '0')}
               </p>
@@ -163,14 +164,16 @@ const Snake = ({ onBack }) => {
       {/* Game Board */}
       <div className="relative group">
         <div 
-          className="grid p-1 gap-0.5 border-[6px] border-white/5 rounded-[2.5rem] bg-[#0a0a0a] shadow-[0_0_50px_rgba(0,0,0,0.5),inset_0_0_20px_rgba(204,151,255,0.05)] relative overflow-hidden"
+          className="grid p-1 gap-0.5 border-[6px] border-hairline/5 rounded-[2.5rem] bg-sdl-sunken shadow-[0_0_50px_rgba(0,0,0,0.5),inset_0_0_20px_rgb(var(--sdl-accent-rgb)/0.05)] relative overflow-hidden"
           style={{ 
             gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)`,
             width: 'min(85vw, 420px)',
             height: 'min(85vw, 420px)'
           }}
         >
-          {/* Scanline Effect */}
+          {/* Scanline Effect. The literal R/G/B triad below is not theming — it is the subpixel
+              fringing of a CRT aperture grille, and it only reads as one if the three channels are
+              the actual primaries. Retinting it to the colorway would just make it a grey haze. */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.02),rgba(0,255,0,0.01),rgba(0,0,255,0.02))] bg-[size:100%_4px,3px_100%] pointer-events-none z-20" />
 
           {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => {
@@ -184,10 +187,10 @@ const Snake = ({ onBack }) => {
               <div 
                 key={i} 
                 className={`w-full h-full rounded-md transition-all duration-300 ${
-                  isHead ? 'bg-os-primary shadow-[0_0_15px_#cc97ff] z-10 scale-125' :
-                  isSnake ? 'bg-os-primary/40 shadow-[0_0_5px_rgba(204,151,255,0.2)]' :
-                  isFood ? 'bg-os-secondary shadow-[0_0_20px_#00d2fd] animate-pulse rounded-full scale-90' :
-                  'bg-white/[0.02]'
+                  isHead ? 'bg-os-primary shadow-[0_0_15px_rgb(var(--os-primary-rgb))] z-10 scale-125' :
+                  isSnake ? 'bg-os-primary/40 shadow-[0_0_5px_rgb(var(--os-primary-rgb)/0.2)]' :
+                  isFood ? 'bg-os-secondary shadow-[0_0_20px_rgb(var(--os-secondary-rgb))] animate-pulse rounded-full scale-90' :
+                  'bg-veil/[0.02]'
                 }`}
               />
             );
@@ -201,18 +204,18 @@ const Snake = ({ onBack }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xl rounded-[2.2rem] border border-white/10"
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-scrim backdrop-blur-xl rounded-[2.2rem] border border-hairline/10"
             >
               {gameOver ? (
                 <>
-                  <CustomIcon icon={Trophy} size={64} color="text-os-secondary" className="mb-6" glow="rgba(0,210,253,0.5)" />
+                  <CustomIcon icon={Trophy} size={64} color="text-os-secondary" className="mb-6" glow="rgb(var(--os-secondary-rgb) / calc(0.35 * var(--sdl-atmo, 1)))" />
                   <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Neural Link Lost</h2>
                   <p className="text-os-secondary font-black tracking-[0.3em] uppercase text-[10px] mb-8">System Re-initialization required</p>
                   <Motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={startGame}
-                    className="flex items-center gap-3 px-8 py-4 bg-os-primary text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(204,151,255,0.3)]"
+                    className="flex items-center gap-3 px-8 py-4 bg-os-primary text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgb(var(--sdl-accent-rgb)/0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                   >
                     <CustomIcon icon={RefreshCw} size={20} />
                     Re-Boot Game
@@ -224,12 +227,12 @@ const Snake = ({ onBack }) => {
                      <CustomIcon icon={Gamepad2} size={40} color="text-os-primary" glow />
                   </div>
                   <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Neon Crawler v2.0</h2>
-                  <p className="text-white/30 font-black tracking-[0.3em] uppercase text-[10px] mb-12 text-center max-w-[200px]">Experimental Data Stream Interaction</p>
+                  <p className="text-sdl-sec font-black tracking-[0.3em] uppercase text-[10px] mb-12 text-center max-w-[200px]">Experimental Data Stream Interaction</p>
                   <Motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={startGame}
-                    className="flex items-center gap-4 px-10 py-5 bg-os-primary text-black font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(204,151,255,0.3)]"
+                    className="flex items-center gap-4 px-10 py-5 bg-os-primary text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgb(var(--sdl-accent-rgb)/0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                   >
                     <CustomIcon icon={Play} size={24} fill="currentColor" />
                     Enter Stream
@@ -244,27 +247,27 @@ const Snake = ({ onBack }) => {
       {/* Controls / Instructions */}
       <div className="mt-auto w-full max-w-lg flex flex-col items-center gap-4">
          <div className="flex gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+            <div className="flex items-center gap-2 px-4 py-2 bg-veil/5 rounded-xl border border-hairline/5">
                <CustomIcon icon={Target} size={14} color="text-os-primary" />
-               <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Avoid Collisions</span>
+               <span className="text-[9px] font-black uppercase tracking-widest text-sdl-sec">Avoid Collisions</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
+            <div className="flex items-center gap-2 px-4 py-2 bg-veil/5 rounded-xl border border-hairline/5">
                <CustomIcon icon={Zap} size={14} color="text-os-secondary" />
-               <span className="text-[9px] font-black uppercase tracking-widest text-white/40">Sync Multiplier: x1.0</span>
+               <span className="text-[9px] font-black uppercase tracking-widest text-sdl-sec">Sync Multiplier: x1.0</span>
             </div>
          </div>
          
          {/* Mobile Controls */}
          <div className="grid grid-cols-3 gap-2 mt-2 md:hidden">
             <div />
-            <button onClick={() => { if (lastProcessedDir.current !== 'DOWN') directionRef.current = 'UP'; }} className="p-4 bg-white/10 rounded-2xl flex justify-center"><CustomIcon icon={ArrowLeft} className="rotate-90" /></button>
+            <button aria-label="Move up" onClick={() => { if (lastProcessedDir.current !== 'DOWN') directionRef.current = 'UP'; }} className="p-4 bg-veil/10 rounded-2xl flex justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><CustomIcon icon={ArrowLeft} className="rotate-90" /></button>
             <div />
-            <button onClick={() => { if (lastProcessedDir.current !== 'RIGHT') directionRef.current = 'LEFT'; }} className="p-4 bg-white/10 rounded-2xl flex justify-center"><CustomIcon icon={ArrowLeft} /></button>
-            <button onClick={() => { if (lastProcessedDir.current !== 'UP') directionRef.current = 'DOWN'; }} className="p-4 bg-white/10 rounded-2xl flex justify-center"><CustomIcon icon={ArrowLeft} className="-rotate-90" /></button>
-            <button onClick={() => { if (lastProcessedDir.current !== 'LEFT') directionRef.current = 'RIGHT'; }} className="p-4 bg-white/10 rounded-2xl flex justify-center"><CustomIcon icon={ArrowLeft} className="rotate-180" /></button>
+            <button aria-label="Move left" onClick={() => { if (lastProcessedDir.current !== 'RIGHT') directionRef.current = 'LEFT'; }} className="p-4 bg-veil/10 rounded-2xl flex justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><CustomIcon icon={ArrowLeft} /></button>
+            <button aria-label="Move down" onClick={() => { if (lastProcessedDir.current !== 'UP') directionRef.current = 'DOWN'; }} className="p-4 bg-veil/10 rounded-2xl flex justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><CustomIcon icon={ArrowLeft} className="-rotate-90" /></button>
+            <button aria-label="Move right" onClick={() => { if (lastProcessedDir.current !== 'LEFT') directionRef.current = 'RIGHT'; }} className="p-4 bg-veil/10 rounded-2xl flex justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><CustomIcon icon={ArrowLeft} className="rotate-180" /></button>
          </div>
 
-         <p className="text-[9px] font-black text-white/10 uppercase tracking-[0.4em] mt-4">Node Authority: Vibe-OS Gaming Kernel</p>
+         <p className="text-[9px] font-black text-sdl-sec uppercase tracking-[0.4em] mt-4">Node Authority: Vibe-OS Gaming Kernel</p>
       </div>
     </div>
   );

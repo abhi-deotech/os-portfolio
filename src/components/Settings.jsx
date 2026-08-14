@@ -1,55 +1,30 @@
 import React, { useState } from 'react';
-import { 
-  Settings as SettingsIcon, 
-  ImageIcon, 
-  Monitor, 
-  Palette, 
-  Wifi, 
-  User, 
-  Cpu, 
-  HardDrive,
-  Moon,
+import Appearance from './settings/Appearance';
+import DesignLanguage from './sdl/DesignLanguage';
+import DL_SECTIONS from './sdl/sections';
+import { SDL_VERSION, SDL_AUTHOR } from '../theme/registry';
+import {
+  Settings as SettingsIcon,
+  Palette,
+  User,
+  Cpu,
   Sun,
-  Droplets,
-  SlidersHorizontal,
-  ChevronRight,
   ChevronLeft,
   RefreshCw,
-  Signal,
-  Globe,
-  Shield,
-  Activity,
   Download,
   Upload,
-  Zap,
-  RotateCcw,
   Cloud
 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import useSystemMetrics from '../hooks/useSystemMetrics';
-import useNetworkInfo from '../hooks/useNetworkInfo';
 
 const Settings = () => {
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState('personalization');
+  const [activeTab, setActiveTab] = useState('appearance');
   const [showSidebar, setShowSidebar] = useState(true);
-  const { 
-    wallpaper, 
-    setWallpaper, 
-    activeAccent, 
-    setActiveAccent,
-    transparencyEffects,
-    setTransparencyEffects,
-    brightness,
-    setBrightness,
-    accentIntensity,
-    setAccentIntensity,
-    lowPerformance,
-    setLowPerformance,
-    resetSettingsToDefault,
-    unlockAchievement,
+  const {
     isPuterSignedIn,
     puterUser,
     isPuterConnecting,
@@ -62,279 +37,31 @@ const Settings = () => {
     lastSyncTime
   } = useOSStore();
   const metrics = useSystemMetrics();
-  const network = useNetworkInfo();
-  
-  // Network scan states
-  const [isScanning, setIsScanning] = useState(false);
-  const [mockNetworks, setMockNetworks] = useState([
-    { id: 'current', name: 'Nexus-5G', signal: 95, secure: true, connected: true },
-    { id: 1, name: 'Lumina-Corp', signal: 78, secure: true, connected: false },
-    { id: 2, name: 'CoffeeHub_Guest', signal: 45, secure: false, connected: false },
-    { id: 3, name: 'CyberCafe_2.4G', signal: 62, secure: true, connected: false },
-  ]);
 
-  const handleNetworkScan = () => {
-    setIsScanning(true);
-    setTimeout(() => {
-      const newNetworks = [
-        { id: 'current', name: 'Nexus-5G', signal: Math.floor(Math.random() * 20 + 80), secure: true, connected: true },
-        { id: 1, name: 'Lumina-Corp', signal: Math.floor(Math.random() * 30 + 60), secure: true, connected: false },
-        { id: 2, name: 'CoffeeHub_Guest', signal: Math.floor(Math.random() * 40 + 30), secure: false, connected: false },
-        { id: Math.random(), name: 'Neural-Link_' + Math.floor(Math.random() * 999), signal: Math.floor(Math.random() * 50 + 40), secure: true, connected: false },
-        { id: Math.random(), name: 'Quantum-Net', signal: Math.floor(Math.random() * 30 + 20), secure: true, connected: false },
-      ];
-      setMockNetworks(newNetworks);
-      setIsScanning(false);
-    }, 2000);
-  };
-
-  const handleWallpaperUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setWallpaper(reader.result);
-        unlockAchievement('decorator');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const wallpapers = [
-    { id: 'neon-nebula', name: 'Neon Nebula', type: 'live', color: 'from-[#cc97ff] to-[#00d2fd]' },
-    { id: 'cyber-grid', name: 'Cyber Grid', type: 'live', color: 'from-[#00f5a0] to-[#00d2fd]' },
-    { id: 'abstract-blue', name: 'Abstract Blue', type: 'image', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=40&w=400&auto=format&fit=crop' },
-    { id: 'dark-mountain', name: 'Dark Mountain', type: 'image', url: 'https://images.unsplash.com/photo-1477346611705-65d1883cee1e?q=40&w=400&auto=format&fit=crop' },
-    { id: 'cyber-vibes', name: 'Cyber Vibes', type: 'image', url: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=40&w=400&auto=format&fit=crop' },
-    { id: 'tech-minimal', name: 'Minimal Tech', type: 'image', url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=40&w=400&auto=format&fit=crop' },
-    { id: 'sunset-glow', name: 'Sunset Glow', type: 'live', color: 'from-[#ff4d4d] to-[#ffaf40]' },
-    { id: 'quantum-flow', name: 'Quantum Flow', type: 'live', color: 'from-[#cc97ff] to-[#60a5fa]' },
-    { id: 'linux-default', name: 'Linux Default', type: 'live', color: 'from-[#4e1a3d] via-[#772953] to-[#e95420]' }
-  ];
-
-  const accentColors = [
-    { id: 'purple', shadow: 'rgba(204,151,255,0.4)', hex: '#cc97ff' },
-    { id: 'cyan', shadow: 'rgba(0,210,253,0.4)', hex: '#00d2fd' },
-    { id: 'magenta', shadow: 'rgba(255,104,240,0.4)', hex: '#ff68f0' },
-    { id: 'green', shadow: 'rgba(0,245,160,0.4)', hex: '#00f5a0' },
-  ];
-
-  const tabs = [
-    { id: 'personalization', icon: Palette, label: 'Personalization' },
-    { id: 'system', icon: Cpu, label: 'System' },
-    { id: 'network', icon: Wifi, label: 'Network' },
-    { id: 'user', icon: User, label: 'User Account' },
+  // Two labelled groups rather than four flat tabs. The Design Language group is the showcase;
+  // it shares the same store and the same controls as Appearance — it documents the thing you are
+  // actually operating, rather than sitting beside it as a museum wing.
+  //
+  // "Desktop" is gone. It was a second personalization pane that duplicated wallpaper AND
+  // transparency, and still offered the four pre-SDL accent swatches that sixteen colorways had
+  // made meaningless. Everything real about it now lives in Appearance, exactly once.
+  const tabGroups = [
+    {
+      id: 'system', label: 'System', items: [
+        { id: 'appearance', icon: Palette, label: 'Appearance' },
+        { id: 'system', icon: Cpu, label: 'System' },
+        { id: 'user', icon: User, label: 'Account & Sync' },
+      ],
+    },
+    {
+      id: 'dl', label: 'Design Language', items: DL_SECTIONS.map((sec) => ({ id: sec.id, icon: Sun, label: sec.label })),
+    },
   ];
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
     if (isMobile) setShowSidebar(false);
   };
-
-  const renderPersonalization = () => (
-    <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
-        <div>
-          <h2 className="text-3xl md:text-4xl font-display font-black tracking-tight mb-2">Personalization</h2>
-          <p className="text-os-onSurfaceVariant text-sm">Customize the look and feel of your workspace.</p>
-        </div>
-        {!isMobile && (
-          <div className="px-4 py-2 rounded-full bg-os-surfaceContainerHigh/50 border border-os-outline/10 backdrop-blur-md flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#cc97ff] animate-pulse"></div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#cc97ff]">Active Profile</span>
-          </div>
-        )}
-      </div>
-
-      {/* Wallpaper Preview Section */}
-      <section className="relative p-4 md:p-6 rounded-[2rem] bg-os-surfaceContainerLowest/20 border border-os-outline/10 overflow-hidden group">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#cc97ff]/5 to-[#00d2fd]/5 opacity-50"></div>
-        <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8 items-center">
-<div 
-              className={`w-full md:w-1/2 h-40 md:h-48 rounded-2xl shadow-2xl overflow-hidden relative border border-white/10 transition-all duration-700 ${!wallpaper.startsWith('data:image') && wallpapers.find(w => w.id === wallpaper)?.type === 'live' ? `bg-gradient-to-br ${wallpapers.find(w => w.id === wallpaper)?.color}` : ''}`}
-              style={
-                wallpaper.startsWith('data:image') 
-                  ? { backgroundImage: `url(${wallpaper})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                  : wallpapers.find(w => w.id === wallpaper)?.type === 'image' 
-                    ? { backgroundImage: `url(${wallpapers.find(w => w.id === wallpaper)?.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
-                    : {}
-              }
-            >
-                <div className="absolute top-4 left-4 right-4 flex gap-2">
-                    <div className="w-16 h-4 bg-white/20 backdrop-blur-md rounded-full"></div>
-                    <div className="w-8 h-4 bg-white/20 backdrop-blur-md rounded-full"></div>
-                </div>
-                <div className="absolute bottom-4 right-4 w-24 md:w-32 h-16 md:h-24 bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 flex flex-col p-2 gap-2">
-                     <div className="w-full h-1 md:h-2 bg-white/20 rounded-full"></div>
-                     <div className="w-3/4 h-1 md:h-2 bg-white/20 rounded-full"></div>
-                </div>
-            </div>
-            <div className="w-full md:w-1/2 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg md:text-xl font-bold flex items-center space-x-2">
-                      <CustomIcon icon={ImageIcon} size={20} color="text-[#cc97ff]" glow="#cc97ff" />
-                      <span>Live Wallpaper</span>
-                  </h3>
-                  <label className="cursor-pointer p-2 rounded-xl bg-os-surfaceContainerHighest/50 hover:bg-os-primary/20 hover:text-os-primary transition-all border border-os-outline/10">
-                    <Upload size={16} />
-                    <input type="file" className="hidden" accept="image/*" onChange={handleWallpaperUpload} />
-                  </label>
-                </div>
-                <div className="grid grid-cols-4 gap-2">
-                  {wallpapers.map((wp) => (
-                    <div 
-                      key={wp.id}
-                      onClick={() => { setWallpaper(wp.id); unlockAchievement('decorator'); }}
-                      className={`cursor-pointer rounded-xl h-12 md:h-14 border transition-all duration-300 relative overflow-hidden group/tile ${
-                        wallpaper === wp.id 
-                          ? 'border-[#cc97ff] shadow-[0_0_15px_rgba(204,151,255,0.3)]' 
-                          : 'border-os-outline/20 hover:border-os-outline/40'
-                      }`}
-                    >
-                      {wp.type === 'live' ? (
-                        <div className={`absolute inset-0 bg-gradient-to-br ${wp.color} opacity-80`} />
-                      ) : (
-                        <img src={wp.url} alt={wp.name} className="absolute inset-0 w-full h-full object-cover" />
-                      )}
-                      
-                      {wallpaper === wp.id && (
-                          <div className="absolute inset-0 bg-[#cc97ff]/20 flex items-center justify-center">
-                            <div className="w-2 h-2 rounded-full bg-white shadow-[0_0_8px_white]" />
-                          </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* Controls Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Appearance Card */}
-        <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/40 border border-os-outline/10 backdrop-blur-xl space-y-6">
-            <h3 className="text-lg font-bold flex items-center space-x-2">
-              <CustomIcon icon={Sun} size={18} color="text-os-onSurfaceVariant" />
-              <span>Appearance</span>
-            </h3>
-            
-            <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 rounded-xl bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50 transition-colors">
-                    <div className="flex items-center gap-3">
-                        <CustomIcon icon={Droplets} size={16} color="text-[#cc97ff]" glow="#cc97ff" />
-                        <div>
-                            <span className="block font-semibold text-sm">Transparency Effects</span>
-                            <span className="block text-xs text-os-onSurfaceVariant">Mica glassmorphism style</span>
-                        </div>
-                    </div>
-                    {/* Mock Toggle */}
-                    <div 
-                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${transparencyEffects ? 'bg-[#cc97ff]' : 'bg-os-surfaceContainerHighest'}`}
-                        onClick={() => setTransparencyEffects(!transparencyEffects)}
-                    >
-                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${transparencyEffects ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                    </div>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-xl bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50 transition-colors border border-os-outline/5">
-                    <div className="flex items-center gap-3">
-                        <CustomIcon icon={Zap} size={16} color="text-os-secondary" glow="rgba(var(--os-secondary-rgb), 0.3)" />
-                        <div>
-                            <span className="block font-semibold text-sm">Performance Mode</span>
-                            <span className="block text-xs text-os-onSurfaceVariant">Disable 3D wallpaper & effects</span>
-                        </div>
-                    </div>
-                    <div 
-                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-300 ${lowPerformance ? 'bg-os-secondary' : 'bg-os-surfaceContainerHighest'}`}
-                        onClick={() => setLowPerformance(!lowPerformance)}
-                    >
-                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${lowPerformance ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        {/* Colors & Sliders Card */}
-        <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/40 border border-os-outline/10 backdrop-blur-xl space-y-6 relative overflow-hidden">
-            <div className="absolute top-[-50%] right-[-20%] w-[200px] h-[200px] bg-[#cc97ff]/5 blur-[60px] rounded-full pointer-events-none" />
-            
-            <h3 className="text-lg font-bold flex items-center space-x-2">
-              <CustomIcon icon={Palette} size={18} color="text-os-onSurfaceVariant" />
-              <span>Accents</span>
-            </h3>
-
-            <div>
-                <span className="block text-sm font-semibold mb-3">Accent Color</span>
-                <div className="flex gap-4">
-                    {accentColors.map(color => (
-                        <div 
-                            key={color.id}
-                            onClick={() => { setActiveAccent(color.id); unlockAchievement('decorator'); }}
-                            className={`w-8 h-8 rounded-full cursor-pointer transition-all duration-300 flex items-center justify-center`}
-                            style={{ 
-                                backgroundColor: color.hex,
-                                boxShadow: activeAccent === color.id ? `0 0 20px ${color.shadow}` : 'none',
-                                transform: activeAccent === color.id ? 'scale(1.2)' : 'scale(1)'
-                            }}
-                        >
-                            {activeAccent === color.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <div className="space-y-6 pt-2">
-                <div>
-                    <div className="flex justify-between text-xs font-semibold mb-2">
-                        <span>Luminosity</span>
-                        <span className="text-[#00d2fd]">{brightness}%</span>
-                    </div>
-                    <div className="h-4 md:h-1 bg-os-surfaceContainerHighest rounded-full relative overflow-hidden cursor-pointer" onClick={(e) => {
-                       const rect = e.currentTarget.getBoundingClientRect();
-                       setBrightness(Math.round(((e.clientX - rect.left) / rect.width) * 100));
-                    }}>
-                       <div className="absolute top-0 left-0 h-full bg-[#00d2fd] transition-all" style={{ width: `${brightness}%` }} />
-                    </div>
-                </div>
-                <div>
-                    <div className="flex justify-between text-xs font-semibold mb-2">
-                        <span>Accent Intensity</span>
-                        <span className="text-[#cc97ff]">{accentIntensity}%</span>
-                    </div>
-                    <div className="h-4 md:h-1 bg-os-surfaceContainerHighest rounded-full relative overflow-hidden cursor-pointer" onClick={(e) => {
-                       const rect = e.currentTarget.getBoundingClientRect();
-                       setAccentIntensity(Math.round(((e.clientX - rect.left) / rect.width) * 100));
-                    }}>
-                       <div className="absolute top-0 left-0 h-full bg-[#cc97ff] transition-all" style={{ width: `${accentIntensity}%` }} />
-                    </div>
-                </div>
-            </div>
-        </section>
-      </div>
-
-      {/* Reset to Default Section */}
-      <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/40 border border-os-outline/10 backdrop-blur-xl">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-red-500/10 text-red-400">
-              <RotateCcw size={20} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white">Reset Personalization</h3>
-              <p className="text-xs text-os-onSurfaceVariant">Restore all appearance settings to factory defaults</p>
-            </div>
-          </div>
-          <button
-            onClick={resetSettingsToDefault}
-            className="px-6 py-2.5 rounded-xl bg-os-surfaceContainerHigh hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 border border-os-outline/20 transition-all duration-300 text-sm font-semibold flex items-center gap-2 group"
-          >
-            <RotateCcw size={16} className="group-hover:-rotate-180 transition-transform duration-500" />
-            Reset to Default
-          </button>
-        </div>
-      </section>
-    </div>
-  );
 
   const renderSystem = () => {
     // metrics are now passed from the top-level scope
@@ -349,15 +76,15 @@ const Settings = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
               <section className="p-6 md:p-8 rounded-[2rem] bg-os-surfaceContainerLow/30 border border-os-outline/10 backdrop-blur-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-full md:w-[400px] h-full bg-gradient-to-l from-[#cc97ff]/5 to-transparent pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-full md:w-[400px] h-full bg-gradient-to-l from-sdl-accent/5 to-transparent pointer-events-none" />
                   
                   <div className="flex items-center justify-between mb-8">
                       <div className="flex flex-col">
-                        <span className="text-2xl md:text-3xl font-black font-display text-[#cc97ff]">Lumina OS</span>
-                        <span className="text-xs md:text-sm font-semibold text-os-onSurfaceVariant">Version 2026.1 (Build 8821)</span>
+                        <span className="text-2xl md:text-3xl font-black font-display text-sdl-accent">Lumina OS</span>
+                        <span className="text-xs md:text-sm font-semibold text-os-onSurfaceVariant">Version 1.0.0</span>
                       </div>
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-os-primary/20 to-os-secondary/20 border border-os-outline/10 flex items-center justify-center shadow-[0_0_30px_rgba(204,151,255,0.15)]">
-                          <CustomIcon icon={Cpu} size={isMobile ? 24 : 28} color="text-os-onSurface" glow="rgba(var(--os-primary-rgb), 0.3)" />
+                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-os-primary/20 to-os-secondary/20 border border-os-outline/10 flex items-center justify-center shadow-[0_0_30px_rgb(var(--sdl-accent-rgb)/0.15)]">
+                          <CustomIcon icon={Cpu} size={isMobile ? 24 : 28} color="text-os-onSurface" glow="rgb(var(--os-primary-rgb) / 0.3)" />
                       </div>
                   </div>
 
@@ -394,7 +121,7 @@ const Settings = () => {
 
           <div className="space-y-6">
               <section className="p-6 rounded-[2rem] bg-gradient-to-b from-os-surfaceContainerLow/50 to-os-surfaceContainerLowest/80 border border-os-outline/10 backdrop-blur-xl relative">
-                  <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[#00f5a0] shadow-[0_0_8px_#00f5a0] animate-pulse" />
+                  <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-sdl-accent shadow-[0_0_8px_rgb(var(--sdl-accent-rgb))] animate-pulse" />
                   <h3 className="text-sm font-semibold text-os-onSurfaceVariant mb-4 uppercase tracking-wider">Performance</h3>
                   
                   <div className="mb-4">
@@ -433,128 +160,6 @@ const Settings = () => {
     );
   };
 
-  const renderNetwork = () => {
-    const getConnectionTypeIcon = () => {
-      if (!network.isOnline) return <Signal size={16} className="text-red-400" />;
-      if (network.connectionType === 'wifi') return <Wifi size={16} className="text-os-primary" />;
-      if (network.connectionType === 'cellular') return <Signal size={16} className="text-os-secondary" />;
-      return <Globe size={16} className="text-os-tertiary" />;
-    };
-
-    return (
-      <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-        <div>
-          <h2 className="text-3xl md:text-4xl font-display font-black tracking-tight mb-2">Network</h2>
-          <p className="text-os-onSurfaceVariant text-sm">Monitor connection status and manage network interfaces.</p>
-        </div>
-
-        {/* Connection Status Card */}
-        <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/40 border border-os-outline/10 backdrop-blur-xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <CustomIcon icon={Activity} size={18} color="text-os-onSurfaceVariant" />
-              Connection Status
-            </h3>
-            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${network.isOnline ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-              {network.isOnline ? 'Online' : 'Offline'}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
-              <div className="flex items-center gap-2 text-os-onSurfaceVariant">
-                {getConnectionTypeIcon()}
-                <span className="text-[10px] font-bold uppercase tracking-widest">Type</span>
-              </div>
-              <span className="block text-sm font-bold text-white capitalize">{network.connectionType}</span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
-              <div className="flex items-center gap-2 text-os-onSurfaceVariant">
-                <Download size={16} className="text-os-secondary" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Downlink</span>
-              </div>
-              <span className="block text-sm font-bold text-white">{network.downlink > 0 ? network.downlink + ' Mbps' : '--'}</span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
-              <div className="flex items-center gap-2 text-os-onSurfaceVariant">
-                <Zap size={16} className="text-os-tertiary" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Latency</span>
-              </div>
-              <span className="block text-sm font-bold text-white">{network.rtt > 0 ? network.rtt + ' ms' : '--'}</span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-os-surfaceContainerHigh/30 space-y-2">
-              <div className="flex items-center gap-2 text-os-onSurfaceVariant">
-                <Shield size={16} className="text-os-primary" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Data Saver</span>
-              </div>
-              <span className="block text-sm font-bold text-white">{network.saveData ? 'On' : 'Off'}</span>
-            </div>
-          </div>
-        </section>
-
-        {/* WiFi Networks */}
-        <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/40 border border-os-outline/10 backdrop-blur-xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <CustomIcon icon={Wifi} size={18} color="text-os-onSurfaceVariant" />
-              Available Networks
-            </h3>
-            <button 
-              onClick={handleNetworkScan}
-              disabled={isScanning}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-os-surfaceContainerHigh/50 hover:bg-os-surfaceContainerHighest transition-colors text-xs font-semibold disabled:opacity-50"
-            >
-              <RefreshCw size={14} className={isScanning ? 'animate-spin' : ''} />
-              {isScanning ? 'Scanning...' : 'Scan'}
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {mockNetworks.map((net) => (
-              <div 
-                key={net.id} 
-                className={`flex items-center justify-between p-4 rounded-2xl transition-all ${net.connected ? 'bg-os-primary/10 border border-os-primary/20' : 'bg-os-surfaceContainerHigh/30 hover:bg-os-surfaceContainerHigh/50'}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`p-2 rounded-xl ${net.connected ? 'bg-os-primary/20 text-os-primary' : 'bg-white/5 text-os-onSurfaceVariant'}`}>
-                    {net.secure ? <Shield size={18} /> : <Wifi size={18} />}
-                  </div>
-                  <div>
-                    <span className={`block font-bold text-sm ${net.connected ? 'text-os-primary' : 'text-white'}`}>
-                      {net.name}
-                      {net.connected && <span className="ml-2 text-[10px] font-normal opacity-60">(Connected)</span>}
-                    </span>
-                    <span className="text-[10px] text-os-onSurfaceVariant font-medium">
-                      {net.secure ? 'WPA3 Secured' : 'Open Network'}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4].map((bar) => (
-                      <div 
-                        key={bar} 
-                        className={`w-1 rounded-full ${net.signal >= bar * 25 ? 'bg-os-primary' : 'bg-os-outline/20'}`}
-                        style={{ height: `${bar * 4}px` }}
-                      />
-                    ))}
-                  </div>
-                  {!net.connected && (
-                    <button className="px-3 py-1.5 rounded-lg bg-os-primary/10 text-os-primary text-[10px] font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-colors">
-                      Connect
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-    );
-  };
 
 
   return (
@@ -564,44 +169,55 @@ const Settings = () => {
       <div className={`${isMobile ? (showSidebar ? 'w-full absolute inset-0' : 'hidden') : 'w-64 border-r'} bg-os-surfaceContainerLow/50 backdrop-blur-3xl border-os-outline/10 flex flex-col p-4 shadow-xl z-20 transition-all`}>
         <div className="flex items-center space-x-3 mb-8 md:mb-10 px-2 mt-2">
           <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-os-surfaceContainerHighest to-os-surfaceContainerLow flex items-center justify-center border border-os-outline/10 shadow-inner">
-            <CustomIcon icon={SettingsIcon} size={16} color="text-os-onSurface" className="relative z-10" glow="rgba(var(--os-primary-rgb), 0.5)" />
-            <div className="absolute inset-0 bg-[#cc97ff]/20 blur-md rounded-lg"></div>
+            <CustomIcon icon={SettingsIcon} size={16} color="text-os-onSurface" className="relative z-10" glow="rgb(var(--os-primary-rgb) / 0.5)" />
+            <div className="absolute inset-0 bg-sdl-accent/20 blur-md rounded-lg"></div>
           </div>
           <span className="font-display font-bold text-lg tracking-wide">Settings</span>
         </div>
 
-        <nav className="space-y-1.5 flex-1">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
-                className={`w-full group flex items-center justify-between px-4 py-4 md:px-3 md:py-3 rounded-[1rem] transition-all duration-300 relative overflow-hidden ${
-                  isActive && !isMobile
-                    ? 'bg-gradient-to-r from-os-surfaceContainerHigh/80 to-transparent' 
-                    : 'hover:bg-os-surfaceContainerHigh/30 text-os-onSurfaceVariant hover:text-os-onSurface'
-                }`}
-              >
-                {/* Active Indicator Light Bar */}
-                {isActive && !isMobile && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-gradient-to-b from-[#cc97ff] to-[#00d2fd] rounded-r-full shadow-[0_0_10px_#cc97ff]"></div>
-                )}
-                
-                <div className="flex items-center space-x-4 md:space-x-3 relative z-10 pl-1">
-                  <CustomIcon icon={Icon} size={20} color={isActive ? 'text-[#cc97ff]' : ''} glow={isActive ? '#cc97ff' : false} />
-                  <span className={`font-semibold text-base md:text-sm ${isActive ? 'text-os-onSurface' : ''}`}>{tab.label}</span>
+        <nav className="space-y-4 flex-1 overflow-y-auto scrollbar-hide">
+          {tabGroups.map((group) => (
+            <div key={group.id}>
+              <div className="px-3 mb-1.5">
+                <div className="text-[10px] uppercase tracking-[0.08em]" style={{ color: 'var(--sdl-sec)', fontWeight: 650 }}>
+                  {group.label}
                 </div>
-
-                <CustomIcon icon={ChevronRight} size={14} color="text-os-onSurfaceVariant/50" className="mr-1" animate={false} />
-              </button>
-            )
-          })}
+                {group.id === 'dl' && (
+                  <div className="text-[10px] mt-0.5 tabular-nums" style={{ color: 'var(--sdl-sec)' }}>
+                    Sarva Design Language · {SDL_VERSION} · {SDL_AUTHOR}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-1">
+                {group.items.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => handleTabClick(tab.id)}
+                      aria-current={isActive ? 'page' : undefined}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sdl-sm transition-colors duration-hover ease-sdl focus-visible:outline-none focus-visible:ring-2"
+                      style={{
+                        background: isActive ? 'var(--sdl-soft)' : 'transparent',
+                        color: isActive ? 'var(--sdl-aink)' : 'var(--sdl-sec)',
+                        boxShadow: isActive ? 'var(--sdl-hairline)' : 'none',
+                        fontWeight: isActive ? 650 : 550,
+                      }}
+                    >
+                      <Icon size={16} strokeWidth={2} />
+                      <span className="text-[13px] text-left">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
         
-        <div className="mt-auto px-4 py-4 text-[10px] text-os-onSurfaceVariant/40 text-center font-bold uppercase tracking-widest">
-            Lumina Engine v2.0
+        <div className="mt-auto px-3 py-4 text-[10px] leading-relaxed" style={{ color: 'var(--sdl-sec)' }}>
+          <div>Lumina OS 1.0.0</div>
+          <div>Design language: SDL {SDL_VERSION} — {SDL_AUTHOR}</div>
         </div>
       </div>
 
@@ -619,13 +235,15 @@ const Settings = () => {
         )}
 
         {/* Ambient OS glow */}
-        <div className="absolute top-[-20%] left-[20%] w-[50vw] h-[50vw] bg-[#cc97ff]/5 blur-[120px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-[#00d2fd]/5 blur-[100px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
+        <div className="absolute top-[-20%] left-[20%] w-[50vw] h-[50vw] bg-sdl-accent/5 blur-[120px] rounded-full pointer-events-none -z-10" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-sdl-soft/30 blur-[100px] rounded-full pointer-events-none -z-10" />
 
         <div className="h-full">
-            {activeTab === 'personalization' && renderPersonalization()}
+            {activeTab === 'appearance' && <Appearance />}
+            {DL_SECTIONS.some((sec) => sec.id === activeTab) && (
+              <div className="max-w-4xl mx-auto"><DesignLanguage section={activeTab} /></div>
+            )}
             {activeTab === 'system' && renderSystem()}
-            {activeTab === 'network' && renderNetwork()}
             {activeTab === 'user' && (
               <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div>
@@ -639,13 +257,13 @@ const Settings = () => {
                   {isPuterSignedIn ? (
                     <div className="space-y-8">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-os-primary to-os-secondary border border-white/10 flex items-center justify-center text-4xl shadow-2xl text-black font-black uppercase">
+                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-os-primary to-os-secondary border border-hairline/10 flex items-center justify-center text-4xl shadow-2xl text-sdl-onAccent font-black uppercase">
                           {puterUser?.username?.[0] || 'P'}
                         </div>
                         <div className="flex-1 text-center sm:text-left space-y-1">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                            <h3 className="text-xl font-black text-white">{puterUser?.username || 'Puter Cloud User'}</h3>
-                            <span className="self-center px-2.5 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 text-[9px] font-black uppercase tracking-widest">
+                            <h3 className="text-xl font-black text-sdl-ink">{puterUser?.username || 'Puter Cloud User'}</h3>
+                            <span className="self-center px-2.5 py-0.5 rounded-full bg-sdl-done/20 text-sdl-done border border-sdl-done/30 text-[9px] font-black uppercase tracking-widest">
                               Connected
                             </span>
                           </div>
@@ -653,27 +271,27 @@ const Settings = () => {
                         </div>
                         <button
                           onClick={signOutPuter}
-                          className="px-5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 text-xs font-semibold uppercase tracking-wider transition-all duration-300"
+                          className="px-5 py-2 rounded-xl bg-veil/5 border border-hairline/10 hover:bg-sdl-alert/20 hover:text-sdl-alert hover:border-sdl-alert/30 text-xs font-semibold uppercase tracking-wider transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                         >
                           Disconnect
                         </button>
                       </div>
 
-                      <div className="p-6 rounded-2xl bg-green-500/10 border border-green-500/20 space-y-4">
+                      <div className="p-6 rounded-2xl bg-sdl-done/10 border border-sdl-done/20 space-y-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-500/20 rounded-lg text-green-400">
+                            <div className="p-2 bg-sdl-done/20 rounded-lg text-sdl-done">
                               <Cloud size={18} />
                             </div>
                             <div>
-                              <span className="block font-bold text-sm text-white">Puter Cloud Sync Active</span>
-                              <span className="block text-[10px] text-green-400/80 font-black uppercase tracking-widest">
+                              <span className="block font-bold text-sm text-sdl-ink">Puter Cloud Sync Active</span>
+                              <span className="block text-[10px] text-sdl-done/80 font-black uppercase tracking-widest">
                                 {lastSyncTime ? `Last Synced: ${new Date(lastSyncTime).toLocaleTimeString()}` : 'Connected and Synchronized'}
                               </span>
                             </div>
                           </div>
                         </div>
-                        <p className="text-xs text-white/40 leading-relaxed">
+                        <p className="text-xs text-sdl-sec leading-relaxed">
                           Your virtual file system, system settings, accent colors, and unlocked achievements are securely synced in the cloud. Changes made here are saved instantly.
                         </p>
                       </div>
@@ -685,14 +303,14 @@ const Settings = () => {
                           <div className="flex gap-2 pt-1">
                             <button
                               onClick={syncFilesToPuter}
-                              className="flex-1 py-2 rounded-xl bg-os-primary/10 border border-os-primary/20 text-os-primary text-xs font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-all flex items-center justify-center gap-2"
+                              className="flex-1 py-2 rounded-xl bg-os-primary/10 border border-os-primary/20 text-os-primary text-xs font-bold uppercase tracking-wider hover:bg-os-primary/20 transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                             >
                               <Upload size={13} />
                               Push Files
                             </button>
                             <button
                               onClick={loadFilesFromPuter}
-                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                              className="flex-1 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sdl-sec text-xs font-bold uppercase tracking-wider hover:bg-veil/10 hover:text-sdl-ink transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                             >
                               <Download size={13} />
                               Pull Files
@@ -706,14 +324,14 @@ const Settings = () => {
                           <div className="flex gap-2 pt-1">
                             <button
                               onClick={syncPrefsToPuter}
-                              className="flex-1 py-2 rounded-xl bg-os-secondary/10 border border-os-secondary/20 text-os-secondary text-xs font-bold uppercase tracking-wider hover:bg-os-secondary/20 transition-all flex items-center justify-center gap-2"
+                              className="flex-1 py-2 rounded-xl bg-os-secondary/10 border border-os-secondary/20 text-os-secondary text-xs font-bold uppercase tracking-wider hover:bg-os-secondary/20 transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                             >
                               <Upload size={13} />
                               Push Settings
                             </button>
                             <button
                               onClick={loadPrefsFromPuter}
-                              className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2"
+                              className="flex-1 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sdl-sec text-xs font-bold uppercase tracking-wider hover:bg-veil/10 hover:text-sdl-ink transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                             >
                               <Download size={13} />
                               Pull Settings
@@ -725,11 +343,11 @@ const Settings = () => {
                   ) : (
                     <div className="space-y-6 text-center sm:text-left">
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                        <div className="w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-2xl">
+                        <div className="w-20 h-20 rounded-3xl bg-veil/5 border border-hairline/10 flex items-center justify-center text-4xl shadow-2xl">
                           👤
                         </div>
                         <div className="flex-1 space-y-2">
-                          <h3 className="text-xl font-black text-white">Offline/Guest Mode</h3>
+                          <h3 className="text-xl font-black text-sdl-ink">Offline/Guest Mode</h3>
                           <p className="text-xs text-os-onSurfaceVariant">
                             You are logged in as a local guest. Your changes are saved to this browser&apos;s IndexedDB and will not persist across different browsers or machines.
                           </p>
@@ -743,14 +361,14 @@ const Settings = () => {
                               <Cloud size={18} />
                             </div>
                             <div>
-                              <span className="block font-bold text-sm text-white">Connect with Puter Cloud</span>
+                              <span className="block font-bold text-sm text-sdl-ink">Connect with Puter Cloud</span>
                               <span className="block text-[10px] text-os-onSurfaceVariant font-medium">Link your Puter.com account for cross-device sync.</span>
                             </div>
                           </div>
                           <button
                             onClick={signInWithPuter}
                             disabled={isPuterConnecting}
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-black font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.3)] disabled:opacity-50"
+                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-os-primary to-os-secondary text-sdl-onAccent font-black text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.3)] disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                           >
                             {isPuterConnecting ? (
                               <RefreshCw size={14} className="animate-spin" />

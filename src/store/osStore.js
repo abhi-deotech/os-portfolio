@@ -9,6 +9,7 @@ import { createWindowSlice } from './slices/windowSlice';
 import { createContainerSlice } from './slices/containerSlice';
 import { createAiSlice } from './slices/aiSlice';
 import { createPuterSlice } from './slices/puterSlice';
+import { MUSIC_DATA } from '../data/musicData';
 
 /**
  * Zustand store for Lumina OS state management.
@@ -29,6 +30,80 @@ const useOSStore = create(
     }),
     {
       name: 'os-settings',
+      // Stamp a version NOW, before any shape change needs one. Without it, zustand treats an
+      // existing payload as version 0 and there is no hook to migrate it — so the first time the
+      // theme fields change shape (P2), every existing user silently lands on defaults.
+      // NOTE: this store uses a custom async `storage` object rather than createJSONStorage; verify
+      // against a real IndexedDB payload that `migrate` fires before relying on it in P2.
+      version: 3,
+      // Verified in-browser against a real v0 IndexedDB payload: this hook DOES fire despite the
+      // custom async `storage` object (zustand's docs assume createJSONStorage).
+      migrate: (persistedState, fromVersion) => {
+        if (!persistedState) return persistedState;
+        const next = { ...persistedState };
+
+        // v1 → v2: adopt SDL colorways.
+        //
+        // Every pre-SDL user lands on Lumina Neon (Legacy) rather than being mapped hue-by-hue onto
+        // the nearest SDL colorway. All four legacy accents ARE the same neon identity, so mapping
+        // them individually would silently change returning visitors' look on upgrade — and one of
+        // them (green) has no locked SDL counterpart at all. Legacy preserves exactly what they had;
+        // SDL is opt-in from the Appearance pane.
+        if (fromVersion < 2 && next.colorway === undefined) {
+          next.colorway = next.activeAccent ? 'lumina-neon' : 'rose-dusk';
+          next.density = 'comfortable';
+          next.reducedMotion = 'system';
+          next.iconTheme = 'lumina';
+        }
+
+        // v2 → v3: move off the fixed neon icon palette.
+        //
+        // This one DOES change how a returning user's dock looks, which normally we refuse to do.
+        // It is justified because the old default is measurably broken rather than merely different:
+        // on all ten light colorways every one of the eighteen glyphs falls below 3:1, bottoming out
+        // at 1.01:1. Keeping someone on an invisible dock is not respecting their choice.
+        //
+        // Anyone actually running the legacy colorway is exempt — there the neon set is correct and
+        // deliberate — and "Lumina Neon" stays selectable for everyone else.
+        if (fromVersion < 3 && (next.iconTheme === 'lumina' || next.iconTheme === undefined)) {
+          next.iconTheme = next.colorway === 'lumina-neon' ? 'lumina' : 'harmonized';
+        }
+        // 'colorway' and 'duotone' were the pre-v3 theme ids and no longer resolve.
+        if (next.iconTheme === 'colorway' || next.iconTheme === 'duotone') next.iconTheme = 'harmonized';
+
+        return next;
+      },
+      merge: (persistedState, currentState) => {
+        const merged = { ...currentState, ...persistedState };
+
+        // Window-state repair. `openWindows` is the source of truth; the three satellite lists are
+        // only meaningful for a window that is actually open. `closeWindow` used to leak into
+        // `maximizedWindows`, and that list is persisted — so anyone who ever maximized and closed
+        // a window carries a phantom id forever, which permanently hid the dock. Fixing the leak
+        // stops NEW poisoning; this repairs the payloads already on disk, and it runs every load
+        // rather than once at a version bump because it is an invariant, not a migration.
+        const open = new Set(merged.openWindows || []);
+        merged.maximizedWindows = (merged.maximizedWindows || []).filter((w) => open.has(w));
+        merged.minimizedWindows = (merged.minimizedWindows || []).filter((w) => open.has(w));
+        merged.snappedWindows = Object.fromEntries(
+          Object.entries(merged.snappedWindows || {}).filter(([w]) => open.has(w)),
+        );
+        if (merged.activeWindow && !open.has(merged.activeWindow)) merged.activeWindow = null;
+
+        if (merged.music) {
+          // Never rehydrate as "playing" — no audio engine is running yet.
+          // Re-resolve the persisted track against the current catalog so
+          // removed/renamed local files can't leave a dead currentTrack.
+          const found = MUSIC_DATA.find((t) => t.id === merged.music.currentTrack?.id);
+          merged.music = {
+            ...merged.music,
+            currentTrack: found || MUSIC_DATA[0],
+            isPlaying: false,
+            currentTime: 0,
+          };
+        }
+        return merged;
+      },
       storage: {
         getItem: async (name) => (await get(name)) || null,
         setItem: async (name, value) => await set(name, value),
@@ -40,6 +115,12 @@ const useOSStore = create(
         transparencyEffects: state.transparencyEffects,
         brightness: state.brightness,
         accentIntensity: state.accentIntensity,
+        soundEnabled: state.soundEnabled,
+        lowPerformance: state.lowPerformance,
+        colorway: state.colorway,
+        density: state.density,
+        reducedMotion: state.reducedMotion,
+        iconTheme: state.iconTheme,
         terminalHistory: state.terminalHistory,
         openWindows: state.openWindows,
         minimizedWindows: state.minimizedWindows,

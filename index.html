@@ -7,6 +7,41 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OS Portfolio</title>
+    <!--
+      Pre-paint theme stamp. MUST stay before the stylesheet and MUST stay synchronous.
+
+      App state persists to IndexedDB, which is async, so React's first render always uses defaults.
+      That was harmless while every theme was navy; with light colorways it becomes a full-screen
+      dark-to-white flash on every load. This reads a tiny synchronous localStorage mirror written by
+      src/theme/applyTheme.js and stamps the resolved variables before the first frame.
+
+      It deliberately contains no token data — only the resolved map — so the 16-colorway table stays
+      in the JS bundle where it belongs and this stays ~15 lines.
+    -->
+    <script>
+      (function () {
+        var r = document.documentElement;
+        try {
+          var t = JSON.parse(localStorage.getItem('lumina.theme.v1')) || {};
+          r.setAttribute('data-theme', t.th || 'jewel-night');
+          r.setAttribute('data-colorway', t.cw || 'rose-dusk');
+          r.setAttribute('data-mode', t.mode || 'dark');
+          r.setAttribute('data-grammar', t.grammar || 'depth');
+          r.setAttribute('data-density', t.den || 'comfortable');
+          r.setAttribute('data-glass', t.glass === 0 ? 'off' : 'on');
+          if (t.bright != null) r.style.setProperty('--os-dim', String((100 - t.bright) / 100));
+          if (t.v) for (var k in t.v) r.style.setProperty(k, t.v[k]);
+        } catch (e) {
+          // Private mode, or a corrupt mirror. Grammar vars must always resolve, so stamp defaults.
+          r.setAttribute('data-mode', 'dark');
+          r.setAttribute('data-grammar', 'depth');
+          r.setAttribute('data-density', 'comfortable');
+          r.setAttribute('data-glass', 'on');
+        }
+        r.setAttribute('data-motion',
+          window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full');
+      })();
+    </script>
     <script src="https://js.puter.com/v2/"></script>
   </head>
   <body>

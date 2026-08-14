@@ -1,0 +1,386 @@
+{
+  "name": "SDL data-viz palettes",
+  "version": "1.0.0",
+  "locked": "2026-08-12",
+  "rules": {
+    "derivation": "controlled spread: series 1 = the colorway's sharp channel (barA family); 2-3 borrowed hues per colorway from its temperature world; neutral always last and always tinted",
+    "categorical": "rank series by importance; series 1 carries current/primary by POSITION, never by red/green; max 5 distinguishable series",
+    "sequential": "accent family; light themes pale->deep, dark themes deep->bright",
+    "diverging": "warm pole <-> accent pole through a plane-tinted neutral midpoint",
+    "semantics": "relaxed inside charts (borrowed hues may resemble status colors); law 10 still governs chips/badges/labels",
+    "rendering": "flat fills for palette honesty; theme bar-shadow/lift grammar applies at implementation; donut centers and inline-bar tracks sit on the chart well (tracks: black 8% on light, white 10% on dark)",
+    "usage": "line charts: series 1 solid 2.5px, series 2 solid 2px, series 3 dashed; area fill = series 1 at 16%; scatter stress-pair = series 1 vs 3"
+  },
+  "themes": {
+    "steel-night": {
+      "grammar": "dark",
+      "cws": {
+        "carbon-vivid": {
+          "cat": [
+            "#5387ee",
+            "#53d0ea",
+            "#8d8df1",
+            "#3457ab",
+            "#93a0b5"
+          ],
+          "seq": [
+            "#16233f",
+            "#24406f",
+            "#35599c",
+            "#5387ee",
+            "#9db9f4"
+          ],
+          "div": [
+            "#ef7d66",
+            "#c58d7f",
+            "#5d6b85",
+            "#4a6cb3",
+            "#5387ee"
+          ]
+        },
+        "graphite-bold": {
+          "cat": [
+            "#8d8df1",
+            "#5fc7e8",
+            "#e88bc8",
+            "#4d4da6",
+            "#9aa3b8"
+          ],
+          "seq": [
+            "#1c1c2e",
+            "#303055",
+            "#4d4da6",
+            "#8d8df1",
+            "#c3c3fa"
+          ],
+          "div": [
+            "#e88b6a",
+            "#c08a7c",
+            "#5f5f74",
+            "#6a6ad0",
+            "#8d8df1"
+          ]
+        }
+      }
+    },
+    "hearth-light": {
+      "grammar": "light",
+      "cws": {
+        "honey-vivid": {
+          "cat": [
+            "#159d8b",
+            "#c2551d",
+            "#c99a2e",
+            "#2e86b5",
+            "#8a7a5e"
+          ],
+          "seq": [
+            "#cdeee8",
+            "#8fd4c8",
+            "#4fae9e",
+            "#159d8b",
+            "#0c6e60"
+          ],
+          "div": [
+            "#c2551d",
+            "#d99a70",
+            "#b9ab90",
+            "#57b3a5",
+            "#159d8b"
+          ]
+        },
+        "moss-vivid": {
+          "cat": [
+            "#2c8a77",
+            "#7ba43c",
+            "#c99a2e",
+            "#427c9a",
+            "#7d8a68"
+          ],
+          "seq": [
+            "#d3efe6",
+            "#a6d9c9",
+            "#6cbcab",
+            "#2c8a77",
+            "#175e50"
+          ],
+          "div": [
+            "#b0692e",
+            "#cfa06e",
+            "#a8b39a",
+            "#5fae9d",
+            "#2c8a77"
+          ]
+        },
+        "tangerine-vivid": {
+          "cat": [
+            "#0d97ab",
+            "#c2551d",
+            "#d4783b",
+            "#7c58c4",
+            "#8a7565"
+          ],
+          "seq": [
+            "#c8ecf2",
+            "#83ccd8",
+            "#45b1c2",
+            "#0d97ab",
+            "#086b7a"
+          ],
+          "div": [
+            "#c2551d",
+            "#e0a173",
+            "#b3a89a",
+            "#58aab4",
+            "#0d97ab"
+          ]
+        },
+        "clay-vivid": {
+          "cat": [
+            "#2e86b5",
+            "#c2653a",
+            "#6ba3bd",
+            "#8a5e9e",
+            "#8a7365"
+          ],
+          "seq": [
+            "#d3e6f0",
+            "#9cc5da",
+            "#62a4c6",
+            "#2e86b5",
+            "#1d5f85"
+          ],
+          "div": [
+            "#c2653a",
+            "#d9a184",
+            "#ada39a",
+            "#6ba3bd",
+            "#2e86b5"
+          ]
+        }
+      }
+    },
+    "jewel-night": {
+      "grammar": "dark",
+      "cws": {
+        "rose-dusk": {
+          "cat": [
+            "#f2479d",
+            "#f0954f",
+            "#b06ee8",
+            "#93365f",
+            "#b39aa5"
+          ],
+          "seq": [
+            "#3a1226",
+            "#6b1f46",
+            "#a52f6c",
+            "#f2479d",
+            "#f893c4"
+          ],
+          "div": [
+            "#f0954f",
+            "#d18a71",
+            "#8a7580",
+            "#b3548f",
+            "#f2479d"
+          ]
+        },
+        "fuchsia-bold": {
+          "cat": [
+            "#e358cd",
+            "#8a5cf0",
+            "#5fc7e8",
+            "#93408c",
+            "#b0a3b5"
+          ],
+          "seq": [
+            "#341031",
+            "#5c1c56",
+            "#963093",
+            "#e358cd",
+            "#f0a1e0"
+          ],
+          "div": [
+            "#ef8a5a",
+            "#c98a76",
+            "#82708a",
+            "#a94ba0",
+            "#e358cd"
+          ]
+        },
+        "cocoa-relit": {
+          "cat": [
+            "#d9b98c",
+            "#ef6f8e",
+            "#a9763f",
+            "#7aa695",
+            "#8f8378"
+          ],
+          "seq": [
+            "#2a1c10",
+            "#56412a",
+            "#8a6a45",
+            "#c49a6a",
+            "#edd3ae"
+          ],
+          "div": [
+            "#ef6f8e",
+            "#d0918e",
+            "#97867a",
+            "#b99a6a",
+            "#d9b98c"
+          ]
+        }
+      }
+    },
+    "botanical-day": {
+      "grammar": "light",
+      "cws": {
+        "garden-dawn": {
+          "cat": [
+            "#1d8f7a",
+            "#cf8a2a",
+            "#bd6b42",
+            "#427c9a",
+            "#7d8a68"
+          ],
+          "seq": [
+            "#d2f4ed",
+            "#9cdccd",
+            "#5bbaa6",
+            "#1d8f7a",
+            "#0f6152"
+          ],
+          "div": [
+            "#bd6b42",
+            "#d8a184",
+            "#b0ab98",
+            "#62b3a2",
+            "#1d8f7a"
+          ]
+        },
+        "periwinkle-vivid": {
+          "cat": [
+            "#5a51ec",
+            "#b04ec4",
+            "#2a9dab",
+            "#8d88e8",
+            "#75738c"
+          ],
+          "seq": [
+            "#dedcfb",
+            "#b3aef5",
+            "#8d88e8",
+            "#5a51ec",
+            "#362fae"
+          ],
+          "div": [
+            "#c4652e",
+            "#d9a081",
+            "#a3a1b3",
+            "#7a73e8",
+            "#5a51ec"
+          ]
+        },
+        "emerald-bold": {
+          "cat": [
+            "#12996f",
+            "#5a51ec",
+            "#c99a2e",
+            "#3e8fa8",
+            "#6d8577"
+          ],
+          "seq": [
+            "#cff0e3",
+            "#8fd8bd",
+            "#47b892",
+            "#12996f",
+            "#0a6448"
+          ],
+          "div": [
+            "#c2551d",
+            "#dda173",
+            "#adb3a3",
+            "#58b393",
+            "#12996f"
+          ]
+        },
+        "orchid-bold": {
+          "cat": [
+            "#c944c9",
+            "#5a51ec",
+            "#e8794f",
+            "#8f5e9e",
+            "#877287"
+          ],
+          "seq": [
+            "#f6dcf6",
+            "#e8aee8",
+            "#d183d1",
+            "#c944c9",
+            "#8f2a8f"
+          ],
+          "div": [
+            "#e8794f",
+            "#dda392",
+            "#b1a1ad",
+            "#cc6ecc",
+            "#c944c9"
+          ]
+        }
+      }
+    },
+    "carbon-day": {
+      "grammar": "light",
+      "cws": {
+        "carbon-dimmed": {
+          "cat": [
+            "#3f6f9f",
+            "#2a9dab",
+            "#8d6ac0",
+            "#93aec6",
+            "#5f6979"
+          ],
+          "seq": [
+            "#dbe4ee",
+            "#aec4d9",
+            "#7a9cbd",
+            "#3f6f9f",
+            "#274a6e"
+          ],
+          "div": [
+            "#bd6b42",
+            "#cf9a7c",
+            "#9aa3ad",
+            "#6a92b8",
+            "#3f6f9f"
+          ]
+        },
+        "mono-soft": {
+          "cat": [
+            "#5b6377",
+            "#3f6f9f",
+            "#2c8a77",
+            "#a7aebb",
+            "#8a8f9a"
+          ],
+          "seq": [
+            "#e0e1e4",
+            "#c2c6cf",
+            "#9aa1af",
+            "#6b7386",
+            "#454c5c"
+          ],
+          "div": [
+            "#b06a54",
+            "#c69a89",
+            "#a0a3a9",
+            "#7d8aa5",
+            "#5b6377"
+          ]
+        }
+      }
+    }
+  }
+}

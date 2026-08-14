@@ -168,9 +168,9 @@ const Benchmark = () => {
           {status !== 'running' ? (
             <button 
               onClick={startBenchmark}
-              className="group relative px-6 py-2.5 rounded-xl bg-os-primary text-black font-black uppercase tracking-widest text-[10px] overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.4)]"
+              className="group relative px-6 py-2.5 rounded-xl bg-os-primary text-sdl-onAccent font-black uppercase tracking-widest text-[10px] overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.4)]"
             >
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+              <div className="absolute inset-0 bg-veil/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
               <span className="relative flex items-center gap-2">
                 <Play size={14} fill="currentColor" /> Run Sequence
               </span>
@@ -178,7 +178,7 @@ const Benchmark = () => {
           ) : (
             <button 
               onClick={stopBenchmark}
-              className="px-6 py-2.5 rounded-xl bg-red-500/10 border border-red-500/50 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+              className="px-6 py-2.5 rounded-xl bg-red-500/10 border border-red-500/50 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500 hover:text-sdl-onAccent transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)]"
             >
               Abort Test
             </button>
@@ -202,13 +202,13 @@ const Benchmark = () => {
                 transition={{ delay: idx * 0.1 }}
                 className={`p-4 rounded-2xl border transition-all duration-300 ${
                   isActive 
-                    ? 'bg-os-primary/10 border-os-primary/40 shadow-[0_0_20px_rgba(var(--os-primary-rgb),0.1)]' 
-                    : 'bg-white/[0.02] border-white/5'
+                    ? 'bg-os-primary/10 border-os-primary/40 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.1)]' 
+                    : 'bg-veil/[0.02] border-hairline/5'
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-lg ${isActive ? 'bg-os-primary text-black' : 'bg-white/5 text-os-onSurfaceVariant'}`}>
+                    <div className={`p-1.5 rounded-lg ${isActive ? 'bg-os-primary text-sdl-onAccent' : 'bg-veil/5 text-os-onSurfaceVariant'}`}>
                       <Icon size={14} />
                     </div>
                     <span className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-os-primary' : 'text-os-onSurfaceVariant'}`}>
@@ -220,7 +220,7 @@ const Benchmark = () => {
                 
                 {isActive && (
                   <div className="space-y-2 mt-3 overflow-hidden">
-                    <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-1 w-full bg-veil/5 rounded-full overflow-hidden">
                       <motion.div 
                         className="h-full bg-os-primary"
                         initial={{ width: 0 }}
@@ -238,7 +238,7 @@ const Benchmark = () => {
           })}
 
           {/* Core Metrics */}
-          <div className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+          <div className="p-5 rounded-2xl bg-veil/[0.02] border border-hairline/5 space-y-4">
             <div className="flex items-center gap-2 opacity-40">
               <Activity size={12} />
               <span className="text-[10px] font-black uppercase tracking-widest">Live Telemetry</span>
@@ -253,7 +253,7 @@ const Benchmark = () => {
                   <motion.div 
                     key={i} 
                     animate={{ height: `${Math.max(10, Math.min(100, (v / Math.max(...history, 1)) * 100))}%` }}
-                    className={`flex-1 rounded-t-sm ${status === 'running' ? 'bg-os-primary' : 'bg-white/10'}`} 
+                    className={`flex-1 rounded-t-sm ${status === 'running' ? 'bg-os-primary' : 'bg-veil/10'}`} 
                   />
                 ))}
               </div>
@@ -263,8 +263,8 @@ const Benchmark = () => {
 
         {/* Right Side: Primary Visualizer & IPS */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          <div className="flex-grow rounded-[2.5rem] bg-white/[0.01] border border-white/5 p-8 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(var(--os-primary-rgb),0.05),transparent)] pointer-events-none" />
+          <div className="flex-grow rounded-[2.5rem] bg-veil/[0.01] border border-hairline/5 p-8 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgb(var(--os-primary-rgb)_/_0.05),transparent)] pointer-events-none" />
             
             {/* Quantum Core Animation */}
             <div className="absolute inset-0 flex items-center justify-center">
@@ -280,8 +280,8 @@ const Benchmark = () => {
                 className="relative"
               >
                 {/* Visualizer Rings */}
-                <div className={`w-48 h-48 rounded-full border border-dashed transition-colors duration-500 ${status === 'running' ? 'border-os-primary/40' : 'border-white/10'}`} />
-                <div className={`absolute inset-4 rounded-full border border-double animate-spin-slow transition-colors duration-500 ${status === 'running' ? 'border-os-secondary/40' : 'border-white/5'}`} />
+                <div className={`w-48 h-48 rounded-full border border-dashed transition-colors duration-500 ${status === 'running' ? 'border-os-primary/40' : 'border-hairline/10'}`} />
+                <div className={`absolute inset-4 rounded-full border border-double animate-spin-slow transition-colors duration-500 ${status === 'running' ? 'border-os-secondary/40' : 'border-hairline/5'}`} />
                 <motion.div 
                   animate={{ opacity: status === 'running' ? [0.2, 0.5, 0.2] : 0.1 }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
@@ -342,13 +342,13 @@ const Benchmark = () => {
 
           {/* Bottom Actions/Stats */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 flex flex-col justify-center gap-1">
+            <div className="p-6 rounded-3xl bg-veil/[0.02] border border-hairline/5 flex flex-col justify-center gap-1">
               <span className="text-[9px] font-black text-os-onSurfaceVariant uppercase tracking-widest">Total Computed</span>
               <span className="text-2xl font-black font-mono tracking-tight whitespace-nowrap">
                 {iterations.toLocaleString()} <span className="text-[10px] opacity-40">OPS</span>
               </span>
             </div>
-            <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 flex flex-col justify-center gap-1">
+            <div className="p-6 rounded-3xl bg-veil/[0.02] border border-hairline/5 flex flex-col justify-center gap-1">
               <span className="text-[9px] font-black text-os-onSurfaceVariant uppercase tracking-widest">Environment</span>
               <span className="text-2xl font-black italic tracking-wide text-os-tertiary">Lumina-V8</span>
             </div>

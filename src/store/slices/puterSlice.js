@@ -201,21 +201,11 @@ export const createPuterSlice = (set, get) => {
           if (Array.isArray(prefs.achievements)) updates.achievements = prefs.achievements;
           
           set(updates);
-          
-          // Apply changes to Document style properties if present
-          if (prefs.activeAccent) {
-            const root = document.documentElement;
-            const accentHexMap = {
-              purple: '204 151 255',
-              cyan: '0 210 253',
-              magenta: '255 104 240',
-              green: '0 245 160'
-            };
-            const rgb = accentHexMap[prefs.activeAccent];
-            if (rgb) {
-              root.style.setProperty('--os-primary-rgb', rgb);
-            }
-          }
+
+          // Deliberately does NOT touch the DOM. This used to write --os-primary-rgb directly to
+          // documentElement from a fifth copy of the accent map, which meant signing into Puter
+          // could leave the page in a different theme state than the store believed. State is the
+          // only channel; App's applyTheme effect renders it. See src/theme/applyTheme.js.
           console.log("Lumina System Preferences successfully loaded from Puter DB.");
         }
       } catch (err) {

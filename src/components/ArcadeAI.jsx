@@ -112,15 +112,15 @@ const ArcadeAI = ({ game }) => {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="flex flex-col h-full bg-[#0c0c0c] border-l border-white/10 w-80 shadow-2xl overflow-hidden"
+      className="flex flex-col h-full bg-[#0c0c0c] border-l border-hairline/10 w-80 shadow-2xl overflow-hidden"
     >
       {/* Header */}
-      <div className="p-4 border-b border-white/5 bg-white/[0.02] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_15px_rgba(var(--os-primary-rgb),0.3)]">
+      <div className="p-4 border-b border-hairline/5 bg-veil/[0.02] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_15px_rgb(var(--os-primary-rgb)_/_0.3)]">
           <Gamepad2 size={16} />
         </div>
         <div>
-          <h4 className="text-[10px] font-black text-white italic uppercase tracking-wider">Arcade AI</h4>
+          <h4 className="text-[10px] font-black text-sdl-ink italic uppercase tracking-wider">Arcade AI</h4>
           <p className="text-[8px] font-bold text-os-primary uppercase tracking-[0.2em]">Game Strategist</p>
         </div>
       </div>
@@ -134,8 +134,8 @@ const ArcadeAI = ({ game }) => {
           <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
             <div className={`max-w-[90%] rounded-xl p-3 text-[11px] leading-relaxed shadow-lg ${
               msg.role === 'assistant' 
-                ? 'bg-white/[0.03] text-white/80 border border-white/5' 
-                : 'bg-os-primary/20 text-white border border-os-primary/20'
+                ? 'bg-veil/[0.03] text-sdl-ink/80 border border-hairline/5' 
+                : 'bg-os-primary/20 text-sdl-ink border border-os-primary/20'
             }`}>
               {msg.text}
             </div>
@@ -151,15 +151,15 @@ const ArcadeAI = ({ game }) => {
       </div>
 
       {/* Control Summary Mini-Panel */}
-      <div className="px-4 py-2 bg-white/[0.02] border-y border-white/5">
+      <div className="px-4 py-2 bg-veil/[0.02] border-y border-hairline/5">
         <div className="flex flex-wrap gap-2">
-           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-white/5">
+           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-hairline/5">
               <Terminal size={10} className="text-os-secondary" />
-              <span className="text-[8px] font-bold text-white/40 uppercase">WASD</span>
+              <span className="text-[8px] font-bold text-sdl-sec uppercase">WASD</span>
            </div>
-           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-white/5">
+           <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-black/40 border border-hairline/5">
               <MousePointer2 size={10} className="text-os-primary" />
-              <span className="text-[8px] font-bold text-white/40 uppercase">Fire</span>
+              <span className="text-[8px] font-bold text-sdl-sec uppercase">Fire</span>
            </div>
         </div>
       </div>
@@ -172,12 +172,12 @@ const ArcadeAI = ({ game }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask for help..."
-            className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-2 px-3 text-[10px] text-white outline-none focus:border-os-primary/50 transition-all placeholder:text-white/20"
+            className="w-full bg-veil/[0.03] border border-hairline/10 rounded-xl py-2 px-3 text-[10px] text-sdl-ink outline-none focus:border-os-primary/50 transition-all placeholder:text-sdl-sec"
           />
           <button 
             type="submit"
             disabled={isTyping}
-            className="p-2 bg-os-primary text-black rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+            className="p-2 bg-os-primary text-sdl-onAccent rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
           >
             <Send size={14} />
           </button>
