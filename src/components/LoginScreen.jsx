@@ -7,7 +7,7 @@ import BootSequence from './BootSequence';
 const IS_PUTER_SHELL = import.meta.env.VITE_APP_MODE === 'puter-shell';
 
 // Define vibrant gradient for the boot button
-const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary bg-[length:200%_auto] hover:bg-[100%_0] text-sdl-onAccent font-bold text-xs tracking-[0.3em] uppercase border border-hairline/20 backdrop-blur-sm transition-all duration-700 shadow-[0_0_20px_rgba(0,0,0,0.3)] hover:shadow-[0_0_40px_rgb(var(--os-primary-rgb)_/_0.5)]";
+const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os-primary via-os-secondary to-os-primary bg-[length:200%_auto] hover:bg-[100%_0] text-sdl-onAccent font-bold text-xs tracking-[0.3em] uppercase border border-hairline/20 backdrop-blur-sm transition-all duration-700 shadow-[var(--sdl-lift)] hover:shadow-[0_0_40px_rgb(var(--os-primary-rgb)_/_0.5)]";
 
 /**
  * Login screen component for Lumina OS authentication.
@@ -64,8 +64,8 @@ const LoginScreen = () => {
           second neutral ramp that ignored the theme entirely. On a light colorway it left dark ink on a
           near-black plane: the login clock measured 1.5:1. Now it settles from the colorway's own plane. */}
       <div className="absolute inset-0 bg-gradient-to-br from-sdl-plane via-sdl-plane to-sdl-sunken" />
-      <div className="absolute top-1/4 left-1/4 w-[50vw] h-[50vw] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[40vw] h-[40vw] bg-blue-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/4 left-1/4 w-[50vw] h-[50vw] bg-sdl-accent/10 rounded-full blur-[120px] animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[40vw] h-[40vw] bg-sdl-soft/25 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
 
       <AnimatePresence mode="wait">
         {!showLogin && !isBooting ? (
@@ -109,7 +109,7 @@ const LoginScreen = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="h-full w-full flex items-center justify-center relative z-20"
           >
-             <div className="w-full max-w-md p-8 bg-[#0c0c0c]/80 backdrop-blur-3xl rounded-[2.5rem] border border-hairline/10 shadow-2xl overflow-hidden relative group">
+             <div className="w-full max-w-md p-8 bg-sdl-surface/80 backdrop-blur-3xl rounded-[2.5rem] border border-hairline/10 shadow-2xl overflow-hidden relative group">
                 <div className="absolute inset-0 bg-gradient-to-br from-os-primary/10 to-transparent pointer-events-none" />
                 
                 <div className="relative z-10">
@@ -137,17 +137,17 @@ const LoginScreen = () => {
                           placeholder="Type 'guest'"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
-                          className={`w-full bg-veil/5 border ${error ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'border-hairline/10 focus:border-os-primary'} rounded-2xl py-5 px-6 text-sdl-ink text-sm outline-none transition-all focus:bg-veil/[0.08]`}
+                          className={`w-full bg-veil/5 border ${error ? 'border-sdl-alert shadow-[0_0_20px_rgb(var(--sdl-alert-rgb)/0.2)]' : 'border-hairline/10 focus:border-os-primary'} rounded-2xl py-5 px-6 text-sdl-ink text-sm outline-none transition-all focus:bg-veil/[0.08]`}
                         />
                       </div>
                       {error && (
-                        <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-[10px] text-red-500 font-bold uppercase tracking-widest ml-2">Invalid Credentials</motion.p>
+                        <motion.p initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="text-[10px] text-sdl-alert font-bold uppercase tracking-widest ml-2">Invalid Credentials</motion.p>
                       )}
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full bg-white text-sdl-onAccent font-black py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
+                      className="w-full bg-sdl-accent text-sdl-onAccent font-black py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 flex items-center justify-center gap-3 uppercase text-xs tracking-[0.3em]"
                     >
                       Authenticate
                       <ArrowRight className="w-4 h-4" />
@@ -198,7 +198,7 @@ const LoginScreen = () => {
                       <motion.p 
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }} 
-                        className="text-[9px] text-red-500 font-bold uppercase tracking-widest text-center mt-3"
+                        className="text-[9px] text-sdl-alert font-bold uppercase tracking-widest text-center mt-3"
                       >
                         {puterSyncError}
                       </motion.p>

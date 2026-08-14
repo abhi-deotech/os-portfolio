@@ -22,15 +22,17 @@ const TwitterIcon = ({ size = 20, className = "" }) => (
 );
 
 const AboutMe = () => {
+  // No `color` field: the marks render in currentColor so the tile's hover state can hand them the
+  // accent. The hexes that used to sit here were third-party brand identities, and nothing read them.
   const socialLinks = [
-    { icon: GithubIcon, label: 'GitHub', href: 'https://github.com/abhi-deotech', color: '#ffffff' },
-    { icon: LinkedinIcon, label: 'LinkedIn', href: 'https://linkedin.com/in/abhimanyu-saxena-b656a4183', color: '#0077b5' },
-    { icon: TwitterIcon, label: 'Twitter', href: 'https://twitter.com/abhi_deotech', color: '#1da1f2' },
-    { icon: Mail, label: 'Email', href: 'mailto:contact@abhi.dev', color: '#ea4335' }
+    { icon: GithubIcon, label: 'GitHub', href: 'https://github.com/abhi-deotech' },
+    { icon: LinkedinIcon, label: 'LinkedIn', href: 'https://linkedin.com/in/abhimanyu-saxena-b656a4183' },
+    { icon: TwitterIcon, label: 'Twitter', href: 'https://twitter.com/abhi_deotech' },
+    { icon: Mail, label: 'Email', href: 'mailto:contact@abhi.dev' }
   ];
 
   return (
-    <div className="h-full w-full bg-[#060e20]/60 text-os-onSurface overflow-y-auto scrollbar-hide">
+    <div className="h-full w-full bg-sdl-plane/60 text-os-onSurface overflow-y-auto scrollbar-hide">
       <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-12">
         {/* Profile Header */}
         <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
@@ -40,12 +42,14 @@ const AboutMe = () => {
             className="relative"
           >
             <div className="w-40 h-40 md:w-56 md:h-56 rounded-[3rem] bg-gradient-to-br from-os-primary to-os-secondary p-1 shadow-2xl shadow-os-primary/20">
-              <div className="w-full h-full rounded-[2.8rem] bg-[#091328] flex items-center justify-center overflow-hidden">
+              <div className="w-full h-full rounded-[2.8rem] bg-sdl-sunken flex items-center justify-center overflow-hidden">
                 <User size={80} className="text-os-primary/40" />
               </div>
             </div>
-            <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-green-500 border-4 border-[#091328] flex items-center justify-center shadow-lg">
-              <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
+            {/* Availability badge. Grey, not green — law 10 keeps "steady" neutral. Its cutout ring
+                matches the avatar well it overlaps. */}
+            <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-2xl bg-sdl-done border-4 border-sdl-sunken flex items-center justify-center shadow-lg">
+              <div className="w-3 h-3 rounded-full bg-veil animate-pulse" />
             </div>
           </motion.div>
 
@@ -91,7 +95,7 @@ const AboutMe = () => {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-os-primary/20 hover:border-os-primary/40 hover:scale-110 transition-all group"
+                  className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-os-primary/20 hover:border-os-primary/40 hover:scale-110 transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                   title={link.label}
                 >
                   <link.icon size={20} className="group-hover:text-sdl-ink transition-colors" />
@@ -138,7 +142,7 @@ const AboutMe = () => {
                 { title: 'Software Engineer', company: 'LendFoundry', year: 'Sep 2021 - July 2024', desc: 'Developed and maintained web-based applications using modern JavaScript frameworks.' }
               ].map((job, idx) => (
                 <div key={idx} className="relative pl-6 border-l-2 border-os-secondary/20 group hover:border-os-secondary transition-colors">
-                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-secondary shadow-[0_0_10px_rgba(0,210,253,0.5)] scale-0 group-hover:scale-100 transition-transform" />
+                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-secondary shadow-[0_0_10px_rgb(var(--os-secondary-rgb)_/_0.5)] scale-0 group-hover:scale-100 transition-transform" />
                   <h4 className="font-bold text-sdl-ink">{job.title}</h4>
                   <p className="text-sm text-os-onSurfaceVariant font-medium">{job.company}</p>
                   <p className="text-[10px] text-os-onSurfaceVariant/50 font-black tracking-widest mt-1 uppercase">{job.year}</p>
@@ -164,7 +168,7 @@ const AboutMe = () => {
                 { title: 'Full Stack Web Development', school: 'Udacity Nanodegree', year: 'Jan 2021' }
               ].map((edu, idx) => (
                 <div key={idx} className="relative pl-6 border-l-2 border-os-tertiary/20 group hover:border-os-tertiary transition-colors">
-                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-tertiary shadow-[0_0_10px_rgba(0,245,160,0.5)] scale-0 group-hover:scale-100 transition-transform" />
+                  <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-tertiary shadow-[0_0_10px_rgb(var(--os-tertiary-rgb)_/_0.5)] scale-0 group-hover:scale-100 transition-transform" />
                   <h4 className="font-bold text-sdl-ink">{edu.title}</h4>
                   <p className="text-sm text-os-onSurfaceVariant font-medium">{edu.school}</p>
                   <p className="text-[10px] text-os-onSurfaceVariant/50 font-black tracking-widest mt-1 uppercase">{edu.year}</p>
@@ -268,7 +272,7 @@ const AboutMe = () => {
           <p className="text-os-onSurfaceVariant font-bold uppercase tracking-widest text-xs mb-8">Ready to sync workflows?</p>
           <button 
             onClick={() => useOSStore.getState().openWindow('mail')}
-            className="px-12 py-5 bg-gradient-to-r from-os-primary to-os-secondary text-[#060e20] font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all"
+            className="px-12 py-5 bg-sdl-accent text-sdl-onAccent font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
           >
             Initiate Contact
           </button>

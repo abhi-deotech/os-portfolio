@@ -31,14 +31,27 @@ const FileTreeNode = ({ node, level = 0, selectedFile, setSelectedFile }) => {
     setIsOpen(true);
   }
 
+  const activate = () => (isFolder
+    ? setIsOpen(!isOpen)
+    : useOSStore.getState().openWindow('documentation', node.id));
+
   return (
     <div className="select-none">
       <div
-        className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer transition-all ${
+        role="button"
+        tabIndex={0}
+        aria-expanded={isFolder ? isOpen : undefined}
+        className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${
           isSelected ? 'bg-os-primary/20 border border-os-outline/30' : 'hover:bg-veil/5 border border-transparent'
         }`}
         style={{ marginLeft: `${level * 12}px` }}
-        onClick={() => isFolder ? setIsOpen(!isOpen) : useOSStore.getState().openWindow('documentation', node.id)}
+        onClick={activate}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            activate();
+          }
+        }}
       >
         {isFolder ? (
           <ChevronRight size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : ''} text-os-onSurfaceVariant`} />
@@ -230,7 +243,8 @@ const DocumentationApp = () => {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-xl hover:bg-veil/5 transition-colors touch-hit-area"
+            aria-label={sidebarOpen ? 'Hide documentation tree' : 'Show documentation tree'}
+            className="p-2 rounded-xl hover:bg-veil/5 transition-colors touch-hit-area focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
           >
             <CustomIcon icon={sidebarOpen ? X : Menu} size={18} color="text-os-onSurfaceVariant" />
           </button>
@@ -241,7 +255,7 @@ const DocumentationApp = () => {
             <div>
               <h1 className="text-sm font-black text-os-onSurface tracking-tight">OS DOCUMENTATION</h1>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-os-secondary animate-pulse' : 'bg-green-500'}`} />
+                <div className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-os-secondary animate-pulse' : 'bg-sdl-done'}`} />
                 <span className="text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest leading-none">
                   {isSyncing ? 'Synchronizing...' : 'Lumina Core v1.0.0'}
                 </span>
@@ -258,7 +272,7 @@ const DocumentationApp = () => {
               placeholder="Search docs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-os-surfaceContainerLow/50 rounded-xl text-xs text-os-onSurface placeholder:text-os-onSurfaceVariant border border-os-outline/10 focus:border-os-primary/30 focus:outline-none w-48 lg:w-64 transition-all"
+              className="pl-10 pr-4 py-2 bg-os-surfaceContainerLow/50 rounded-xl text-xs text-os-onSurface placeholder:text-os-onSurfaceVariant border border-os-outline/10 focus:border-os-primary/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 w-48 lg:w-64 transition-all"
             />
             
             {/* Search Popover */}
@@ -274,8 +288,17 @@ const DocumentationApp = () => {
                   {searchResults.map(res => (
                     <div
                       key={res.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => { openWindow('documentation', res.id); setSearchTerm(''); }}
-                      className="p-3 rounded-xl hover:bg-veil/5 cursor-pointer group"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          openWindow('documentation', res.id);
+                          setSearchTerm('');
+                        }
+                      }}
+                      className="p-3 rounded-xl hover:bg-veil/5 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <FileText size={12} className="text-os-primary" />
@@ -293,11 +316,11 @@ const DocumentationApp = () => {
           <button
             onClick={fetchDocumentationFromGitHub}
             disabled={isSyncing}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all ${
-              syncStatus === 'success' 
-                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${
+              syncStatus === 'success'
+                ? 'bg-sdl-done/20 text-sdl-done border border-sdl-done/30'
                 : syncStatus === 'error'
-                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                ? 'bg-sdl-alert/20 text-sdl-alert border border-sdl-alert/30'
                 : 'bg-os-secondary/10 text-os-secondary border border-os-secondary/20 hover:bg-os-secondary/20 active:scale-95'
             }`}
           >
@@ -342,7 +365,7 @@ const DocumentationApp = () => {
                     {new Date(lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                   <div className="flex gap-2 text-[10px] text-os-onSurfaceVariant font-bold">
-                    <span className="text-green-500">READY</span>
+                    <span className="text-sdl-done">READY</span>
                   </div>
                 </div>
               )}
@@ -351,13 +374,20 @@ const DocumentationApp = () => {
         </AnimatePresence>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#060e20]/40 overflow-hidden">
+        <div className="flex-1 flex flex-col min-w-0 bg-sdl-plane/40 overflow-hidden">
           {selectedFile ? (
             <div className="h-full flex flex-col relative">
               {/* Internal Breadcrumb & ToC Toggle */}
               <div className="h-14 border-b border-os-outline/5 flex items-center justify-between px-6 shrink-0 bg-os-surface/30 backdrop-blur-md">
                 <div className="flex items-center gap-2 text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest overflow-hidden">
-                  <Home size={12} className="shrink-0 cursor-pointer hover:text-os-primary transition-colors" onClick={() => setSelectedFile(null)} />
+                  <button
+                    type="button"
+                    aria-label="Back to documentation home"
+                    onClick={() => setSelectedFile(null)}
+                    className="shrink-0 rounded hover:text-os-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+                  >
+                    <Home size={12} />
+                  </button>
                   {(selectedFile?.path || []).map((segment, idx) => (
                     <React.Fragment key={idx}>
                       <ChevronRight size={12} className="shrink-0 opacity-30" />
@@ -370,7 +400,9 @@ const DocumentationApp = () => {
                 
                 <button
                   onClick={() => setShowToC(!showToC)}
-                  className={`p-2 rounded-lg transition-all ${showToC ? 'bg-os-primary/20 text-os-primary' : 'hover:bg-veil/5 text-os-onSurfaceVariant'}`}
+                  aria-pressed={showToC}
+                  aria-label="Toggle table of contents"
+                  className={`p-2 rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${showToC ? 'bg-os-primary/20 text-os-primary' : 'hover:bg-veil/5 text-os-onSurfaceVariant'}`}
                 >
                   <List size={18} />
                 </button>
@@ -392,9 +424,9 @@ const DocumentationApp = () => {
                         <AlertCircle size={12} />
                         End of Documentation
                       </div>
-                      <button 
+                      <button
                         onClick={() => openWindow('files')}
-                        className="flex items-center gap-2 text-[10px] font-black text-os-primary uppercase tracking-widest hover:underline"
+                        className="flex items-center gap-2 text-[10px] font-black text-os-primary uppercase tracking-widest hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                       >
                         Source Code <ExternalLink size={12} />
                       </button>
@@ -414,16 +446,17 @@ const DocumentationApp = () => {
                       </h4>
                       <nav className="space-y-3">
                         {tableOfContents.map((item, idx) => (
-                          <div 
+                          <button
                             key={idx}
-                            className={`text-xs cursor-pointer hover:text-os-primary transition-colors block truncate ${item.level === 3 ? 'pl-4 text-os-onSurfaceVariant' : 'font-bold text-os-onSurface'}`}
+                            type="button"
+                            className={`w-full text-left text-xs cursor-pointer hover:text-os-primary transition-colors block truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${item.level === 3 ? 'pl-4 text-os-onSurfaceVariant' : 'font-bold text-os-onSurface'}`}
                             onClick={() => {
                               const el = document.getElementById(item.id);
                               if (el) el.scrollIntoView({ behavior: 'smooth' });
                             }}
                           >
                             {item.text}
-                          </div>
+                          </button>
                         ))}
                       </nav>
                     </motion.div>
@@ -458,8 +491,17 @@ const DocumentationApp = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.1 }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={file.name}
                       onClick={() => openWindow('documentation', file.id)}
-                      className="p-5 bg-os-surfaceContainerLow/50 rounded-2xl border border-os-outline/10 hover:border-os-primary/40 hover:bg-os-surfaceContainerLow transition-all text-left group cursor-pointer group shadow-xl"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          openWindow('documentation', file.id);
+                        }
+                      }}
+                      className="p-5 bg-os-surfaceContainerLow/50 rounded-2xl border border-os-outline/10 hover:border-os-primary/40 hover:bg-os-surfaceContainerLow transition-all text-left group cursor-pointer group shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="p-2 bg-os-primary/10 rounded-xl border border-os-primary/20 group-hover:bg-os-primary/20 transition-colors">

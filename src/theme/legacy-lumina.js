@@ -6,9 +6,10 @@
  * than a hypothetical one.
  *
  * Values are taken verbatim from the shipped :root block, including its flaws — those flaws are the
- * point. `missingRoles` is the honest part: the legacy palette genuinely has no sunken, no
- * accent-soft, no accent-ink and no bar channel, because it never distinguished chrome from data.
- * The showcase renders those as struck-through em-dashes.
+ * point. `missingRoles` is the honest part: the legacy palette has no chart well, no accent-soft,
+ * no accent-ink, no deepened sunken ink and no bar channel, because it never distinguished chrome
+ * from data. The showcase renders those as struck-through em-dashes. (It DOES have a real, distinct
+ * `sunken` — that one it got right.)
  *
  * Measured against SDL's locked band (see sdl-notes.md): all four legacy accents run 100% HSL
  * saturation at relative luminance 0.375-0.678, while SDL's locked dark accents run 46-82% at
@@ -29,8 +30,10 @@ export const LUMINA_NEON_LEGACY = {
 
   roles: {
     plane: '#060e20',
-    // Identical to plane — a Law 4 violation you can see in the swatch ladder, and true of the
-    // shipped product: index.css declared --os-background and --os-surface as the same hex.
+    // Identical to plane — no law names this directly (law 4 is about chart WELLS), but a surface
+    // that does not demarcate from its plane is the role vocabulary collapsing, and you can see it
+    // in the swatch ladder. True of the shipped product: index.css declared --os-background and
+    // --os-surface as the same hex.
     surface: '#060e20',
     sunken: '#091328',
     chart: '#12161d',

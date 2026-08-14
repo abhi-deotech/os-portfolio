@@ -6,6 +6,7 @@ import { useIsMobile } from '../hooks/useMediaQuery';
 import Visualizer from './Visualizer';
 import { seek as engineSeek } from '../utils/musicEngine';
 import { MUSIC_DATA, CATEGORIES } from '../data/musicData';
+import { useColorway } from '../theme/useColorway';
 
 const MusicApp = () => {
   const {
@@ -19,9 +20,18 @@ const MusicApp = () => {
     setMusicVolume,
     nextTrack,
     prevTrack,
-    activeAccent,
     unlockAchievement
   } = useOSStore();
+
+  // Canvas, so it cannot read a CSS variable — a sanctioned useColorway consumer. The old ternary
+  // chain tested `activeAccent === 'blue'`, a value the accent preset never took, so the visualizer
+  // only ever rendered one of two hardcoded colours regardless of the theme.
+  //
+  // The raw accent, not accentAtLightness(). That helper pins lightness for surfaces that do NOT
+  // follow the mode — and this app's plane used to be a hardcoded near-black, which is exactly why
+  // it was needed here. Now that the plane is `bg-sdl-plane`, SDL already guarantees the accent
+  // reads against it in both modes, and pinning would fight the theme instead of serving it.
+  const vizAccent = useColorway().roles.accent;
 
   const isMobile = useIsMobile();
   const [showSidebar, setShowSidebar] = useState(!isMobile);
@@ -81,7 +91,7 @@ const MusicApp = () => {
   };
 
   return (
-    <div className="flex h-full bg-[#030712] text-sdl-ink overflow-hidden rounded-b-2xl relative">
+    <div className="flex h-full bg-sdl-plane text-sdl-ink overflow-hidden rounded-b-2xl relative">
       {/* Background Glow */}
       <div className="absolute inset-0 bg-gradient-to-br from-os-primary/5 to-transparent pointer-events-none" />
       {/* Sidebar */}
@@ -89,7 +99,7 @@ const MusicApp = () => {
         <motion.div 
           initial={isMobile ? { x: -300 } : false}
           animate={{ x: 0 }}
-          className={`${isMobile ? 'absolute inset-y-0 left-0 z-50 w-64' : 'w-64'} bg-black/90 md:bg-black/40 border-r border-hairline/5 p-6 flex flex-col gap-8 h-full`}
+          className={`${isMobile ? 'absolute inset-y-0 left-0 z-50 w-64' : 'w-64'} bg-veil/[0.06] md:bg-veil/[0.03] border-r border-hairline/5 p-6 flex flex-col gap-8 h-full`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3 text-os-primary">
@@ -133,15 +143,15 @@ const MusicApp = () => {
       )}
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col relative overflow-hidden bg-black/20">
+      <div className="flex-grow flex flex-col relative overflow-hidden bg-veil/[0.02]">
         <div className="absolute inset-0 z-0 opacity-40">
-          <Visualizer isPlaying={music.isPlaying} accentColor={activeAccent === 'purple' ? '#a855f7' : activeAccent === 'blue' ? '#3b82f6' : '#10b981'} />
+          <Visualizer isPlaying={music.isPlaying} accentColor={vizAccent} />
         </div>
         <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-os-primary/10 to-transparent pointer-events-none" />
         
         <div className="flex-grow overflow-y-auto p-4 md:p-8 z-10 custom-scrollbar relative">
           {isMobile && (
-            <button onClick={() => setShowSidebar(true)} className="absolute top-4 left-4 p-2 bg-black/40 rounded-xl border border-hairline/10 z-20">
+            <button onClick={() => setShowSidebar(true)} className="absolute top-4 left-4 p-2 bg-veil/[0.06] rounded-xl border border-hairline/10 z-20">
               <List size={20} />
             </button>
           )}
@@ -157,7 +167,7 @@ const MusicApp = () => {
               >
                 <div className="relative group">
                    <div className="absolute inset-0 bg-gradient-to-r from-os-primary/20 to-os-secondary/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
-                   <div className="relative p-8 md:p-12 rounded-3xl border border-hairline/5 bg-black/40 backdrop-blur-xl overflow-hidden">
+                   <div className="relative p-8 md:p-12 rounded-3xl border border-hairline/5 bg-veil/[0.04] backdrop-blur-xl overflow-hidden">
                       <div className="absolute right-0 top-0 w-64 h-64 bg-os-primary/10 blur-[100px]" />
                       <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
                          <motion.img 
@@ -195,7 +205,7 @@ const MusicApp = () => {
                         >
                            <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-hairline/10 shadow-lg">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <div className="absolute inset-0 bg-scrim opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                  <div className="w-12 h-12 rounded-full bg-os-primary flex items-center justify-center text-sdl-onAccent">
                                     <Play size={24} fill="currentColor" />
                                  </div>
@@ -222,7 +232,7 @@ const MusicApp = () => {
                         >
                            <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-hairline/10 shadow-lg">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <div className="absolute inset-0 bg-scrim opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                  <div className="w-12 h-12 rounded-full bg-os-secondary flex items-center justify-center text-sdl-onAccent">
                                     <Play size={24} fill="currentColor" />
                                  </div>
@@ -247,7 +257,7 @@ const MusicApp = () => {
               >
                 <div className="relative h-48 md:h-64 rounded-3xl overflow-hidden border border-hairline/10 group">
                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/40 via-blue-500/40 to-cyan-400/40 group-hover:scale-110 transition-transform duration-700" />
-                   <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-black/40 backdrop-blur-sm">
+                   <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-scrim backdrop-blur-sm">
                       <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4">Discover Infinite Beats</h2>
                       <div className="relative w-full max-w-xl">
                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-sdl-sec" size={20} />
@@ -299,7 +309,7 @@ const MusicApp = () => {
                         >
                            <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-hairline/10">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <div className="absolute inset-0 bg-scrim opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                  <Play size={20} fill="currentColor" />
                               </div>
                            </div>
@@ -332,7 +342,7 @@ const MusicApp = () => {
                         >
                            <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-hairline/10">
                               <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                              <div className="absolute inset-0 bg-scrim opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                                  <Play size={20} fill="currentColor" />
                               </div>
                            </div>
@@ -355,7 +365,7 @@ const MusicApp = () => {
               >
                 <div className="flex items-end gap-8 mb-12">
                    <div className="w-48 h-48 md:w-64 md:h-64 rounded-3xl bg-gradient-to-br from-os-primary to-os-secondary flex items-center justify-center shadow-2xl border border-hairline/10">
-                      <Heart size={80} fill="black" strokeWidth={0} />
+                      <Heart size={80} fill="currentColor" strokeWidth={0} className="text-sdl-sec" />
                    </div>
                    <div className="flex flex-col gap-2">
                       <span className="text-xs font-black uppercase tracking-[0.3em] text-os-primary">Collection</span>
@@ -402,7 +412,7 @@ const MusicApp = () => {
         </div>
 
         {/* Player Bar */}
-        <div className={`h-24 bg-black/80 backdrop-blur-3xl border-t border-hairline/5 px-4 md:px-8 flex items-center justify-between z-20`}>
+        <div className={`h-24 bg-sdl-surface/80 backdrop-blur-3xl border-t border-hairline/5 px-4 md:px-8 flex items-center justify-between z-20`}>
           <div className={`flex items-center gap-4 ${isMobile ? 'w-1/2' : 'w-1/3'}`}>
              <motion.div 
                whileHover={{ scale: 1.05 }}
@@ -432,9 +442,9 @@ const MusicApp = () => {
                     setMusicIsPlaying(nextState);
                     if (nextState) unlockAchievement('audiophile');
                   }}
-                  className="w-10 h-10 rounded-full bg-white text-sdl-onAccent flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                  className="w-10 h-10 rounded-full bg-sdl-accent text-sdl-onAccent flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
                 >
-                  {music.isPlaying ? <Pause size={20} fill="black" /> : <Play size={20} fill="black" className="translate-x-0.5" />}
+                  {music.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="translate-x-0.5" />}
                 </button>
                 <button className="text-os-onSurfaceVariant hover:text-sdl-ink transition-colors" onClick={nextTrack}><SkipForward size={22} fill="currentColor" /></button>
                 <button 
@@ -493,11 +503,11 @@ const MusicApp = () => {
             initial={{ opacity: 0, scale: 1.1, y: 100 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 100 }}
-            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-3xl p-8 md:p-16 flex flex-col items-center justify-center overflow-hidden"
+            className="fixed inset-0 z-[100] bg-sdl-plane/95 backdrop-blur-3xl p-8 md:p-16 flex flex-col items-center justify-center overflow-hidden"
           >
             {/* Immersive Background */}
             <div className="absolute inset-0 z-0">
-               <Visualizer isPlaying={music.isPlaying} accentColor={activeAccent === 'purple' ? '#a855f7' : '#3b82f6'} scale={1.5} />
+               <Visualizer isPlaying={music.isPlaying} accentColor={vizAccent} scale={1.5} />
                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
             </div>
 
@@ -567,9 +577,9 @@ const MusicApp = () => {
                         <button onClick={handlePrev} className="hover:scale-110 transition-transform"><SkipBack size={48} fill="currentColor" /></button>
                         <button 
                           onClick={() => setMusicIsPlaying(!music.isPlaying)}
-                          className="w-20 h-20 rounded-full bg-white text-sdl-onAccent flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl shadow-os-primary/20"
+                          className="w-20 h-20 rounded-full bg-sdl-accent text-sdl-onAccent flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl shadow-os-primary/20"
                         >
-                          {music.isPlaying ? <Pause size={40} fill="black" /> : <Play size={40} fill="black" className="translate-x-1" />}
+                          {music.isPlaying ? <Pause size={40} fill="currentColor" /> : <Play size={40} fill="currentColor" className="translate-x-1" />}
                         </button>
                         <button onClick={nextTrack} className="hover:scale-110 transition-transform"><SkipForward size={48} fill="currentColor" /></button>
                         <button onClick={cycleRepeatMode} className={music.repeatMode !== 'none' ? 'text-os-primary' : 'opacity-40'}><Repeat size={28} /></button>

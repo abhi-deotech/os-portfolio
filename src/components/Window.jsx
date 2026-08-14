@@ -29,7 +29,7 @@ import WindowGlass from './WindowGlass';
  * @param {number} [props.minHeight=300] - Minimum resize height
  */
 const Window = ({ id, title, children, isMinimized, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
-  const { closeWindow, toggleMinimizeWindow, toggleMaximizeWindow, snapWindow, focusWindow, activeWindow, maximizedWindows, snappedWindows, activeAccent, setIsDragging, isDragging, transparencyEffects } = useOSStore();
+  const { closeWindow, toggleMinimizeWindow, toggleMaximizeWindow, snapWindow, focusWindow, activeWindow, maximizedWindows, snappedWindows, setIsDragging, isDragging, transparencyEffects } = useOSStore();
   const isMobile = useIsMobile();
   const { playSound } = useSoundEffects();
   const isActive = activeWindow === id;
@@ -58,13 +58,11 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
     }
   }, [isMobile, id, maximizedWindows, toggleMaximizeWindow]);
 
-  const accentHexMap = {
-    purple: '#cc97ff',
-    cyan: '#00d2fd',
-    magenta: '#ff68f0',
-    green: '#00f5a0'
-  };
-  const accentHex = accentHexMap[activeAccent] || '#cc97ff';
+  // The focused-window accent was a four-entry hex map keyed off the retired `activeAccent`
+  // preset, so it stayed neon purple no matter which of the sixteen colorways was active. These
+  // are all CSS-expressible, so they read the role directly and need no JS at all.
+  const ACCENT = 'var(--sdl-accent)';
+  const ACTIVE_SHADOW = '0 32px 64px rgb(var(--sdl-plane-rgb) / 0.5), 0 0 20px rgb(var(--sdl-accent-rgb) / 0.2)';
 
   const isSnapped = snappedWindows?.[id];
 
@@ -196,13 +194,13 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
             y: 0
           }),
           zIndex: isActive ? 50 : 10,
-          borderColor: isActive && !isMaximized && !isSnapped ? accentHex : undefined,
-          boxShadow: isActive && !isMaximized && !isSnapped ? `0 32px 64px rgba(0,0,0,0.5), 0 0 20px ${accentHex}33` : undefined,
+          borderColor: isActive && !isMaximized && !isSnapped ? ACCENT : undefined,
+          boxShadow: isActive && !isMaximized && !isSnapped ? ACTIVE_SHADOW : undefined,
           resize: (isMaximized || isSnapped || isMobile) ? 'none' : 'both',
           overflow: 'hidden'
         }}
         className={`absolute flex flex-col transition-shadow duration-300 pointer-events-auto group/window ${
-          isActive ? 'border' : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgba(0,0,0,0.3)]'
+          isActive ? 'border' : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgb(var(--sdl-plane-rgb)/0.3)]'
         } ${!isMaximized && !isSnapped ? `bg-os-surfaceContainerHighest/50 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl` : `bg-os-surface/95 ${transparencyEffects ? 'backdrop-blur-3xl' : ''}`}`}
       >
       {/* Title Bar - Glassmorphic Strip */}
@@ -220,7 +218,9 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
         style={{ 
           touchAction: "none", 
           cursor: (isMaximized || isMobile) ? 'default' : 'grab',
-          backgroundColor: isActive ? `${accentHex}15` : 'rgba(25, 37, 64, 0.4)'
+          backgroundColor: isActive
+            ? 'rgb(var(--sdl-accent-rgb) / 0.08)'
+            : 'rgb(var(--sdl-surface-2-rgb) / 0.4)'
         }}
       >
         <div className="flex space-x-2.5 z-50 w-24 group/controls" onPointerDown={(e) => e.stopPropagation()}>
@@ -229,7 +229,7 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
             onClick={() => { closeWindow(id); playSound('close'); }}
             aria-label="Close window"
             title="Close"
-            className={`${isMobile ? 'w-5 h-5' : 'w-3.5 h-3.5'} rounded-full bg-[#ff5f56] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#e0443e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/50`}
+            className={`${isMobile ? 'w-5 h-5' : 'w-3.5 h-3.5'} rounded-full bg-[#ff5f56] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#e0443e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-hairline/60`}
           >
             <CustomIcon icon={X} size={isMobile ? 12 : 10} strokeWidth={4} color="text-[#4c0000]" className={`${isMobile ? 'opacity-100' : 'opacity-0'} group-hover/controls:opacity-100 transition-opacity`} animate={false} />
           </button>
@@ -240,7 +240,7 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
                onClick={() => { toggleMinimizeWindow(id); playSound('click'); }}
                aria-label="Minimize window"
                title="Minimize"
-               className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/50"
+               className="w-3.5 h-3.5 rounded-full bg-[#ffbd2e] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#dea123] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-hairline/60"
               >
                 <CustomIcon icon={Minus} size={10} strokeWidth={4} color="text-[#5c3e00]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
               </button>
@@ -249,7 +249,7 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
                 onClick={() => { toggleMaximizeWindow(id); playSound('click'); }}
                 aria-label={isMaximized ? "Restore window" : "Maximize window"}
                 title={isMaximized ? "Restore" : "Maximize"}
-                className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#1aab29] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-white/50"
+                className="w-3.5 h-3.5 rounded-full bg-[#27c93f] hover:brightness-110 flex items-center justify-center relative z-50 cursor-pointer border border-[#1aab29] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-hairline/60"
               >
                 {isMaximized ? (
                   <CustomIcon icon={Minimize2} size={9} strokeWidth={4} color="text-[#004d09]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />

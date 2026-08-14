@@ -14,6 +14,12 @@
  * records Gill Sans as REJECTED for titles — which is exactly what the JSON still lists for Rose Dusk
  * and Garden Dawn. Typography owns typography, so the JSON field is dropped and this table wins.
  *
+ * SCOPE, stated plainly because the paragraph above reads narrower than the behaviour: `normalize()`
+ * never reads `cw.font` for ANY colorway, so this table overrides all 15, not just the two named.
+ * Rose Dusk and Garden Dawn are simply the cases where the JSON's answer was actively rejected
+ * upstream; Tangerine Vivid, Fuchsia Bold and Emerald Bold list "Avenir Next", which the same
+ * typography lock also rejects, and the remaining eight list "system" and are unaffected either way.
+ *
  * These are SYSTEM STACKS by design. Do not webfont them: SDL wrote them as stacks precisely so that
  * most users land on a declared fallback, and adding ~40KB per theme for a face the system already
  * has is exactly the kind of loudness the design language argues against.

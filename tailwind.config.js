@@ -68,6 +68,11 @@ export default {
           warn: "rgb(var(--sdl-warn-rgb) / <alpha-value>)",
           done: "rgb(var(--sdl-done-rgb) / <alpha-value>)",
         },
+        // Modal/overlay scrim. Defined in grammar.css since P3 but only reachable from hand-written
+        // CSS until now, so every modal in the app reached for `bg-black/60` instead — which is
+        // wrong in light mode, where the scrim is the colorway's own INK at 28%, not pure black.
+        // No <alpha-value> twin: the alpha is part of the role's definition, not the caller's choice.
+        scrim: "var(--sdl-scrim)",
         // Mode-aware alpha channels. `veil` LIFTS in dark (white over a dark plane) and DEEPENS in
         // light, using the colorway's own ink rather than pure black so each pack stays in register.
         // This is what replaces the 925 bare white/black literals in P4.

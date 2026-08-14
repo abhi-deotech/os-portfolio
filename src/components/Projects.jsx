@@ -6,6 +6,7 @@ import {
   ArrowRight, Sparkles, Star
 } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import { useVizPalette } from '../theme/useColorway';
 
 const GithubIcon = ({ size = 20, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -21,7 +22,6 @@ const PROJECTS = [
     tags: ['React', 'Zustand', 'Framer Motion', 'Tailwind'],
     category: 'Full Stack',
     icon: Layers,
-    color: '#cc97ff',
     github: 'https://github.com/abhi-deotech/os-portfolio',
     demo: 'https://lumina-os.dev',
     featured: true,
@@ -34,7 +34,6 @@ const PROJECTS = [
     tags: ['Three.js', 'WebGL', 'TypeScript', 'GLSL'],
     category: 'Graphics',
     icon: Cpu,
-    color: '#00d2fd',
     github: 'https://github.com/abhi-deotech/nexus-x',
     demo: 'https://nexus.dev',
     featured: true,
@@ -47,7 +46,6 @@ const PROJECTS = [
     tags: ['Node.js', 'Socket.io', 'OpenAI', 'Redis'],
     category: 'AI / Realtime',
     icon: Globe,
-    color: '#00f5a0',
     github: 'https://github.com/abhi-deotech/neural-chat',
     demo: 'https://chat.neural.dev',
     featured: false,
@@ -60,7 +58,6 @@ const PROJECTS = [
     tags: ['React Native', 'Web3.js', 'Biometrics', 'Redux'],
     category: 'Mobile',
     icon: Smartphone,
-    color: '#ff86c3',
     github: 'https://github.com/abhi-deotech/cyber-vault',
     demo: 'https://vault.dev',
     featured: false,
@@ -73,7 +70,6 @@ const PROJECTS = [
     tags: ['Go', 'Python', 'Docker', 'Kubernetes'],
     category: 'Backend',
     icon: Database,
-    color: '#ffc86b',
     github: 'https://github.com/abhi-deotech/quantum-analytics',
     demo: 'https://stats.quantum.dev',
     featured: false,
@@ -86,7 +82,6 @@ const PROJECTS = [
     tags: ['Design', 'React', 'Tailwind', 'CSS'],
     category: 'Design',
     icon: Palette,
-    color: '#9effc8',
     github: 'https://github.com/abhi-deotech/aether-ui',
     demo: 'https://aether.dev',
     featured: true,
@@ -94,7 +89,20 @@ const PROJECTS = [
   }
 ];
 
-const ProjectCard = ({ project }) => {
+/**
+ * Six peer cards that have to be told apart is exactly the categorical case, so a card's identity is
+ * its slot in the active colorway's own series rather than a fixed hex. The six hexes that used to
+ * live on the records were the retired legacy-neon palette, which meant every card rendered the same
+ * six colours on all sixteen colorways — including the ten light ones, where #9effc8 measures under
+ * 1.5:1 on the plane. Position is taken in PROJECTS, not in the filtered list, so filtering does not
+ * shuffle the colours; `cat` ships five entries, so the sixth wraps rather than falling back.
+ */
+const seriesColor = (viz, i) => (viz.cat?.length ? viz.cat[i % viz.cat.length] : null);
+
+const ProjectCard = ({ project, series }) => {
+  const glyph = series || 'var(--sdl-accent)';
+  const wash = series ? `${series}15` : 'var(--sdl-soft)';
+
   return (
     <motion.div
       layout
@@ -104,13 +112,13 @@ const ProjectCard = ({ project }) => {
       whileHover={{ y: -8 }}
       className="p-6 rounded-[2.5rem] bg-veil/[0.03] border border-hairline/5 hover:border-os-primary/40 transition-all group relative overflow-hidden flex flex-col h-full shadow-2xl"
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-veil/[0.02] to-transparent pointer-events-none" />
       <div className="absolute -right-12 -top-12 w-48 h-48 bg-os-primary/5 blur-[80px] rounded-full group-hover:bg-os-primary/10 transition-all" />
       
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div className={`p-4 rounded-2xl flex items-center justify-center border border-hairline/5 shadow-xl`} style={{ backgroundColor: `${project.color}15` }}>
-          <project.icon size={28} style={{ color: project.color }} />
+        <div className="p-4 rounded-2xl flex items-center justify-center border border-hairline/5 shadow-xl" style={{ backgroundColor: wash }}>
+          <project.icon size={28} style={{ color: glyph }} />
         </div>
         <div className="flex items-center gap-4">
            {project.featured && (
@@ -149,7 +157,7 @@ const ProjectCard = ({ project }) => {
           href={project.github} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-veil/5 border border-hairline/10 text-xs font-black uppercase tracking-widest hover:bg-veil/10 transition-all active:scale-95"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-veil/5 border border-hairline/10 text-xs font-black uppercase tracking-widest hover:bg-veil/10 transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <GithubIcon size={14} />
           Code
@@ -158,7 +166,7 @@ const ProjectCard = ({ project }) => {
           href={project.demo} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-os-primary text-[#060e20] text-xs font-black uppercase tracking-widest hover:scale-105 transition-all active:scale-95 shadow-lg shadow-os-primary/20"
+          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-os-primary text-sdl-onAccent text-xs font-black uppercase tracking-widest hover:scale-105 transition-all active:scale-95 shadow-lg shadow-os-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <ExternalLink size={14} />
           Live
@@ -171,6 +179,7 @@ const ProjectCard = ({ project }) => {
 const Projects = () => {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const viz = useVizPalette();
 
   const categories = ['All', ...new Set(PROJECTS.map(p => p.category))];
 
@@ -183,7 +192,7 @@ const Projects = () => {
   });
 
   return (
-    <div className="h-full w-full bg-[#060e20]/60 text-os-onSurface overflow-y-auto scrollbar-hide">
+    <div className="h-full w-full bg-sdl-plane/60 text-os-onSurface overflow-y-auto scrollbar-hide">
       <div className="max-w-7xl mx-auto p-6 md:p-12 space-y-12">
         
         {/* Header */}
@@ -209,7 +218,8 @@ const Projects = () => {
                   placeholder="Filter by tech or name..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-12 pr-6 py-4 bg-veil/5 border border-hairline/10 rounded-2xl text-sm text-sdl-ink placeholder:text-os-onSurfaceVariant/50 focus:outline-none focus:border-os-primary/40 focus:bg-veil/10 transition-all w-full md:w-64"
+                  aria-label="Filter projects by tech or name"
+                  className="pl-12 pr-6 py-4 bg-veil/5 border border-hairline/10 rounded-2xl text-sm text-sdl-ink placeholder:text-os-onSurfaceVariant/50 focus:outline-none focus:border-os-primary/40 focus:bg-veil/10 focus-visible:ring-2 focus-visible:ring-os-primary/50 transition-all w-full md:w-64"
                 />
               </div>
            </div>
@@ -222,9 +232,10 @@ const Projects = () => {
                 <button
                   key={cat}
                   onClick={() => setFilter(cat)}
-                  className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                    filter === cat 
-                      ? 'bg-os-primary text-[#060e20] shadow-lg shadow-os-primary/20' 
+                  aria-pressed={filter === cat}
+                  className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${
+                    filter === cat
+                      ? 'bg-os-primary text-sdl-onAccent shadow-lg shadow-os-primary/20'
                       : 'text-os-onSurfaceVariant hover:bg-veil/5 hover:text-sdl-ink'
                   }`}
                 >
@@ -242,7 +253,11 @@ const Projects = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
            <AnimatePresence mode="popLayout">
               {filteredProjects.map(project => (
-                <ProjectCard key={project.id} project={project} />
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  series={seriesColor(viz, PROJECTS.indexOf(project))}
+                />
               ))}
            </AnimatePresence>
         </div>
@@ -257,7 +272,7 @@ const Projects = () => {
              <Layers size={64} className="text-os-onSurfaceVariant/20" />
              <h3 className="text-xl font-bold text-os-onSurface">No matching nodes found</h3>
              <p className="text-sm text-os-onSurfaceVariant max-w-xs mx-auto italic">Try adjusting your filters to explore other parts of the technical log.</p>
-             <button onClick={() => {setFilter('All'); setSearch('');}} className="text-os-primary font-black uppercase tracking-widest text-[10px] mt-4 hover:underline">Reset Search</button>
+             <button onClick={() => {setFilter('All'); setSearch('');}} className="text-os-primary font-black uppercase tracking-widest text-[10px] mt-4 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50">Reset Search</button>
           </motion.div>
         )}
 
@@ -280,7 +295,7 @@ const Projects = () => {
            
            <button 
             onClick={() => useOSStore.getState().openWindow('terminal')}
-            className="flex items-center gap-3 px-8 py-4 bg-veil/5 border border-hairline/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-os-primary hover:border-os-primary hover:text-[#060e20] transition-all group"
+            className="flex items-center gap-3 px-8 py-4 bg-veil/5 border border-hairline/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-os-primary hover:border-os-primary hover:text-sdl-onAccent transition-all group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
            >
               Explore via Terminal <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
            </button>

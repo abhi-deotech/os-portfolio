@@ -35,7 +35,7 @@ const useOSStore = create(
       // theme fields change shape (P2), every existing user silently lands on defaults.
       // NOTE: this store uses a custom async `storage` object rather than createJSONStorage; verify
       // against a real IndexedDB payload that `migrate` fires before relying on it in P2.
-      version: 2,
+      version: 3,
       // Verified in-browser against a real v0 IndexedDB payload: this hook DOES fire despite the
       // custom async `storage` object (zustand's docs assume createJSONStorage).
       migrate: (persistedState, fromVersion) => {
@@ -55,10 +55,41 @@ const useOSStore = create(
           next.reducedMotion = 'system';
           next.iconTheme = 'lumina';
         }
+
+        // v2 → v3: move off the fixed neon icon palette.
+        //
+        // This one DOES change how a returning user's dock looks, which normally we refuse to do.
+        // It is justified because the old default is measurably broken rather than merely different:
+        // on all ten light colorways every one of the eighteen glyphs falls below 3:1, bottoming out
+        // at 1.01:1. Keeping someone on an invisible dock is not respecting their choice.
+        //
+        // Anyone actually running the legacy colorway is exempt — there the neon set is correct and
+        // deliberate — and "Lumina Neon" stays selectable for everyone else.
+        if (fromVersion < 3 && (next.iconTheme === 'lumina' || next.iconTheme === undefined)) {
+          next.iconTheme = next.colorway === 'lumina-neon' ? 'lumina' : 'harmonized';
+        }
+        // 'colorway' and 'duotone' were the pre-v3 theme ids and no longer resolve.
+        if (next.iconTheme === 'colorway' || next.iconTheme === 'duotone') next.iconTheme = 'harmonized';
+
         return next;
       },
       merge: (persistedState, currentState) => {
         const merged = { ...currentState, ...persistedState };
+
+        // Window-state repair. `openWindows` is the source of truth; the three satellite lists are
+        // only meaningful for a window that is actually open. `closeWindow` used to leak into
+        // `maximizedWindows`, and that list is persisted — so anyone who ever maximized and closed
+        // a window carries a phantom id forever, which permanently hid the dock. Fixing the leak
+        // stops NEW poisoning; this repairs the payloads already on disk, and it runs every load
+        // rather than once at a version bump because it is an invariant, not a migration.
+        const open = new Set(merged.openWindows || []);
+        merged.maximizedWindows = (merged.maximizedWindows || []).filter((w) => open.has(w));
+        merged.minimizedWindows = (merged.minimizedWindows || []).filter((w) => open.has(w));
+        merged.snappedWindows = Object.fromEntries(
+          Object.entries(merged.snappedWindows || {}).filter(([w]) => open.has(w)),
+        );
+        if (merged.activeWindow && !open.has(merged.activeWindow)) merged.activeWindow = null;
+
         if (merged.music) {
           // Never rehydrate as "playing" — no audio engine is running yet.
           // Re-resolve the persisted track against the current catalog so

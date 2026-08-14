@@ -13,7 +13,7 @@
  *                utility call sites reskin with zero component edits. Deletable in one commit once
  *                P4 finishes migrating them; `npm run census` tracks the burndown.
  */
-import { rgbTriple, relLuminance } from './registry';
+import { rgbTriple, relLuminance, saturation } from './registry';
 
 /** Mix two hexes in sRGB. Good enough for deriving one ramp step; not a colour-science claim. */
 function mix(hexA, hexB, amountOfA) {
@@ -165,15 +165,15 @@ export function bridgeVars(cw) {
   };
 }
 
-/** Convenience for the showcase: how loud is this accent, against SDL's locked band? */
+/**
+ * Convenience for the showcase: how loud is this accent, against SDL's locked band?
+ *
+ * `saturation` is imported rather than reimplemented — this used to carry a byte-for-byte copy of
+ * registry.js's version as a local IIFE, from a module that already imports two other helpers from
+ * that same file. The showcase quotes these numbers as evidence, so two implementations that could
+ * silently drift apart is the one thing they must not be.
+ */
 export const accentMetrics = (cw) => ({
   relLuminance: +relLuminance(cw.roles.accent).toFixed(3),
-  saturationPct: (function sat(hex) {
-    const h = hex.replace('#', '');
-    const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
-    const max = Math.max(r, g, b); const min = Math.min(r, g, b); const l = (max + min) / 2;
-    if (max === min) return 0;
-    const d = max - min;
-    return Math.round((l > 0.5 ? d / (2 - max - min) : d / (max + min)) * 100);
-  })(cw.roles.accent),
+  saturationPct: saturation(cw.roles.accent),
 });

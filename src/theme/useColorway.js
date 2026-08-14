@@ -12,9 +12,10 @@
  * If the consumer count creeps past a dozen, colour is leaking back into JS and the engine is being
  * misused.
  */
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import useOSStore from '../store/osStore';
 import { resolveColorway, colorwaysByTheme, accentBand } from './registry';
+import { iconStyle, DEFAULT_ICON_THEME, isKnownIconTheme } from './icons';
 
 /** The active colorway record: id, name, theme, mode, radius, tempo, titleFace, roles, viz. */
 export function useColorway() {
@@ -33,6 +34,23 @@ export function useDensity() {
 export function useVizPalette() {
   const cw = useColorway();
   return cw.viz || { cat: [], seq: [], div: [] };
+}
+
+/**
+ * One hook per component, returning a resolver applied per app inside a map.
+ *
+ * Deliberately not `useAppIconStyle(app)`: that shape would have to be called inside `.map()`,
+ * which breaks the rules of hooks the moment the list changes length — and it does, since the dock
+ * shows pinned apps plus whatever is currently open.
+ *
+ * The dock's running-app indicator is the caller. It used to read a per-app `shadow` hex that no
+ * theme touched; Terminal's was `#ffffff`, invisible on every light colorway.
+ */
+export function useIconResolver() {
+  const cw = useColorway();
+  const stored = useOSStore((s) => s.iconTheme);
+  const themeId = isKnownIconTheme(stored) ? stored : DEFAULT_ICON_THEME;
+  return useCallback((app) => iconStyle(themeId, cw, app), [themeId, cw]);
 }
 
 /** Theme-grouped lineup for the Settings picker. Stable across renders. */

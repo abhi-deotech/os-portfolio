@@ -115,10 +115,10 @@ const AIChat = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0c0c0c]">
+    <div className="flex flex-col h-full bg-sdl-plane">
       {/* Header */}
       <div className="flex items-center gap-3 px-6 py-4 border-b border-hairline/5 bg-veil/[0.02]">
-        <div className="w-10 h-10 rounded-2xl bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.2)]">
+        <div className="w-10 h-10 rounded-2xl bg-os-primary/20 flex items-center justify-center text-os-primary shadow-[0_0_20px_var(--sdl-glow)]">
           <Brain size={20} />
         </div>
         <div>
@@ -131,12 +131,14 @@ const AIChat = () => {
            {!isPuterSignedIn && (
              <button
                onClick={() => signInWithPuter()}
-               className="px-3 py-1 bg-os-primary/10 border border-os-primary/30 rounded-lg text-[9px] font-black text-os-primary uppercase tracking-widest hover:bg-os-primary/20 transition-all"
+               className="px-3 py-1 bg-os-primary/10 border border-os-primary/30 rounded-lg text-[9px] font-black text-os-primary uppercase tracking-widest hover:bg-os-primary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
              >
                Sign In
              </button>
            )}
-           <div className={`w-2 h-2 rounded-full ${isPuterSignedIn ? 'bg-os-primary shadow-[0_0_10px_rgb(var(--os-primary-rgb)_/_0.5)]' : 'bg-green-500 animate-pulse'}`} />
+           {/* Local link is the steady/idle state, so it reads as `done` (neutral) — the accent dot
+               is reserved for the cloud link that actually did something. */}
+           <div className={`w-2 h-2 rounded-full ${isPuterSignedIn ? 'bg-os-primary shadow-[0_0_10px_var(--sdl-glow)]' : 'bg-sdl-done animate-pulse'}`} />
         </div>
       </div>
 
@@ -170,7 +172,7 @@ const AIChat = () => {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 onClick={() => signInWithPuter()}
-                className="ml-12 px-4 py-2 bg-os-primary text-sdl-onAccent text-[10px] font-black uppercase tracking-widest rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg"
+                className="ml-12 px-4 py-2 bg-os-primary text-sdl-onAccent text-[10px] font-black uppercase tracking-widest rounded-lg hover:scale-105 active:scale-95 transition-all shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
               >
                 Sign in with Puter
               </motion.button>
@@ -205,11 +207,12 @@ const AIChat = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={isPuterSignedIn ? "Ask anything (Keyless Cloud AI)..." : "Ask about Abhimanyu, his stack, or projects..."}
-              className="w-full bg-[#1a1a1a] border border-hairline/10 rounded-2xl py-4 px-6 text-xs text-sdl-ink outline-none focus:border-os-primary/50 transition-all"
+              className="w-full bg-sdl-sunken border border-hairline/10 rounded-2xl py-4 px-6 text-xs text-sdl-ink focus:border-os-primary/50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             />
-            <button 
+            <button
               type="submit"
-              className="px-6 bg-os-primary text-sdl-onAccent rounded-2xl font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg"
+              aria-label="Send message"
+              className="px-6 bg-os-primary text-sdl-onAccent rounded-2xl font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             >
               <Send size={16} />
             </button>

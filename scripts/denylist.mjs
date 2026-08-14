@@ -43,3 +43,19 @@ export const MEDIA_FILES = [
   'src/components/RetroArcade.jsx', 'src/components/Screensaver.jsx',
   'src/components/Visualizer.jsx', 'src/components/BSOD.jsx', 'src/components/Browser.jsx',
 ];
+
+/**
+ * Strip comments before counting.
+ *
+ * Without this the scanners flag PROSE: the header in src/index.css that explains why the token
+ * layer was dead cites `#cc97ff` by name, and src/theme/icons.js documents the exact neon hexes it
+ * exists to replace. A ratchet that fires on a comment teaches people to explain themselves less,
+ * which is the opposite of what it is for.
+ *
+ * The `//` rule requires the slashes not be preceded by `:` so that `https://…` in a URL survives.
+ */
+export function stripComments(text) {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}

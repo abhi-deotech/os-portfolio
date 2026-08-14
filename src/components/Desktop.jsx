@@ -4,6 +4,26 @@ import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import useSoundEffects from '../hooks/useSoundEffects';
 import { APPS } from '../config/apps';
+import AppIcon from './common/AppIcon';
+
+/**
+ * Desktop labels sit on the user's wallpaper, so they need a halo to stay legible over an arbitrary
+ * photo. The halo was a hardcoded `rgba(0,0,0,0.8)`, which is a dark-mode assumption: under a light
+ * colorway the ink is already dark and a black halo just smudged it. `plane` is the inverse of `ink`
+ * in both modes by construction, so keying the halo to `plane` is correct in either.
+ *
+ * Three stacked layers rather than one soft 8px blur, though. A single diffuse halo is enough when
+ * the plane shows through, and nowhere near enough over a busy mid-tone photograph — a light
+ * colorway puts dark ink behind a pale wash that a photo simply swallows. Stacking a tight opaque
+ * layer under two wider ones builds an outline that survives arbitrary imagery without drawing a
+ * visible box behind every label. This is the same "the USER owns the plane" gap recorded in
+ * sdl-notes.md: SDL's atmosphere grammar assumes the designer controls the background.
+ */
+const LABEL_SHADOW = [
+  '0 0 3px rgb(var(--sdl-plane-rgb) / 0.95)',
+  '0 1px 6px rgb(var(--sdl-plane-rgb) / 0.9)',
+  '0 0 14px rgb(var(--sdl-plane-rgb) / 0.75)',
+].join(', ');
 
 const Desktop = ({ onIconContextMenu }) => {
   const isMobile = useIsMobile();
@@ -30,13 +50,11 @@ const Desktop = ({ onIconContextMenu }) => {
                 onClick={() => { openWindow(icon.id); playSound('click'); }}
                 className="flex flex-col items-center justify-start p-2 rounded-2xl active:bg-veil/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 cursor-pointer transition-colors group"
               >
-                <div className="mb-2 p-4 bg-veil/10 backdrop-blur-2xl rounded-2xl border border-hairline/10 shadow-lg relative active:scale-95 transition-all overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="transition-transform group-hover:scale-110">
-                    {icon.icon(32)}
-                  </div>
-                </div>
-                <span className="text-[10px] text-sdl-ink font-bold text-center leading-tight [text-shadow:0_1px_4px_rgba(0,0,0,0.8)] px-2 transition-all">
+                <AppIcon app={icon} size={32} tile className="mb-2 shadow-lg" />
+                <span
+                  className="text-[10px] text-sdl-ink font-bold text-center leading-tight px-2 transition-all"
+                  style={{ textShadow: LABEL_SHADOW }}
+                >
                   {icon.title}
                 </span>
               </motion.button>
@@ -87,13 +105,17 @@ const Desktop = ({ onIconContextMenu }) => {
               onContextMenu={(e) => onIconContextMenu(e, icon.id)}
               className="absolute flex flex-col items-center justify-start p-2 rounded-2xl hover:bg-veil/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 cursor-grab transition-all w-28 text-center group"
             >
-              <div className="mb-2 p-4 bg-veil/10 backdrop-blur-3xl rounded-[1.75rem] border border-hairline/5 group-hover:border-hairline/20 shadow-xl transition-all relative overflow-hidden group-hover:scale-105 group-active:scale-95 group-hover:bg-veil/15">
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="transition-transform duration-300">
-                  {icon.icon(28)}
-                </div>
-              </div>
-              <span className="text-[11px] md:text-[13px] text-sdl-ink font-semibold tracking-wide [text-shadow:0_1px_8px_rgba(0,0,0,0.8)] px-3 py-1 transition-all group-hover:scale-105">
+              <AppIcon
+                app={icon}
+                size={28}
+                tile
+                radius="var(--sdl-radius-panel)"
+                className="mb-2 shadow-xl transition-transform group-hover:scale-105 group-active:scale-95"
+              />
+              <span
+                className="text-[11px] md:text-[13px] text-sdl-ink font-semibold tracking-wide leading-tight px-3 py-1 transition-all group-hover:scale-105"
+                style={{ textShadow: LABEL_SHADOW }}
+              >
                 {icon.title}
               </span>
             </motion.div>

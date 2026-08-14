@@ -132,24 +132,28 @@ const Game2048 = ({ onBack }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [move, gameOver]);
 
+  // The ladder is three accent-family hues at rising saturation, then the top two tiers as solids.
+  // 1024 was `bg-white` — which is not a role, and paired with `text-sdl-onAccent` (ink measured
+  // against the ACCENT) it went unreadable the moment a colorway made the accent pale. Ink-on-plane
+  // keeps it the maximum-contrast rung it was meant to be, in both modes.
   const tileColors = {
-    2: 'bg-[#cc97ff]/20 text-os-primary border-os-primary/20 shadow-[0_0_15px_rgba(204,151,255,0.1)]',
-    4: 'bg-[#cc97ff]/30 text-os-primary border-os-primary/30 shadow-[0_0_20px_rgba(204,151,255,0.2)]',
-    8: 'bg-[#00d2fd]/20 text-os-secondary border-os-secondary/20 shadow-[0_0_25px_rgba(0,210,253,0.1)]',
-    16: 'bg-[#00d2fd]/30 text-os-secondary border-os-secondary/30 shadow-[0_0_30px_rgba(0,210,253,0.2)]',
-    32: 'bg-[#00f5a0]/20 text-os-tertiary border-os-tertiary/20 shadow-[0_0_35px_rgba(0,245,160,0.1)]',
-    64: 'bg-[#00f5a0]/30 text-os-tertiary border-os-tertiary/30 shadow-[0_0_40px_rgba(0,245,160,0.2)]',
-    128: 'bg-os-primary text-sdl-onAccent border-hairline/20 shadow-[0_0_30px_#cc97ff]',
-    256: 'bg-os-secondary text-sdl-onAccent border-hairline/20 shadow-[0_0_35px_#00d2fd]',
-    512: 'bg-os-tertiary text-sdl-onAccent border-hairline/20 shadow-[0_0_40px_#00f5a0]',
-    1024: 'bg-white text-sdl-onAccent border-hairline/40 shadow-[0_0_50px_rgba(255,255,255,0.4)]',
-    2048: 'bg-gradient-to-br from-os-primary via-os-secondary to-os-tertiary text-sdl-onAccent border-hairline/50 shadow-[0_0_60px_#cc97ff]',
+    2: 'bg-os-primary/20 text-os-primary border-os-primary/20 shadow-[0_0_15px_rgb(var(--os-primary-rgb)/0.1)]',
+    4: 'bg-os-primary/30 text-os-primary border-os-primary/30 shadow-[0_0_20px_rgb(var(--os-primary-rgb)/0.2)]',
+    8: 'bg-os-secondary/20 text-os-secondary border-os-secondary/20 shadow-[0_0_25px_rgb(var(--os-secondary-rgb)/0.1)]',
+    16: 'bg-os-secondary/30 text-os-secondary border-os-secondary/30 shadow-[0_0_30px_rgb(var(--os-secondary-rgb)/0.2)]',
+    32: 'bg-os-tertiary/20 text-os-tertiary border-os-tertiary/20 shadow-[0_0_35px_rgb(var(--os-tertiary-rgb)/0.1)]',
+    64: 'bg-os-tertiary/30 text-os-tertiary border-os-tertiary/30 shadow-[0_0_40px_rgb(var(--os-tertiary-rgb)/0.2)]',
+    128: 'bg-os-primary text-sdl-onAccent border-hairline/20 shadow-[0_0_30px_rgb(var(--os-primary-rgb))]',
+    256: 'bg-os-secondary text-sdl-onAccent border-hairline/20 shadow-[0_0_35px_rgb(var(--os-secondary-rgb))]',
+    512: 'bg-os-tertiary text-sdl-onAccent border-hairline/20 shadow-[0_0_40px_rgb(var(--os-tertiary-rgb))]',
+    1024: 'bg-sdl-ink text-sdl-plane border-hairline/40 shadow-[0_0_50px_var(--sdl-glow)]',
+    2048: 'bg-gradient-to-br from-os-primary via-os-secondary to-os-tertiary text-sdl-onAccent border-hairline/50 shadow-[0_0_60px_rgb(var(--os-primary-rgb))]',
   };
 
   return (
-    <div className="h-full w-full bg-[#050505] text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
+    <div className="h-full w-full bg-sdl-plane text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
       {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,210,253,0.03)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgb(var(--os-secondary-rgb)/0.03)_0%,transparent_70%)] pointer-events-none" />
       
       {/* Header */}
       <div className="w-full max-w-[440px] flex justify-between items-center mb-8 relative z-10">
@@ -157,7 +161,8 @@ const Game2048 = ({ onBack }) => {
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack}
-          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink"
+          aria-label="Back"
+          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <ArrowLeft size={20} />
         </motion.button>
@@ -181,7 +186,8 @@ const Game2048 = ({ onBack }) => {
           whileHover={{ rotate: 180, scale: 1.1 }}
           transition={{ duration: 0.5 }}
           onClick={initGame}
-          className="p-3 rounded-2xl bg-os-secondary/10 border border-os-secondary/20 text-os-secondary hover:bg-os-secondary/20 transition-all"
+          aria-label="Restart"
+          className="p-3 rounded-2xl bg-os-secondary/10 border border-os-secondary/20 text-os-secondary hover:bg-os-secondary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <RefreshCw size={20} />
         </motion.button>
@@ -189,11 +195,11 @@ const Game2048 = ({ onBack }) => {
 
       {/* Game Board Container */}
       <div className="relative p-2 md:p-4 bg-veil/[0.03] border border-hairline/5 rounded-[3rem] backdrop-blur-xl shadow-2xl overflow-hidden group">
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-veil/[0.05] to-transparent pointer-events-none" />
         
         <div className="grid grid-cols-4 gap-2.5 md:gap-4 w-[300px] h-[300px] md:w-[400px] md:h-[400px] relative z-10">
           {grid.flat().map((tile, i) => (
-            <div key={i} className="bg-black/40 rounded-[1.25rem] border border-hairline/5 relative overflow-hidden h-full w-full">
+            <div key={i} className="bg-sdl-sunken rounded-[1.25rem] border border-hairline/5 relative overflow-hidden h-full w-full">
                <AnimatePresence mode="popLayout">
                 {tile !== 0 && (
                   <motion.div
@@ -201,7 +207,7 @@ const Game2048 = ({ onBack }) => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.5, opacity: 0 }}
                     key={`tile-${i}-${tile}`}
-                    className={`absolute inset-0 flex items-center justify-center font-black text-xl md:text-3xl rounded-[1.25rem] border transition-all duration-300 ${tileColors[tile] || 'bg-black text-sdl-ink border-hairline/10'}`}
+                    className={`absolute inset-0 flex items-center justify-center font-black text-xl md:text-3xl rounded-[1.25rem] border transition-all duration-300 ${tileColors[tile] || 'bg-sdl-sunken text-sdl-ink border-hairline/10'}`}
                   >
                     {tile}
                   </motion.div>
@@ -218,16 +224,16 @@ const Game2048 = ({ onBack }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xl rounded-[2.8rem] border border-hairline/10"
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-scrim backdrop-blur-xl rounded-[2.8rem] border border-hairline/10"
             >
-              <Trophy size={64} className="text-os-secondary mb-6 drop-shadow-[0_0_20px_rgba(0,210,253,0.5)]" />
+              <Trophy size={64} className="text-os-secondary mb-6 drop-shadow-[0_0_20px_var(--sdl-glow)]" />
               <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Cycle Complete</h2>
               <p className="text-os-secondary font-black tracking-[0.3em] uppercase text-[10px] mb-8">Final Neural Score: {score}</p>
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={initGame}
-                className="flex items-center gap-3 px-8 py-4 bg-os-secondary text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgba(0,210,253,0.3)]"
+                className="flex items-center gap-3 px-8 py-4 bg-os-secondary text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgb(var(--os-secondary-rgb)/0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
               >
                 <RefreshCw size={20} />
                 Re-Init Node

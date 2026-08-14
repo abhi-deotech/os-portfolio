@@ -10,7 +10,7 @@
    flat grammar enforces itself.
    ───────────────────────────────────────────────────────────────────────────── */
 
-:root[data-mode='dark'] {
+[data-mode='dark'] {
   --sdl-lift:        0 1px 2px rgb(0 0 0 / .50), 0 10px 26px rgb(0 0 0 / .35);
   --sdl-lift-hover:  0 2px 4px rgb(0 0 0 / .55), 0 16px 36px rgb(0 0 0 / .45);
   --sdl-lift-window: 0 2px 4px rgb(0 0 0 / .55), 0 32px 64px rgb(0 0 0 / .50);
@@ -34,7 +34,7 @@
   --sdl-hairline-rgb: 255 255 255;
 }
 
-:root[data-mode='light'] {
+[data-mode='light'] {
   /* Paper-flat. Every shadow role resolves to none, so "flat stays flat" is structural. */
   --sdl-lift:        none;
   --sdl-lift-hover:  none;
@@ -62,8 +62,9 @@
 /* ── State layer ──────────────────────────────────────────────────────────────
    ONE formula, both modes. Because `ink` inverts with the mode, mixing the base toward ink
    LIGHTENS in dark and DARKENS in light — exactly what INTERACTION.md specifies for each —
-   with no branching anywhere. */
-:root {
+   with no branching anywhere. Declared on [data-mode] rather than :root so a ThemeScope subtree
+   recomputes it against ITS OWN surface and ink. */
+[data-mode] {
   --sdl-hover-surface: color-mix(in oklab, var(--sdl-surface) var(--sdl-hover-mix, 88%), var(--sdl-ink));
   --sdl-press-surface: color-mix(in oklab, var(--sdl-surface) var(--sdl-press-mix, 88%), var(--sdl-ink));
   --sdl-hover-plane:   color-mix(in oklab, var(--sdl-plane)   var(--sdl-hover-mix, 88%), var(--sdl-ink));
@@ -87,25 +88,25 @@
 
    `transparencyEffects` stays meaningful in both modes: OFF swaps the alpha fill for the opaque role
    colour and drops the blur. */
-:root[data-mode='dark'][data-glass='on'] {
+[data-mode='dark'][data-glass='on'] {
   --sdl-glass-bg:     rgb(255 255 255 / .05);
   --sdl-glass-bg-2:   rgb(255 255 255 / .10);
   --sdl-glass-border: rgb(255 255 255 / .10);
   --sdl-glass-blur:   blur(24px) saturate(160%);
 }
-:root[data-mode='dark'][data-glass='off'] {
+[data-mode='dark'][data-glass='off'] {
   --sdl-glass-bg:     var(--sdl-surface);
   --sdl-glass-bg-2:   var(--sdl-surface-2);
   --sdl-glass-border: rgb(255 255 255 / .10);
   --sdl-glass-blur:   none;
 }
-:root[data-mode='light'][data-glass='on'] {
+[data-mode='light'][data-glass='on'] {
   --sdl-glass-bg:     rgb(var(--sdl-surface-rgb) / .72);
   --sdl-glass-bg-2:   rgb(var(--sdl-surface-rgb) / .88);
   --sdl-glass-border: rgb(var(--sdl-sec-rgb) / .22);
   --sdl-glass-blur:   blur(20px) saturate(120%);
 }
-:root[data-mode='light'][data-glass='off'] {
+[data-mode='light'][data-glass='off'] {
   --sdl-glass-bg:     var(--sdl-surface);
   --sdl-glass-bg-2:   var(--sdl-sunken);
   --sdl-glass-border: rgb(var(--sdl-sec-rgb) / .22);
@@ -115,13 +116,13 @@
 /* ── Density ──────────────────────────────────────────────────────────────────
    Compact steps every space token down one, body -1px, KPI -20%.
    Radii, inks and accent voices NEVER change between densities. */
-:root[data-density='comfortable'] {
+[data-density='comfortable'] {
   --sdl-s1: 4px;  --sdl-s2: 8px;  --sdl-s3: 12px; --sdl-s4: 16px; --sdl-s5: 24px;
   --sdl-s6: 32px; --sdl-s7: 48px; --sdl-s8: 64px; --sdl-s9: 96px;
   --sdl-card-pad: 14px 16px; --sdl-row-pad: 8px 14px;
   --sdl-body: 13px; --sdl-kpi: 26px; --sdl-control-h: 36px;
 }
-:root[data-density='compact'] {
+[data-density='compact'] {
   --sdl-s1: 4px;  --sdl-s2: 4px;  --sdl-s3: 8px;  --sdl-s4: 12px; --sdl-s5: 16px;
   --sdl-s6: 24px; --sdl-s7: 32px; --sdl-s8: 48px; --sdl-s9: 64px;
   --sdl-card-pad: 9px 12px; --sdl-row-pad: 5px 10px;

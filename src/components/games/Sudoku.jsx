@@ -93,9 +93,9 @@ const Sudoku = ({ onBack }) => {
   };
 
   return (
-    <div className="h-full w-full bg-[#050505] text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
+    <div className="h-full w-full bg-sdl-plane text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
       {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,245,160,0.03)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgb(var(--os-tertiary-rgb)/0.03)_0%,transparent_70%)] pointer-events-none" />
       
       {/* Header */}
       <div className="w-full max-w-lg flex justify-between items-center mb-8 relative z-10">
@@ -103,7 +103,8 @@ const Sudoku = ({ onBack }) => {
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack}
-          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink"
+          aria-label="Back"
+          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <CustomIcon icon={ArrowLeft} size={20} />
         </Motion.button>
@@ -116,7 +117,8 @@ const Sudoku = ({ onBack }) => {
         <Motion.button
           whileHover={{ rotate: 180, scale: 1.1 }}
           onClick={generateSudoku}
-          className="p-3 rounded-2xl bg-os-tertiary/10 border border-os-tertiary/20 text-os-tertiary hover:bg-os-tertiary/20 transition-all"
+          aria-label="New puzzle"
+          className="p-3 rounded-2xl bg-os-tertiary/10 border border-os-tertiary/20 text-os-tertiary hover:bg-os-tertiary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <CustomIcon icon={RefreshCw} size={20} color="text-os-tertiary" glow />
         </Motion.button>
@@ -139,13 +141,26 @@ const Sudoku = ({ onBack }) => {
               <Motion.div
                 key={`${r}-${c}`}
                 onClick={() => handleCellClick(r, c)}
+                // Givens stay out of the tab order: they cannot be edited, so making all 81 cells
+                // stops would bury the 30-odd cells a keyboard player can actually act on.
+                role="button"
+                tabIndex={isInitial ? -1 : 0}
+                aria-label={`Row ${r + 1} column ${c + 1}${cell !== 0 ? `, ${cell}` : ', empty'}${isError ? ', invalid' : ''}`}
+                aria-invalid={isError || undefined}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleCellClick(r, c);
+                  }
+                }}
                 whileTap={{ scale: 0.95 }}
                 className={`
                   w-8 h-8 md:w-11 md:h-11 flex items-center justify-center font-black text-sm md:text-base cursor-pointer transition-all relative
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50
                   ${isInitial ? 'bg-veil/[0.02] text-sdl-ink/80' : 'bg-transparent text-os-tertiary'}
                   ${isRelated && !isSelected ? 'bg-os-tertiary/[0.03]' : ''}
                   ${isSelected ? 'bg-os-tertiary/20 ring-1 ring-inset ring-os-tertiary/50 z-20' : ''}
-                  ${isError ? 'text-red-500 bg-red-500/10' : ''}
+                  ${isError ? 'text-sdl-alert bg-sdl-alert/10' : ''}
                   ${borderRight} ${borderBottom}
                 `}
               >
@@ -163,12 +178,12 @@ const Sudoku = ({ onBack }) => {
             <Motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xl"
+              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-scrim backdrop-blur-xl"
             >
                <CustomIcon icon={ShieldCheck} size={64} className="mb-4 animate-bounce" color="text-os-tertiary" glow />
                <h2 className="text-3xl font-black italic uppercase tracking-tighter">Integrity Verified</h2>
                <p className="text-os-tertiary font-black tracking-[0.3em] uppercase text-[10px] mb-8">Node Sector Secure</p>
-               <button onClick={generateSudoku} className="px-10 py-4 bg-os-tertiary text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl">
+               <button onClick={generateSudoku} className="px-10 py-4 bg-os-tertiary text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50">
                   Re-Analyze
                </button>
             </Motion.div>
@@ -185,7 +200,8 @@ const Sudoku = ({ onBack }) => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleNumberInput(num)}
-                className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-veil/5 border border-hairline/10 font-black text-sm hover:border-os-tertiary/50 hover:text-os-tertiary transition-all flex items-center justify-center"
+                aria-label={num === 0 ? 'Clear cell' : `Enter ${num}`}
+                className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-veil/5 border border-hairline/10 font-black text-sm hover:border-os-tertiary/50 hover:text-os-tertiary transition-all flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
               >
                 {num === 0 ? <CustomIcon icon={XCircle} size={18} /> : num}
               </Motion.button>

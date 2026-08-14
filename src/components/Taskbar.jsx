@@ -5,6 +5,8 @@ import {
   Home, Power, Settings as SettingsIcon
 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
+import AppIcon from './common/AppIcon';
+import { useIconResolver } from '../theme/useColorway';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import useSoundEffects from '../hooks/useSoundEffects';
@@ -14,12 +16,26 @@ const Taskbar = () => {
   const isMobile = useIsMobile();
   const { playSound } = useSoundEffects();
   const [time, setTime] = useState(new Date());
+  // One hook for the whole dock; the running-app dot is resolved per app from it.
+  const resolveIcon = useIconResolver();
 
   const openWindows = useOSStore(state => state.openWindows);
   const minimizedWindows = useOSStore(state => state.minimizedWindows || []);
   const maximizedWindows = useOSStore(state => state.maximizedWindows || []);
   const activeWindow = useOSStore(state => state.activeWindow);
-  const hasMaximizedWindow = maximizedWindows.length > 0;
+  /**
+   * The dock retracts for an immersive full-screen window — but only for the one you are LOOKING at.
+   *
+   * This was `maximizedWindows.length > 0`, i.e. any maximized window anywhere, so maximizing app A
+   * and then focusing a small floating app B still hid the dock.
+   *
+   * Never on mobile: `Window.jsx` force-maximizes every window there, so the old rule hid the dock
+   * for every app — while the window itself reserves `bottom: 80px` for that same dock, leaving an
+   * empty strip and no way back to the launcher.
+   */
+  const immersive = !isMobile && !!activeWindow
+    && maximizedWindows.includes(activeWindow)
+    && !minimizedWindows.includes(activeWindow);
   const openWindow = useOSStore(state => state.openWindow);
   const focusWindow = useOSStore(state => state.focusWindow);
   const toggleMinimizeWindow = useOSStore(state => state.toggleMinimizeWindow);
@@ -44,9 +60,9 @@ const Taskbar = () => {
   return (
     <>
       <div
-        className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-veil/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-hairline/10 flex items-center px-4 justify-between z-[1000] shadow-2xl transition-all duration-500 ${(hasMaximizedWindow && activeWindow) ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
+        className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-veil/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-hairline/10 flex items-center px-4 justify-between z-[1000] shadow-2xl transition-all duration-500 ${immersive ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
       >
-        <div className="flex items-center bg-black/20 rounded-2xl p-1 gap-1 border border-hairline/5 md:mr-4">
+        <div className="flex items-center bg-veil/[0.06] rounded-2xl p-1 gap-1 border border-hairline/5 md:mr-4">
           <button
             type="button"
             onClick={() => { toggleAppLauncher(); playSound('click'); }}
@@ -55,7 +71,7 @@ const Taskbar = () => {
             className={`p-2.5 rounded-xl transition-all cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/10 ${isAppLauncherOpen ? 'bg-os-primary/10 border border-os-primary/30' : 'hover:bg-os-surfaceContainerLow/50 border border-transparent'}`}
           >
             <CustomIcon icon={isMobile && openWindows.length > 0 ? Home : LayoutGrid} size={20} color={isAppLauncherOpen ? 'text-os-primary' : 'text-os-onSurface group-hover:text-os-primary'} glow={isAppLauncherOpen ? 'rgb(var(--os-primary-rgb) / 0.5)' : false} />
-            {isAppLauncherOpen && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-os-primary shadow-[0_0_8px_#cc97ff]" />}
+            {isAppLauncherOpen && <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-os-primary shadow-[0_0_8px_rgb(var(--sdl-accent-rgb))]" />}
           </button>
 
           {!isMobile && (
@@ -111,19 +127,19 @@ const Taskbar = () => {
                     openWindow(app.id);
                   }
                 }}
-                className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/10 ${isActive ? 'bg-veil/10 shadow-[inset_0_0_12px_rgba(255,255,255,0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
+                className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/10 ${isActive ? 'bg-veil/10 shadow-[inset_0_0_12px_rgb(var(--sdl-veil-rgb)/0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
               >
                 <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105 group-active:scale-95'} ${minimizedWindows.includes(app.id) ? 'opacity-60 scale-90' : 'opacity-100'}`}>
-                  {app.icon(isMobile ? 18 : 22, isActive ? app.color : null)}
+                  <AppIcon app={app} size={isMobile ? 18 : 22} animate={false} />
                 </div>
-                
+
                 {isOpen && (
                   <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full transition-all duration-500 ${isActive ? 'w-2 h-1 animate-pulse' : 'w-1 h-1'}`}
-                    style={{ 
-                      backgroundColor: app.shadow || 'rgb(var(--os-primary-rgb) / 1)', 
-                      boxShadow: `0 0 10px ${app.shadow || 'rgb(var(--os-primary-rgb) / 1)'}`,
-                      opacity: 0.8
-                    }} 
+                    style={{
+                      backgroundColor: resolveIcon(app).dot,
+                      boxShadow: `0 0 10px ${resolveIcon(app).dot}`,
+                      opacity: 0.8,
+                    }}
                   />
                 )}
               </button>
@@ -134,11 +150,11 @@ const Taskbar = () => {
         {!isMobile && <div className="h-8 w-px bg-os-outline/20 ml-4 mr-4" />}
 
         <div className={`flex flex-col items-center justify-center ${isMobile ? 'min-w-[50px] ml-2' : 'min-w-[70px] pr-2'} cursor-default select-none`}>
-          <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold text-os-onSurface leading-none mb-0.5`}>
+          <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold tabular-nums text-os-onSurface leading-none mb-0.5`}>
             {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
           {!isMobile && (
-            <span className="text-[10px] text-os-onSurfaceVariant font-bold tracking-tight uppercase leading-none">
+            <span className="text-[10px] text-os-onSurfaceVariant font-bold tabular-nums tracking-tight uppercase leading-none">
               {time.toLocaleDateString([], { month: 'short', day: 'numeric' })}
             </span>
           )}
@@ -180,10 +196,8 @@ const Taskbar = () => {
                           onClick={() => { openWindow(app.id); toggleAppLauncher(); playSound('click'); }}
                           className="flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-veil/5 active:bg-veil/10 transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/5"
                         >
-                          <div className="p-3 bg-os-primary/10 rounded-2xl border border-os-primary/20 group-hover:bg-os-primary/20 group-hover:border-os-primary/40 transition-all mb-1 flex items-center justify-center">
-                            {app.icon(22)}
-                          </div>
-                          <span className="text-[10px] text-os-primary font-black text-center truncate w-full">{app.title}</span>
+                          <AppIcon app={app} size={22} tile pad={12} className="mb-1" />
+                          <span className="text-[10px] text-sdl-ink font-black text-center truncate w-full">{app.title}</span>
                         </button>
                       ))}
                     </div>
@@ -205,10 +219,8 @@ const Taskbar = () => {
                           onClick={() => { openWindow(app.id); toggleAppLauncher(); playSound('click'); }}
                           className="flex flex-col items-center justify-center p-2 rounded-2xl hover:bg-veil/5 active:bg-veil/10 transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/5"
                         >
-                          <div className="p-2.5 bg-os-surfaceContainerLow/30 rounded-xl border border-hairline/5 group-hover:border-os-primary/30 transition-all mb-1">
-                            {app.icon(18)}
-                          </div>
-                          <span className="text-[10px] text-os-onSurfaceVariant font-bold text-center truncate w-full">{app.title}</span>
+                          <AppIcon app={app} size={18} tile pad={10} radius="var(--sdl-radius-sm)" className="mb-1" />
+                          <span className="text-[10px] text-sdl-sec font-bold text-center truncate w-full">{app.title}</span>
                         </button>
                       ))}
                     </div>
@@ -242,10 +254,10 @@ const Taskbar = () => {
                         type="button"
                         aria-label="Logout"
                         title="Logout"
-                        className="p-2 hover:bg-red-500/20 rounded-xl transition-all cursor-pointer group/logout focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
+                        className="p-2 hover:bg-sdl-alert/20 rounded-xl transition-all cursor-pointer group/logout focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sdl-alert/50"
                         onClick={() => { logout(); playSound('click'); }}
                       >
-                        <Power size={16} className="text-os-onSurfaceVariant group-hover/logout:text-red-500 transition-colors" />
+                        <Power size={16} className="text-os-onSurfaceVariant group-hover/logout:text-sdl-alert transition-colors" />
                       </button>
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import {
   MousePointer2, FolderPlus, RefreshCw, Cpu, X, RotateCcw, Hash,
-  User, Image as Wallpaper
+  User, Image as Wallpaper, Shuffle
 } from 'lucide-react';
 import CustomIcon from './components/common/CustomIcon';
 import {
@@ -27,13 +27,11 @@ import WindowContentRenderer from './components/WindowContentRenderer';
 import Desktop from './components/Desktop';
 import Taskbar from './components/Taskbar';
 
-import useSoundEffects from './hooks/useSoundEffects';
 import useOSStore from './store/osStore';
 import { applyTheme } from './theme/applyTheme';
 import './theme/grammar.css';
 import { attach as attachMusicEngine } from './utils/musicEngine';
 import { useIsMobile } from './hooks/useMediaQuery';
-import { APPS } from './config/apps';
 import './index.css';
 
 // Context menu IDs for desktop and icon menus
@@ -77,35 +75,22 @@ function App() {
   const reducedMotion = useOSStore(state => state.reducedMotion);
   const transparencyEffects = useOSStore(state => state.transparencyEffects);
   const resetSettingsToDefault = useOSStore(state => state.resetSettingsToDefault);
+  const randomizeAppearance = useOSStore(state => state.randomizeAppearance);
   const isBSOD = useOSStore(state => state.isBSOD);
   const activeRetroGame = useOSStore(state => state.activeRetroGame);
 
-  const { playSound } = useSoundEffects();
   const [isIdle, setIsIdle] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
   const idleTimer = useRef(null);
 
   useEffect(() => {
     attachMusicEngine(useOSStore);
   }, []);
 
-  useEffect(() => {
-    const handleInteraction = () => {
-      setHasInteracted(true);
-      window.removeEventListener('mousedown', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-    };
-    window.addEventListener('mousedown', handleInteraction);
-    window.addEventListener('keydown', handleInteraction);
-    window.addEventListener('touchstart', handleInteraction);
-    return () => {
-      window.removeEventListener('mousedown', handleInteraction);
-      window.removeEventListener('keydown', handleInteraction);
-      window.removeEventListener('touchstart', handleInteraction);
-    };
-  }, []);
+  // A `hasInteracted` flag and its three global listeners used to live here. Nothing ever read the
+  // flag — not this file, not any other — so the effect registered and tore down three window
+  // listeners to set a value with no consumer. useSoundEffects does its own AudioContext.resume()
+  // on first play, which is what actually satisfies the autoplay policy.
 
   const isMobile = useIsMobile();
   const contextMenuIconRef = useRef(null);
@@ -186,30 +171,35 @@ function App() {
       {/* Context Menus — Desktop */}
       {!isMobile && (
         <>
-          <Menu id={DESKTOP_MENU_ID} animation="fade" theme="dark" className="os-context-menu">
+          <Menu id={DESKTOP_MENU_ID} animation="fade" className="os-context-menu">
             <Item onClick={() => openWindow('terminal')}>
-              <div className="font-mono font-bold text-os-onSurfaceVariant text-xs mr-2">{'>_'}</div> Open Terminal
+              <div className="font-mono font-bold text-xs mr-2">{'>_'}</div> Open Terminal
             </Item>
             <Item onClick={() => openWindow('about')}>
-              <CustomIcon icon={User} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> About Me
+              <CustomIcon icon={User} size={13} color="currentColor" className="mr-2" animate={false} /> About Me
             </Item>
             <Separator />
             <Item onClick={() => openWindow('settings')}>
-              <CustomIcon icon={Wallpaper} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> Personalize…
+              <CustomIcon icon={Wallpaper} size={13} color="currentColor" className="mr-2" animate={false} /> Personalize…
             </Item>
             <Item onClick={() => createFolder(`New Folder`)}>
-              <CustomIcon icon={FolderPlus} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> New Folder
+              <CustomIcon icon={FolderPlus} size={13} color="currentColor" className="mr-2" animate={false} /> New Folder
+            </Item>
+            <Separator />
+            {/* Above the Resets, not beside them: this rolls a look, it does not discard one. */}
+            <Item onClick={randomizeAppearance}>
+              <CustomIcon icon={Shuffle} size={13} color="currentColor" className="mr-2" animate={false} /> Surprise Me
             </Item>
             <Separator />
             <Item onClick={() => { resetSettingsToDefault(); closeWindow('settings'); }}>
-              <CustomIcon icon={RotateCcw} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> Reset Settings
+              <CustomIcon icon={RotateCcw} size={13} color="currentColor" className="mr-2" animate={false} /> Reset Settings
             </Item>
             <Item onClick={resetIconPositions}>
-              <CustomIcon icon={RefreshCw} size={13} color="text-os-onSurfaceVariant" className="mr-2" animate={false} /> Reset Icon Layout
+              <CustomIcon icon={RefreshCw} size={13} color="currentColor" className="mr-2" animate={false} /> Reset Icon Layout
             </Item>
           </Menu>
 
-          <Menu id={ICON_MENU_ID} animation="fade" theme="dark" className="os-context-menu">
+          <Menu id={ICON_MENU_ID} animation="fade" className="os-context-menu">
             <Item onClick={() => openWindow(contextMenuIconRef.current)}>
               Open
             </Item>
@@ -262,13 +252,17 @@ function App() {
       {/* Achievement Toasts Container */}
       <div className={`fixed ${isMobile ? 'bottom-[calc(6.5rem+env(safe-area-inset-bottom))]' : 'bottom-24'} right-6 z-[2000] flex flex-col gap-4 items-end pointer-events-none`}>
         <AnimatePresence>
-          {achievementQueue.map((id) => (
-            <AchievementToast 
-              key={id} 
-              achievementId={id} 
-              onComplete={() => removeAchievementToast(id)} 
-            />
-          ))}
+          {achievementQueue.map((entry) => {
+            // Entries are either a bare achievement id or a { id, title, desc } one-off toast.
+            const key = entry?.id ?? entry;
+            return (
+              <AchievementToast
+                key={key}
+                achievementId={entry}
+                onComplete={() => removeAchievementToast(key)}
+              />
+            );
+          })}
         </AnimatePresence>
       </div>
     </div>

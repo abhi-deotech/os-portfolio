@@ -93,7 +93,7 @@ const LuminaChat = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#080808] text-sdl-ink font-sans overflow-hidden border border-hairline/5 shadow-2xl">
+    <div className="flex flex-col h-full bg-sdl-plane text-sdl-ink font-sans overflow-hidden border border-hairline/5 shadow-2xl">
       {/* App Header */}
       <div className="px-6 py-4 border-b border-hairline/5 bg-veil/[0.02] flex justify-between items-center">
         <div className="flex items-center gap-3">
@@ -103,7 +103,7 @@ const LuminaChat = () => {
           <div>
             <h2 className="text-sm font-black uppercase tracking-tight italic">Lumina Guestbook</h2>
             <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${isConnecting ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`} />
+              <div className={`w-1.5 h-1.5 rounded-full ${isConnecting ? 'bg-sdl-warn animate-pulse' : 'bg-sdl-done'}`} />
               <span className="text-[9px] font-bold text-sdl-sec uppercase tracking-widest">
                 {isConnecting ? 'Establishing Link...' : isPuterSignedIn ? 'Cloud Node: Global' : 'Local Node: Sandbox'}
               </span>
@@ -113,13 +113,12 @@ const LuminaChat = () => {
         {!isPuterSignedIn && (
           <button 
             onClick={() => signInWithPuter()}
-            className="text-[9px] font-black text-os-primary uppercase tracking-widest border border-os-primary/30 px-3 py-1 rounded-full hover:bg-os-primary/10 transition-all"
+            className="text-[9px] font-black text-os-primary uppercase tracking-widest border border-os-primary/30 px-3 py-1 rounded-full hover:bg-os-primary/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
           >
             Enable Global Link
           </button>
         )}
       </div>
-...
 
       {/* Messages Area */}
       <div 
@@ -166,7 +165,7 @@ const LuminaChat = () => {
                     <div className={`
                       max-w-[85%] px-4 py-2.5 rounded-2xl text-sm font-medium leading-relaxed
                       ${isSystem ? 'bg-veil/[0.03] text-os-primary/60 border border-os-primary/10 text-[11px] font-bold italic text-center' : 
-                        isMe ? 'bg-os-primary text-sdl-onAccent rounded-tr-none shadow-[0_4px_20px_rgba(204,151,255,0.2)]' : 
+                        isMe ? 'bg-os-primary text-sdl-onAccent rounded-tr-none shadow-[0_4px_20px_rgb(var(--sdl-accent-rgb)_/_0.2)]' :
                         'bg-veil/5 border border-hairline/5 rounded-tl-none text-sdl-ink/80'}
                     `}>
                       {msg.text}
@@ -190,13 +189,14 @@ const LuminaChat = () => {
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder={isConnecting ? "Establishing neural link..." : "Type your signal to the world..."}
-              className="w-full bg-veil/5 border border-hairline/10 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-os-primary/50 transition-all relative z-10 disabled:opacity-50"
+              className="w-full bg-veil/5 border border-hairline/10 rounded-xl py-3 px-4 text-sm focus:border-os-primary/50 transition-all relative z-10 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             />
           </div>
-          <button 
+          <button
             disabled={isConnecting || !input.trim()}
             type="submit"
-            className="p-3 bg-os-primary text-sdl-onAccent rounded-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-[0_0_15px_rgba(204,151,255,0.2)]"
+            aria-label="Send message"
+            className="p-3 bg-os-primary text-sdl-onAccent rounded-xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-[0_0_15px_var(--sdl-glow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
           >
             <Send size={20} />
           </button>

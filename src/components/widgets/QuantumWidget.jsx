@@ -2,19 +2,20 @@ import React, { useRef, Suspense, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, MeshDistortMaterial, Sphere, PerspectiveCamera } from '@react-three/drei';
 import useOSStore from '../../store/osStore';
+import { useColorway } from '../../theme/useColorway';
+import { accentAtLightness } from '../../theme/registry';
 
 const Core = () => {
   const meshRef = useRef();
-  const { activeAccent } = useOSStore();
-
-  const accentColors = {
-    purple: '#cc97ff',
-    cyan: '#00d2fd',
-    magenta: '#ff68f0',
-    green: '#00f5a0'
-  };
-
-  const color = accentColors[activeAccent] || accentColors.purple;
+  // WebGL cannot read CSS variables, so this is one of the three sanctioned useColorway consumers
+  // (see the rule at the top of src/theme/useColorway.js). It replaces a four-entry hex map keyed
+  // off the retired `activeAccent` preset, which pinned the core to legacy neon under all sixteen
+  // colorways.
+  //
+  // Lightness is pinned rather than taken raw: MeshDistortMaterial is metallic (metalness 0.8), so
+  // it MULTIPLIES its base colour by the lighting. A light colorway's accent is dark by design —
+  // Honey Vivid's is a teal at OKLCH L=0.50 — and multiplying that renders a black blob.
+  const color = accentAtLightness(useColorway());
 
   useFrame((state) => {
     if (meshRef.current) {
@@ -26,13 +27,20 @@ const Core = () => {
   return (
     <Float speed={2} rotationIntensity={1.5} floatIntensity={1.5}>
       <Sphere ref={meshRef} args={[1, 64, 64]} scale={1.8}>
+        {/* metalness was 0.8. A metal with no environment map reflects nothing, so the sphere
+            rendered near-black whatever its base colour — invisible as a colour, and merely
+            unnoticed before because the widget only ever sat on a dark card. Dropping to a mostly
+            dielectric surface lets the albedo show under the existing lights, and the emissive
+            keeps the "core" reading as lit rather than as a hole. */}
         <MeshDistortMaterial
           color={color}
           speed={2}
           distort={0.4}
           radius={1}
-          metalness={0.8}
-          roughness={0.2}
+          metalness={0.2}
+          roughness={0.35}
+          emissive={color}
+          emissiveIntensity={0.35}
         />
       </Sphere>
     </Float>

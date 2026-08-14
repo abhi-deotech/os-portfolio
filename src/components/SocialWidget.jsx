@@ -170,7 +170,7 @@ const SocialWidget = () => {
     if (error) {
       return (
         <div className="flex flex-col items-center justify-center h-full py-12 text-center px-4">
-          <p className="text-red-500 text-sm font-bold mb-3">Sync Failed</p>
+          <p className="text-sdl-alert text-sm font-bold mb-3">Sync Failed</p>
           <p className="text-sdl-sec text-xs leading-relaxed">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
@@ -193,7 +193,7 @@ const SocialWidget = () => {
         <div className="flex items-center gap-5 py-2">
           <div className="relative">
             <img src={githubData.avatar} alt="Avatar" className="w-16 h-16 rounded-2xl border-2 border-os-primary/20 pointer-events-none p-0.5" />
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-black border border-hairline/10 rounded-lg flex items-center justify-center">
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-sdl-plane border border-hairline/10 rounded-lg flex items-center justify-center">
                <GithubIcon size={12} className="text-os-primary" />
             </div>
           </div>
@@ -214,9 +214,9 @@ const SocialWidget = () => {
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { icon: Star, val: githubData.stars, label: 'Stars', color: 'text-yellow-400' },
+            { icon: Star, val: githubData.stars, label: 'Stars', color: 'text-sdl-warn' },
             { icon: GitFork, val: githubData.repos, label: 'Repos', color: 'text-os-primary' },
-            { icon: Users, val: githubData.followers, label: 'Fans', color: 'text-blue-400' }
+            { icon: Users, val: githubData.followers, label: 'Fans', color: 'text-sdl-barA' }
           ].map((item, i) => (
             <div key={i} className="p-4 bg-veil/[0.03] rounded-2xl border border-hairline/5 flex flex-col items-center justify-center gap-1.5 hover:bg-veil/[0.05] transition-colors">
               <item.icon size={18} className={item.color} />
@@ -231,6 +231,9 @@ const SocialWidget = () => {
               <span className="text-xs font-black text-sdl-sec uppercase tracking-[0.15em]">Contribution Matrix</span>
               <span className="text-[10px] font-bold text-os-primary/60 uppercase tracking-widest font-mono">6 Months</span>
            </div>
+           {/* Deliberately white: this mounts a third-party contribution raster from
+               ghchart.rshah.org, drawn for a light backing. Theming the mount would not retint the
+               image, it would just put its green cells on a surface they were not drawn for. */}
            <div className="p-4 sm:p-5 bg-white rounded-2xl border border-hairline/10 overflow-hidden shadow-lg">
               <div className="relative w-full overflow-hidden" style={{ aspectRatio: '3/1' }}>
                   <img
@@ -248,7 +251,7 @@ const SocialWidget = () => {
            <div className="flex flex-col gap-2">
               {githubData.recentEvents?.map((event, i) => (
                  <div key={i} className="flex items-center gap-3 p-3 bg-veil/[0.03] rounded-xl border border-hairline/5 text-sm">
-                    <div className={`w-2 h-2 rounded-full ${event.type === 'PushEvent' ? 'bg-os-primary shadow-[0_0_8px_var(--os-primary-rgb)]' : 'bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]'}`} />
+                    <div className={`w-2 h-2 rounded-full ${event.type === 'PushEvent' ? 'bg-os-primary shadow-[0_0_8px_rgb(var(--os-primary-rgb))]' : 'bg-sdl-warn shadow-[0_0_8px_rgb(var(--sdl-warn-rgb)/0.5)]'}`} />
                     <span className="text-sdl-sec font-bold">{event.type === 'PushEvent' ? 'Pushed to' : 'Starred'}</span>
                     <span className="text-sdl-ink font-black truncate max-w-[180px]">{event.repo.name.split('/')[1]}</span>
                  </div>
@@ -336,7 +339,7 @@ const SocialWidget = () => {
   };
 
   return (
-    <div className="flex flex-col h-full p-5 md:p-6 bg-gradient-to-br from-[#121212] to-[#080808] rounded-3xl border border-hairline/5 overflow-hidden relative group">
+    <div className="flex flex-col h-full p-5 md:p-6 bg-gradient-to-br from-sdl-surface to-sdl-plane rounded-3xl border border-hairline/5 overflow-hidden relative group">
       <div className={`absolute top-0 right-0 w-40 h-40 blur-3xl rounded-full transition-all duration-500 ${activeTab === 'github' ? 'bg-os-primary/5' : 'bg-[#0077b5]/10'}`} />
       
       {/* Tab Switcher */}

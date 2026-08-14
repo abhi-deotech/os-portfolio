@@ -17,6 +17,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, extname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stripComments } from './denylist.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
@@ -38,7 +39,8 @@ const EXEMPT_DIRS = ['src/theme/'];
 const files = walk(SRC)
   .map((p) => relative(ROOT, p))
   .filter((rel) => !EXEMPT_DIRS.some((d) => rel.startsWith(d)))
-  .map((rel) => ({ path: rel, text: readFileSync(join(ROOT, rel), 'utf8') }));
+  // Comments are stripped so the census counts CODE, not the prose that documents it.
+  .map((rel) => ({ path: rel, text: stripComments(readFileSync(join(ROOT, rel), 'utf8')) }));
 
 /** Count regex matches across all files; returns { total, byFile: Map }. */
 function count(re) {

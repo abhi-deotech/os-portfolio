@@ -110,7 +110,7 @@ const Spotlight = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => toggleSpotlight(false)}
-            className={`fixed inset-0 bg-black/40 ${transparencyEffects ? 'backdrop-blur-sm' : ''} z-[1000]`}
+            className={`fixed inset-0 bg-scrim ${transparencyEffects ? 'backdrop-blur-sm' : ''} z-[1000]`}
           />
 
           {/* Search Box */}
@@ -118,7 +118,7 @@ const Spotlight = () => {
             initial={{ opacity: 0, scale: 0.9, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -20 }}
-            className={`fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-2xl bg-os-surfaceContainerLow/90 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl border border-hairline/10 shadow-2xl z-[1001] overflow-hidden`}
+            className={`fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-2xl bg-os-surfaceContainerLow/90 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl border border-hairline/10 shadow-[var(--sdl-lift)] z-[1001] overflow-hidden`}
           >
             <div className="flex items-center px-6 py-5 gap-4 border-b border-hairline/5">
               <Search className="text-os-primary" size={24} />
@@ -126,7 +126,7 @@ const Spotlight = () => {
                 ref={inputRef}
                 type="text"
                 placeholder="Search files, apps, and commands..."
-                className="flex-grow bg-transparent text-xl font-medium outline-none text-sdl-ink placeholder:text-sdl-sec"
+                className="flex-grow bg-transparent text-xl font-medium text-sdl-ink placeholder:text-sdl-sec rounded-lg outline-none"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -141,9 +141,10 @@ const Spotlight = () => {
                 results.map((result, index) => (
                   <button
                     key={result.id}
+                    type="button"
                     onClick={() => handleSelect(result)}
                     onMouseEnter={() => setSelectedIndex(index)}
-                    className={`w-full flex items-center justify-between px-6 py-4 transition-colors ${
+                    className={`w-full flex items-center justify-between px-6 py-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-os-primary/50 ${
                       selectedIndex === index ? 'bg-os-primary/10' : 'hover:bg-veil/5'
                     }`}
                   >
@@ -182,10 +183,11 @@ const Spotlight = () => {
                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sdl-sec mb-4">Quick Shortcuts</p>
                    <div className="grid grid-cols-2 gap-3">
                       {SPOTLIGHT_APPS.map(app => (
-                        <button 
+                        <button
                           key={app.id}
+                          type="button"
                           onClick={() => handleSelect(app)}
-                          className="flex items-center gap-3 p-3 rounded-2xl bg-veil/5 border border-hairline/5 hover:border-os-primary/30 hover:bg-os-primary/5 transition-all group"
+                          className="flex items-center gap-3 p-3 rounded-2xl bg-veil/5 border border-hairline/5 hover:border-os-primary/30 hover:bg-os-primary/5 transition-all group outline-none"
                         >
                            <app.icon size={18} className="text-sdl-sec group-hover:text-os-primary" />
                            <span className="text-xs font-bold text-sdl-sec group-hover:text-sdl-ink">{app.name}</span>
@@ -196,7 +198,7 @@ const Spotlight = () => {
               )}
             </div>
 
-            <div className="px-6 py-3 bg-black/20 flex justify-between items-center border-t border-hairline/5">
+            <div className="px-6 py-3 bg-veil/5 flex justify-between items-center border-t border-hairline/5">
                <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5 border border-hairline/10 rounded px-1.5 py-0.5">
                      <div className="text-[8px] font-black text-sdl-sec uppercase">↑↓</div>

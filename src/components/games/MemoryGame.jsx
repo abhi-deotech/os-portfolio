@@ -2,16 +2,29 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, RefreshCw, ArrowLeft, Brain, Cpu, Zap, Timer, Layers, Globe, ShieldCheck } from 'lucide-react';
 import useOSStore from '../../store/osStore';
+import { useColorway } from '../../theme/useColorway';
+import { iconStyle } from '../../theme/icons';
 
+// Game pieces, not chrome: a pair is matched by eye on colour + glyph before `label` ever confirms
+// it, so these eight have to stay eight mutually distinguishable hues. Folding them onto accent /
+// barA / barB would leave three colours for eight symbols and make the board unplayable.
+//
+// But "must stay eight" does not mean "must stay these eight LITERALS". They were the legacy neon
+// palette, and the card back tints itself with them, so on any of the ten light colorways a
+// #00f5a0 glyph landed on a near-white card at about 1.4:1 — the same bug the app icons were
+// rebuilt to fix. So: identity is the HUE, discipline is the colorway, exactly as in
+// src/theme/icons.js. `harmonized` re-renders each hue at the active colorway's chroma and
+// lightness and walks lightness until it measures 3:1 against the plane, so all eight stay
+// mutually distinguishable AND readable in both modes.
 const SYMBOLS = [
-  { icon: Cpu, color: '#cc97ff', label: 'Processing' },
-  { icon: Zap, color: '#00d2fd', label: 'Quantum' },
-  { icon: Brain, color: '#00f5a0', label: 'Neural' },
-  { icon: Trophy, color: '#ff68f0', label: 'Node' },
-  { icon: Timer, color: '#ffd93d', label: 'Sync' },
-  { icon: Layers, color: '#ff6b6b', label: 'Data' },
-  { icon: Globe, color: '#4ade80', label: 'Network' },
-  { icon: ShieldCheck, color: '#3b82f6', label: 'Secure' }
+  { icon: Cpu, hue: 300, label: 'Processing' },
+  { icon: Zap, hue: 216, label: 'Quantum' },
+  { icon: Brain, hue: 160, label: 'Neural' },
+  { icon: Trophy, hue: 330, label: 'Node' },
+  { icon: Timer, hue: 96, label: 'Sync' },
+  { icon: Layers, hue: 28, label: 'Data' },
+  { icon: Globe, hue: 140, label: 'Network' },
+  { icon: ShieldCheck, hue: 254, label: 'Secure' }
 ];
 
 const MemoryGame = ({ onBack }) => {
@@ -27,6 +40,10 @@ const MemoryGame = ({ onBack }) => {
   const [moves, setMoves] = useState(0);
   const [bestMoves, setBestScore] = useState(localStorage.getItem('memory-best-moves') || '--');
   const { unlockAchievement } = useOSStore();
+  // Resolved at render, not stored on the card: the board must retint when the colorway changes
+  // mid-game, and shuffled state should not carry a frozen palette.
+  const cw = useColorway();
+  const faceOf = (hue) => iconStyle('harmonized', cw, { hue });
 
   const initGame = () => {
     const duplicatedSymbols = [...SYMBOLS, ...SYMBOLS];
@@ -78,9 +95,9 @@ const MemoryGame = ({ onBack }) => {
   const isGameOver = solved.length === cards.length && cards.length > 0;
 
   return (
-    <div className="h-full w-full bg-[#050505] text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
+    <div className="h-full w-full bg-sdl-plane text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
       {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(204,151,255,0.03)_0%,transparent_70%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgb(var(--sdl-accent-rgb)/0.03)_0%,transparent_70%)] pointer-events-none" />
       
       {/* Header */}
       <div className="w-full max-w-lg flex justify-between items-center mb-8 relative z-10">
@@ -88,7 +105,8 @@ const MemoryGame = ({ onBack }) => {
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           onClick={onBack}
-          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink"
+          aria-label="Back"
+          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <ArrowLeft size={20} />
         </motion.button>
@@ -112,7 +130,8 @@ const MemoryGame = ({ onBack }) => {
           whileHover={{ rotate: 180, scale: 1.1 }}
           transition={{ duration: 0.5 }}
           onClick={initGame}
-          className="p-3 rounded-2xl bg-os-primary/10 border border-os-primary/20 text-os-primary hover:bg-os-primary/20 transition-all"
+          aria-label="Restart"
+          className="p-3 rounded-2xl bg-os-primary/10 border border-os-primary/20 text-os-primary hover:bg-os-primary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <RefreshCw size={20} />
         </motion.button>
@@ -127,7 +146,19 @@ const MemoryGame = ({ onBack }) => {
             <div
               key={card.id}
               onClick={() => handleClick(index)}
-              className="aspect-square cursor-pointer relative group"
+              // Without the button contract the entire board is mouse-only — there is no other way
+              // to turn a card over.
+              role="button"
+              tabIndex={0}
+              aria-label={isFlipped ? `Card ${index + 1}, ${card.label}` : `Card ${index + 1}, face down`}
+              aria-pressed={isFlipped}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleClick(index);
+                }
+              }}
+              className="aspect-square cursor-pointer relative group rounded-[1.5rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
               style={{ perspective: '1000px' }}
             >
               <motion.div
@@ -138,10 +169,10 @@ const MemoryGame = ({ onBack }) => {
               >
                 {/* Card Front (Hidden side) */}
                 <div 
-                  className="absolute inset-0 bg-[#0a0a0a] border border-hairline/10 rounded-[1.5rem] flex items-center justify-center backface-hidden shadow-xl overflow-hidden group-hover:border-os-primary/40 transition-colors"
+                  className="absolute inset-0 bg-sdl-surface border border-hairline/10 rounded-[1.5rem] flex items-center justify-center backface-hidden shadow-xl overflow-hidden group-hover:border-os-primary/40 transition-colors"
                   style={{ backfaceVisibility: 'hidden' }}
                 >
-                   <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+                   <div className="absolute inset-0 bg-gradient-to-br from-veil/[0.03] to-transparent pointer-events-none" />
                    <div className="w-10 h-10 rounded-2xl bg-veil/5 border border-hairline/5 flex items-center justify-center">
                       <div className="w-2 h-2 rounded-full bg-os-primary/40 animate-pulse" />
                    </div>
@@ -153,16 +184,21 @@ const MemoryGame = ({ onBack }) => {
                   style={{ 
                     backfaceVisibility: 'hidden', 
                     transform: 'rotateY(180deg)',
-                    backgroundColor: isSolved ? '#0a0a0a' : `${card.color}15`,
-                    borderColor: isSolved ? 'rgba(255,255,255,0.05)' : card.color
+                    // A solved pair drops out of the symbol palette and back onto plain surface —
+                    // that is chrome again, so it follows the colorway rather than staying near-black.
+                    backgroundColor: isSolved ? 'var(--sdl-surface)' : faceOf(card.hue).tile,
+                    borderColor: isSolved ? 'rgb(var(--sdl-hairline-rgb) / .05)' : faceOf(card.hue).tileBorder
                   }}
                 >
-                  <card.icon 
-                    size={32} 
-                    style={{ color: card.color, filter: isSolved ? 'grayscale(1) opacity(0.2)' : `drop-shadow(0 0 10px ${card.color}40)` }} 
+                  <card.icon
+                    size={32}
+                    style={{
+                      color: faceOf(card.hue).glyph,
+                      filter: isSolved ? 'grayscale(1) opacity(0.2)' : `drop-shadow(0 0 10px ${faceOf(card.hue).tile})`,
+                    }}
                   />
                   {!isSolved && (
-                    <span className="text-[8px] font-black uppercase tracking-[0.2em] mt-2 opacity-40" style={{ color: card.color }}>
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] mt-2 opacity-40" style={{ color: faceOf(card.hue).glyph }}>
                       {card.label}
                     </span>
                   )}
@@ -180,7 +216,7 @@ const MemoryGame = ({ onBack }) => {
             animate={{ opacity: 1, scale: 1 }}
             className="mt-12 flex flex-col items-center gap-4 bg-os-primary/10 border border-os-primary/20 p-8 rounded-[3rem] backdrop-blur-xl"
           >
-            <div className="w-16 h-16 rounded-full bg-os-primary flex items-center justify-center shadow-[0_0_30px_#cc97ff]">
+            <div className="w-16 h-16 rounded-full bg-os-primary flex items-center justify-center shadow-[0_0_30px_rgb(var(--os-primary-rgb))]">
                <Trophy size={32} className="text-sdl-onAccent" />
             </div>
             <div className="text-center">
@@ -193,7 +229,7 @@ const MemoryGame = ({ onBack }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={initGame}
-              className="mt-2 px-8 py-3 bg-white text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl"
+              className="mt-2 px-8 py-3 bg-sdl-accent text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             >
               Restart Link
             </motion.button>

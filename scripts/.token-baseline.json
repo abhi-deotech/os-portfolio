@@ -1,27 +1,27 @@
 {
   "savedAt": "2026-08-13",
-  "generatedFrom": "78 files under src/",
+  "generatedFrom": "83 files under src/",
   "tokens": {
-    "os-* bridge — accent/outline/container keys": 777,
-    "os-* bridge — surface/ink keys": 242,
+    "os-* bridge — accent/outline/container keys": 747,
+    "os-* bridge — surface/ink keys": 228,
     "legacy rgba(var(--os-*), N) — must be 0": 0,
-    "var(--sdl-*) — migrated to roles": 9
+    "var(--sdl-*) — migrated to roles": 135
   },
   "tokensDetail": {
     "accentKeys": {
-      "primary": 456,
-      "secondary": 120,
-      "tertiary": 54,
-      "outline": 75,
-      "surfaceContainerLow": 29,
-      "surfaceContainerHigh": 22,
-      "surfaceContainerHighest": 21
+      "primary": 445,
+      "secondary": 118,
+      "tertiary": 52,
+      "outline": 72,
+      "surfaceContainerLow": 27,
+      "surfaceContainerHigh": 13,
+      "surfaceContainerHighest": 20
     },
     "surfaceInkKeys": {
       "background": 1,
       "surface": 9,
-      "onSurface": 42,
-      "onSurfaceVariant": 187,
+      "onSurface": 40,
+      "onSurfaceVariant": 175,
       "primaryDim": 2,
       "secondaryDim": 1
     }
@@ -36,15 +36,15 @@
     "onAccent  text-black": 9
   },
   "hexes": {
-    "accent-duplicating": 143,
+    "accent-duplicating": 138,
     "surface-duplicating": 23,
     "near-black second ramp": 66,
-    "all 6-digit hexes": 383
+    "all 6-digit hexes": 370
   },
   "hexesDetail": {
     "accent": {
-      "#cc97ff": 67,
-      "#00d2fd": 51,
+      "#cc97ff": 63,
+      "#00d2fd": 50,
       "#00f5a0": 21,
       "#ff68f0": 4
     },
@@ -66,9 +66,9 @@
     }
   },
   "stockSemantic": {
-    "total": 165,
-    "red": 58,
-    "green": 30,
+    "total": 160,
+    "red": 55,
+    "green": 28,
     "yellow": 21,
     "blue": 15,
     "purple": 10,
@@ -84,14 +84,14 @@
     "amber": 1
   },
   "structure": {
-    "rounded-* occurrences": 552,
-    "rounded-[arbitrary]": 46,
-    "backdrop-blur": 73,
+    "rounded-* occurrences": 551,
+    "rounded-[arbitrary]": 43,
+    "backdrop-blur": 71,
     "prefers-reduced-motion": 0
   },
   "headline": {
-    "bridgeSites": 1019,
+    "bridgeSites": 975,
     "whiteBlackTotal": 226,
-    "untokenizedTotal": 623
+    "untokenizedTotal": 613
   }
 }

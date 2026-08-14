@@ -92,9 +92,9 @@
     "stock": 3
   },
   "src/components/Settings.jsx": {
-    "hex": 32,
+    "hex": 27,
     "white": 5,
-    "stock": 21
+    "stock": 16
   },
   "src/components/SocialWidget.jsx": {
     "hex": 14,
@@ -151,6 +151,9 @@
     "hex": 7,
     "white": 2,
     "stock": 9
+  },
+  "src/components/sdl/DesignLanguage.jsx": {
+    "hex": 3
   },
   "src/components/widgets/NowPlayingWidget.jsx": {
     "white": 3

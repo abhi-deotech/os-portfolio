@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, extname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DENYLIST, DENY_DIRS } from './denylist.mjs';
+import { DENYLIST, DENY_DIRS, stripComments } from './denylist.mjs';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const SRC = join(ROOT, 'src');
@@ -46,7 +46,8 @@ const files = walk(SRC).map((p) => relative(ROOT, p)).sort();
 const current = {};
 for (const rel of files) {
   if (DENYLIST[rel] || DENY_DIRS.some((d) => rel.startsWith(d))) continue;
-  const text = readFileSync(join(ROOT, rel), 'utf8');
+  // Comments are stripped so the ratchet counts CODE, not the prose that documents it.
+  const text = stripComments(readFileSync(join(ROOT, rel), 'utf8'));
   const counts = {};
   let any = 0;
   for (const r of RULES) {

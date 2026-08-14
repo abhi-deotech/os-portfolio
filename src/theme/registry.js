@@ -15,6 +15,7 @@ import TOKENS from './sdl/design-tokens.json';
 import VIZ from './sdl/viz-palettes.json';
 import { LUMINA_NEON_LEGACY } from './legacy-lumina';
 import { THEME_TITLE_FACE, COLORWAY_TITLE_FACE, FONT_STACKS } from './overrides';
+import { hexToOklch, oklchToHex, srgbToLinear } from './oklch';
 
 export const SDL_VERSION = 'v2.0.0-rc';
 export const SDL_AUTHOR = 'Aditya Sarva';
@@ -32,12 +33,12 @@ export function hexToRgb(hex) {
 /** Space-separated triple — required by `rgb(var(--x) / a)`. Commas silently break it. */
 export const rgbTriple = (hex) => hexToRgb(hex).join(' ');
 
-const channel = (c) => { const v = c / 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
-
-/** WCAG relative luminance, 0..1. */
+/** WCAG relative luminance, 0..1. Companding is imported, not reimplemented — this file and
+ *  oklch.js each carried their own copy of the same sRGB curve, one on 0-255 ints and one on
+ *  0-1 floats, which is exactly how two "identical" functions drift apart. */
 export function relLuminance(hex) {
-  const [r, g, b] = hexToRgb(hex);
-  return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  const [r, g, b] = hexToRgb(hex).map((c) => srgbToLinear(c / 255));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
 /** HSL saturation as a percentage — used by the showcase to measure against SDL's locked band. */
@@ -158,8 +159,32 @@ export const THEMES = TOKENS.themes.map((t) => ({
 
 const SDL_COLORWAYS = TOKENS.themes.flatMap((t) => t.colorways.map((cw) => normalize(cw, t)));
 
+/**
+ * Fields every consumer assumes exist, applied to records that skip `normalize()`.
+ *
+ * The legacy pack is hand-authored rather than compiled from the SDL tokens, so it used to reach
+ * `COLORWAYS` missing the derived fields entirely. Two live consequences: `FONT_STACK(undefined)`
+ * fell through to the system stack, silently discarding the Manrope face `overrides.js` reserves
+ * for exactly this colorway, and the Design Language panel printed the literal string "undefined"
+ * for its title face. `--sdl-btn-grad` got the same treatment — inert today only because nothing
+ * outside Jewel reads it yet.
+ *
+ * Applying it here rather than inlining the values in legacy-lumina.js means a NEW hand-authored
+ * pack cannot reintroduce the same gap.
+ */
+function withDerived(cw) {
+  const accent = cw.roles.accent;
+  return {
+    titleFace: COLORWAY_TITLE_FACE[cw.id] || THEME_TITLE_FACE[cw.theme] || 'system',
+    btnGrad: `linear-gradient(90deg, ${accent}, ${accent})`,
+    motifNote: null,
+    note: null,
+    ...cw,
+  };
+}
+
 /** All 16: SDL's 15 locked colorways plus the preserved legacy pack. */
-export const COLORWAYS = [...SDL_COLORWAYS, LUMINA_NEON_LEGACY];
+export const COLORWAYS = [...SDL_COLORWAYS, withDerived(LUMINA_NEON_LEGACY)];
 
 const BY_ID = new Map(COLORWAYS.map((c) => [c.id, c]));
 
@@ -192,6 +217,27 @@ export function colorwaysByTheme() {
 }
 
 export const FONT_STACK = (key) => FONT_STACKS[key] || FONT_STACKS.system;
+
+/**
+ * The accent's hue and chroma re-rendered at a fixed perceptual lightness.
+ *
+ * For WebGL and canvas ONLY. Those surfaces do not obey the mode: the Quantum core is a metallic
+ * material that multiplies its base colour by the lighting, and the Music visualiser draws on a
+ * deliberately near-black app background. Handing either of them a light colorway's accent — Honey
+ * Vivid's is a dark teal at OKLCH L=0.50 — renders a black blob and a black waveform respectively.
+ * Chrome can invert with the mode because ink inverts with it; a lit 3D object cannot.
+ *
+ * Hue and chroma still come from the colorway, so the object is unmistakably in-theme.
+ */
+export function accentAtLightness(cw, L = 0.74) {
+  const { C, h } = hexToOklch(cw.roles.accent);
+  // Lightness is pinned; chroma is NOT floored. A floor here used to force visible colour onto
+  // Mono Soft (accent chroma 0.011), so the Quantum core rendered tinted while the icon set —
+  // which applies no floor — correctly rendered that same colorway greyscale. One accent, two
+  // answers, depending which code path read it. Visibility comes from L, so the floor bought
+  // nothing it did not already have.
+  return oklchToHex(L, C, h);
+}
 
 /**
  * SDL's locked accent band, measured across all 15 colorways. The showcase uses this to place any

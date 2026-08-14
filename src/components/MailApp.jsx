@@ -58,6 +58,11 @@ const MailApp = () => {
     }, 1500);
   };
 
+  const openEmail = (id) => {
+    setSelectedId(id);
+    setEmails(prev => prev.map(e => e.id === id ? { ...e, read: true } : e));
+  };
+
   const toggleStar = (id, e) => {
     e.stopPropagation();
     setEmails(prev => prev.map(email => 
@@ -66,12 +71,12 @@ const MailApp = () => {
   };
 
   return (
-    <div className="flex h-full w-full bg-[#0a0a0a] text-sdl-ink font-sans overflow-hidden">
+    <div className="flex h-full w-full bg-sdl-plane text-sdl-ink font-sans overflow-hidden">
       {/* Sidebar */}
       <div className="w-16 md:w-64 border-r border-hairline/5 flex flex-col p-4 space-y-6">
-        <button 
+        <button
           onClick={() => setIsComposeOpen(true)}
-          className="w-full bg-os-primary text-sdl-onAccent rounded-2xl p-3 md:px-4 flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all"
+          className="w-full bg-os-primary text-sdl-onAccent rounded-2xl p-3 md:px-4 flex items-center justify-center gap-3 font-black uppercase tracking-widest text-xs hover:scale-105 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
         >
           <PenSquare size={18} />
           <span className="hidden md:inline">Compose</span>
@@ -107,22 +112,33 @@ const MailApp = () => {
             <input 
               type="text" 
               placeholder="Search neural mail..." 
-              className="w-full bg-veil/5 border border-hairline/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-os-primary/50 transition-all"
+              className="w-full bg-veil/5 border border-hairline/10 rounded-xl py-2 pl-10 pr-4 text-sm focus:border-os-primary/50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
             />
           </div>
         </header>
 
         <div className="flex-1 flex overflow-hidden">
           {/* List */}
-          <div className={`w-full ${selectedId ? 'hidden md:block md:w-80' : ''} border-r border-hairline/5 overflow-y-auto`}>
+          <div role="list" aria-label="Inbox" className={`w-full ${selectedId ? 'hidden md:block md:w-80' : ''} border-r border-hairline/5 overflow-y-auto`}>
             {emails.map((email) => (
-              <div 
+              // `listitem` + a nested control, NOT role="button": the star below is a real
+              // <button> inside this row, and an interactive element inside role="button" is
+              // invalid ARIA — worse, the row's Enter/Space handler fired while focus was on the
+              // star, cancelling its activation so it could only ever be clicked. The row keeps its
+              // own tab stop and guards on the event actually targeting the row.
+              <div
                 key={email.id}
-                onClick={() => {
-                  setSelectedId(email.id);
-                  setEmails(prev => prev.map(e => e.id === email.id ? { ...e, read: true } : e));
+                role="listitem"
+                tabIndex={0}
+                onClick={() => openEmail(email.id)}
+                onKeyDown={(e) => {
+                  if (e.target !== e.currentTarget) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openEmail(email.id);
+                  }
                 }}
-                className={`p-4 border-b border-hairline/[0.03] cursor-pointer hover:bg-veil/[0.02] transition-all relative ${!email.read ? 'bg-os-primary/[0.03]' : ''} ${selectedId === email.id ? 'bg-os-primary/10' : ''}`}
+                className={`p-4 border-b border-hairline/[0.03] cursor-pointer hover:bg-veil/[0.02] transition-all relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${!email.read ? 'bg-os-primary/[0.03]' : ''} ${selectedId === email.id ? 'bg-os-primary/10' : ''}`}
               >
                 {!email.read && <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-os-primary rounded-r-full" />}
                 <div className="flex justify-between items-start mb-1">
@@ -131,9 +147,14 @@ const MailApp = () => {
                 </div>
                 <h4 className={`text-xs truncate ${!email.read ? 'font-bold text-sdl-ink/90' : 'text-sdl-sec'}`}>{email.subject}</h4>
                 <p className="text-xs text-sdl-sec truncate mt-1">{email.content}</p>
-                <button 
+                {/* Starred is emphasis, not a warning, so it takes the accent rather than `warn`.
+                    The old yellow-400 was a fixed hue that ignored the colorway and sank to ~1.9:1
+                    against the light packs' near-white plane. */}
+                <button
                   onClick={(e) => toggleStar(email.id, e)}
-                  className={`absolute right-4 bottom-4 transition-colors ${email.starred ? 'text-yellow-400' : 'text-sdl-sec hover:text-sdl-sec'}`}
+                  aria-label={email.starred ? `Unstar ${email.subject}` : `Star ${email.subject}`}
+                  aria-pressed={email.starred}
+                  className={`absolute right-4 bottom-4 rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${email.starred ? 'text-sdl-accent' : 'text-sdl-sec hover:text-sdl-ink'}`}
                 >
                   <Star size={14} fill={email.starred ? "currentColor" : "none"} />
                 </button>
@@ -147,7 +168,7 @@ const MailApp = () => {
               <div className="flex-1 flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="p-6 border-b border-hairline/5 flex justify-between items-center bg-veil/[0.01]">
                   <div className="flex items-center gap-4">
-                    <button onClick={() => setSelectedId(null)} className="md:hidden p-2 hover:bg-veil/5 rounded-lg">
+                    <button onClick={() => setSelectedId(null)} aria-label="Back to inbox" className="md:hidden p-2 hover:bg-veil/5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50">
                       <ChevronLeft size={20} />
                     </button>
                     <div>
@@ -159,14 +180,14 @@ const MailApp = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button className="p-2.5 hover:bg-veil/5 rounded-xl text-sdl-sec hover:text-sdl-ink transition-all"><Archive size={18} /></button>
-                    <button className="p-2.5 hover:bg-red-500/10 rounded-xl text-sdl-sec hover:text-red-400 transition-all"><Trash2 size={18} /></button>
+                    <button aria-label="Archive message" className="p-2.5 hover:bg-veil/5 rounded-xl text-sdl-sec hover:text-sdl-ink transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><Archive size={18} /></button>
+                    <button aria-label="Delete message" className="p-2.5 hover:bg-sdl-alert/10 rounded-xl text-sdl-sec hover:text-sdl-alert transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><Trash2 size={18} /></button>
                   </div>
                 </div>
                 <div className="p-8 overflow-y-auto space-y-8">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-os-primary to-os-secondary p-0.5">
-                      <div className="w-full h-full rounded-[0.9rem] bg-black flex items-center justify-center font-black text-os-primary">
+                      <div className="w-full h-full rounded-[0.9rem] bg-sdl-plane flex items-center justify-center font-black text-os-primary">
                         {selectedEmail.sender[0]}
                       </div>
                     </div>
@@ -208,11 +229,11 @@ const MailApp = () => {
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
           >
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsComposeOpen(false)} />
-            <div className="relative w-full max-w-xl bg-[#0f0f0f] border border-hairline/10 rounded-[2rem] shadow-2xl overflow-hidden shadow-black/50">
+            <div className="absolute inset-0 bg-scrim backdrop-blur-sm" onClick={() => setIsComposeOpen(false)} />
+            <div className="relative w-full max-w-xl bg-sdl-surface border border-hairline/10 rounded-[2rem] shadow-2xl overflow-hidden shadow-[var(--sdl-lift)]">
               <div className="p-6 border-b border-hairline/5 flex justify-between items-center bg-veil/[0.02]">
                 <h3 className="font-black uppercase italic tracking-tight text-os-primary">New Neural Message</h3>
-                <button onClick={() => setIsComposeOpen(false)} className="text-sdl-sec hover:text-sdl-ink"><Trash2 size={18} /></button>
+                <button onClick={() => setIsComposeOpen(false)} aria-label="Discard draft" className="text-sdl-sec hover:text-sdl-ink rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><Trash2 size={18} /></button>
               </div>
               <form onSubmit={handleSend} className="p-6 space-y-4">
                 <div className="space-y-4">
@@ -222,7 +243,7 @@ const MailApp = () => {
                       required
                       type="email" 
                       placeholder="abhimanyu@saxena.dev"
-                      className="bg-transparent border-none outline-none text-sm w-full text-os-primary font-bold"
+                      className="bg-transparent border-none rounded-sm text-sm w-full text-os-primary font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                       value={composeData.to}
                       onChange={e => setComposeData({...composeData, to: e.target.value})}
                     />
@@ -233,7 +254,7 @@ const MailApp = () => {
                       required
                       type="text" 
                       placeholder="Inquiry regarding..."
-                      className="bg-transparent border-none outline-none text-sm w-full font-bold"
+                      className="bg-transparent border-none rounded-sm text-sm w-full font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                       value={composeData.subject}
                       onChange={e => setComposeData({...composeData, subject: e.target.value})}
                     />
@@ -242,7 +263,7 @@ const MailApp = () => {
                 <textarea 
                   required
                   placeholder="Write your message here..."
-                  className="w-full h-64 bg-transparent border-none outline-none text-sm resize-none py-4 leading-relaxed font-medium"
+                  className="w-full h-64 bg-transparent border-none rounded-sm text-sm resize-none py-4 leading-relaxed font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                   value={composeData.message}
                   onChange={e => setComposeData({...composeData, message: e.target.value})}
                 />
@@ -254,9 +275,11 @@ const MailApp = () => {
                   <button 
                     type="submit"
                     disabled={isSending}
-                    className="bg-os-primary text-sdl-onAccent px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-[0_0_20px_rgba(204,151,255,0.2)]"
+                    className="bg-os-primary text-sdl-onAccent px-8 py-3 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-[0_0_20px_var(--sdl-glow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                   >
-                    {isSending ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" /> : <Send size={16} />}
+                    {/* Spinner sits ON the accent fill, so it has to be onAccent — a black ring
+                        disappeared entirely on the darker accents. */}
+                    {isSending ? <div className="w-4 h-4 border-2 border-sdl-onAccent/20 border-t-sdl-onAccent rounded-full animate-spin" /> : <Send size={16} />}
                     {isSending ? 'Transmitting...' : 'Send Message'}
                   </button>
                 </div>

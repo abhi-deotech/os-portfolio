@@ -60,6 +60,10 @@ export const createWindowSlice = (set) => ({
       return {
         openWindows: state.openWindows.filter((w) => w !== id),
         minimizedWindows: (state.minimizedWindows || []).filter((w) => w !== id),
+        // maximizedWindows was the ONE list this never cleaned, and it is persisted. Maximizing any
+        // window once and closing it left its id here permanently, across reloads — and the dock
+        // hides itself whenever that list is non-empty, so the dock disappeared for good.
+        maximizedWindows: (state.maximizedWindows || []).filter((w) => w !== id),
         snappedWindows: snapped,
         activeWindow: state.activeWindow === id ? null : state.activeWindow,
       };
