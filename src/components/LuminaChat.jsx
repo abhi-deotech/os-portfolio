@@ -4,54 +4,54 @@ import { Send, User, Globe, MessageSquare, Shield, Clock, Hash, Zap } from 'luci
 import useOSStore from '../store/osStore';
 
 /**
- * LuminaChat: A real-time guestbook.
- * Now powered by Puter.js Key-Value Store for true persistence and global sync.
+ * LuminaChat: A real-time guestbook simulation.
+ * In a production environment, this would connect to Firebase or Supabase.
+ * For this demo, it uses a hybrid approach:
+ * 1. Syncs with localStorage to simulate real-time across tabs.
+ * 2. Pre-populates with mock "Global" messages.
  */
 
 const MOCK_GLOBAL_MESSAGES = [
   { id: 'm1', user: 'System', text: 'Global Neural Link established. Welcome to the construct.', timestamp: Date.now() - 3600000 * 24, role: 'system' },
   { id: 'm2', user: 'TechEnthusiast', text: 'This OS UI is incredible! How did you handle the window management?', timestamp: Date.now() - 3600000 * 2, role: 'user' },
+  { id: 'm3', user: 'DesignGuru', text: 'The glassmorphism and animations are so smooth. Great work on the aesthetics.', timestamp: Date.now() - 3600000 * 1, role: 'user' },
 ];
 
 const LuminaChat = () => {
-  const { userRole, isPuterSignedIn, signInWithPuter } = useOSStore();
+  const { userRole } = useOSStore();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [username] = useState(() => userRole === 'admin' ? 'Abhimanyu' : 'Guest_' + Math.floor(Math.random() * 1000));
   const [isConnecting, setIsConnecting] = useState(true);
   const scrollRef = useRef(null);
 
-  // Load and sync messages from Puter
+  // Load and sync messages
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        let remoteMsgs = [];
-        if (typeof window !== 'undefined' && window.puter && window.puter.auth.isSignedIn()) {
-          const data = await window.puter.keyval.get('lumina_guestbook_v2');
-          if (data) {
-            remoteMsgs = JSON.parse(data);
-          }
-        } else {
-          // Fallback to local storage if not signed in
-          const saved = localStorage.getItem('lumina_guestbook_msgs');
-          remoteMsgs = saved ? JSON.parse(saved) : [];
-        }
-        
-        const combined = [...MOCK_GLOBAL_MESSAGES, ...remoteMsgs].sort((a, b) => a.timestamp - b.timestamp);
-        setMessages(combined);
-      } catch (err) {
-        console.error("Guestbook Load Error:", err);
-      } finally {
-        setIsConnecting(false);
-      }
+    const loadMessages = () => {
+      const saved = localStorage.getItem('lumina_guestbook_msgs');
+      const localMsgs = saved ? JSON.parse(saved) : [];
+      
+      // Combine mock global messages with local ones, sorted by time
+      const combined = [...MOCK_GLOBAL_MESSAGES, ...localMsgs].sort((a, b) => a.timestamp - b.timestamp);
+      setMessages(combined);
     };
 
-    loadMessages();
+    // Simulate connection lag
+    const timer = setTimeout(() => {
+      setIsConnecting(false);
+      loadMessages();
+    }, 1500);
 
-    // Poll for updates every 10 seconds for a "live" feel if not using WebSockets
-    const pollTimer = setInterval(loadMessages, 10000);
+    // Sync across tabs
+    const handleStorageChange = (e) => {
+      if (e.key === 'lumina_guestbook_msgs') loadMessages();
+    };
+    window.addEventListener('storage', handleStorageChange);
 
-    return () => clearInterval(pollTimer);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -60,34 +60,23 @@ const LuminaChat = () => {
     }
   }, [messages, isConnecting]);
 
-  const handleSend = async (e) => {
+  const handleSend = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
 
     const newMessage = {
-      id: 'msg-' + Date.now(),
+      id: 'local-' + Date.now(),
       user: username,
       text: input.trim(),
       timestamp: Date.now(),
       role: 'user'
     };
 
-    const newLocalMsgs = [...messages.filter(m => !m.id.startsWith('m')), newMessage];
+    const saved = localStorage.getItem('lumina_guestbook_msgs');
+    const localMsgs = saved ? JSON.parse(saved) : [];
+    const updated = [...localMsgs, newMessage];
     
-    // Save to Puter if signed in
-    if (typeof window !== 'undefined' && window.puter && (await window.puter.auth.isSignedIn())) {
-      try {
-        const currentData = await window.puter.keyval.get('lumina_guestbook_v2');
-        const currentMsgs = currentData ? JSON.parse(currentData) : [];
-        await window.puter.keyval.set('lumina_guestbook_v2', JSON.stringify([...currentMsgs, newMessage].slice(-50))); // Keep last 50
-      } catch (err) {
-        console.error("Puter KV Save Error:", err);
-      }
-    } else {
-      // Otherwise save to localStorage
-      localStorage.setItem('lumina_guestbook_msgs', JSON.stringify(newLocalMsgs.slice(-50)));
-    }
-
+    localStorage.setItem('lumina_guestbook_msgs', JSON.stringify(updated));
     setMessages(prev => [...prev, newMessage]);
     setInput('');
   };
@@ -105,19 +94,14 @@ const LuminaChat = () => {
             <div className="flex items-center gap-1.5">
               <div className={`w-1.5 h-1.5 rounded-full ${isConnecting ? 'bg-sdl-warn animate-pulse' : 'bg-sdl-done'}`} />
               <span className="text-[9px] font-bold text-sdl-sec uppercase tracking-widest">
-                {isConnecting ? 'Establishing Link...' : isPuterSignedIn ? 'Cloud Node: Global' : 'Local Node: Sandbox'}
+                {isConnecting ? 'Establishing Link...' : 'Global Node: Connected'}
               </span>
             </div>
           </div>
         </div>
-        {!isPuterSignedIn && (
-          <button 
-            onClick={() => signInWithPuter()}
-            className="text-[9px] font-black text-os-primary uppercase tracking-widest border border-os-primary/30 px-3 py-1 rounded-full hover:bg-os-primary/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-          >
-            Enable Global Link
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+           <span className="text-[10px] font-black text-os-primary/60 uppercase tracking-widest">{messages.length} Active Signals</span>
+        </div>
       </div>
 
       {/* Messages Area */}

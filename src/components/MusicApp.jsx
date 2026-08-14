@@ -1,27 +1,31 @@
-import React, { useState, useMemo } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, List, Heart, Repeat, Shuffle, Music, ChevronLeft, Search, TrendingUp, Radio, Library, Home, Maximize2, Minimize2 } from 'lucide-react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, List, Heart, Repeat, Shuffle, Music, ChevronLeft, Search, TrendingUp, Radio, Library, Home, Maximize2, Minimize2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import Visualizer from './Visualizer';
-import { seek as engineSeek } from '../utils/musicEngine';
 import { MUSIC_DATA, CATEGORIES } from '../data/musicData';
 import { useColorway } from '../theme/useColorway';
+import { getArtistBio, getSimilarTracks, getTopTracks } from '../utils/musicApi';
 
 const MusicApp = () => {
-  const {
-    music,
-    setMusicIsPlaying,
-    setMusicTrack,
+  const { 
+    music, 
+    setMusicIsPlaying, 
+    setMusicTrack, 
+    setMusicCurrentTime, 
     toggleLikeSong,
     setMusicView,
     toggleShuffle,
     setRepeatMode,
-    setMusicVolume,
-    nextTrack,
-    prevTrack,
-    unlockAchievement
+    unlockAchievement,
+    setLastFmArtistBio,
+    setLastFmSimilarTracks,
+    setLastFmTopTracks
   } = useOSStore();
+
+  const playerRef = useRef(null);
+  const containerRef = useRef(null);
 
   // Canvas, so it cannot read a CSS variable — a sanctioned useColorway consumer. The old ternary
   // chain tested `activeAccent === 'blue'`, a value the accent preset never took, so the visualizer
@@ -35,9 +39,13 @@ const MusicApp = () => {
 
   const isMobile = useIsMobile();
   const [showSidebar, setShowSidebar] = useState(!isMobile);
+  const [volume, setVolume] = useState(music.volume * 100);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const volume = Math.round(music.volume * 100);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Import music APIs dynamically to avoid top-level await issues if any, or just import at top
+  // Actually I will import at top.
 
   const displayPlaylist = useMemo(() => {
     let list = MUSIC_DATA;
@@ -60,22 +68,189 @@ const MusicApp = () => {
     setShowSidebar(!isMobile);
   }
 
-  // Playback itself lives in the global engine (src/utils/musicEngine.js);
-  // this component only dispatches store actions and imperative seeks.
-  const handlePrev = () => {
-    if (music.currentTime > 5) {
-      engineSeek(0);
+  const handleNext = useCallback(() => {
+    if (music.repeatMode === 'one') {
+      playerRef.current?.seekTo(0);
+      playerRef.current?.playVideo();
       return;
     }
-    prevTrack();
-  };
+
+    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
+    let nextTrack;
+
+    if (music.shuffle) {
+      const otherTracks = list.filter(t => t.id !== music.currentTrack.id);
+      nextTrack = otherTracks[Math.floor(Math.random() * otherTracks.length)];
+    } else {
+      const idx = list.findIndex(t => t.id === music.currentTrack.id);
+      if (idx === list.length - 1) {
+        if (music.repeatMode === 'all') nextTrack = list[0];
+        else return; // End of playlist
+      } else {
+        nextTrack = list[idx + 1];
+      }
+    }
+
+    if (nextTrack) setMusicTrack(nextTrack);
+  }, [displayPlaylist, music.currentTrack.id, music.repeatMode, music.shuffle, setMusicTrack]);
+
+  const handlePrev = useCallback(() => {
+    if (music.currentTime > 5) {
+      playerRef.current?.seekTo(0);
+      return;
+    }
+
+    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
+    const idx = list.findIndex(t => t.id === music.currentTrack.id);
+    const prevTrack = idx > 0 ? list[idx - 1] : list[list.length - 1];
+    setMusicTrack(prevTrack);
+  }, [displayPlaylist, music.currentTrack.id, music.currentTime, setMusicTrack]);
+
+  useEffect(() => {
+    // Load YouTube IFrame API
+    if (!window.YT) {
+      if (!document.getElementById('youtube-iframe-api')) {
+        const tag = document.createElement('script');
+        tag.id = 'youtube-iframe-api';
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+      }
+    }
+
+    const createPlayer = () => {
+      if (playerRef.current || !window.YT || !window.YT.Player || !containerRef.current) return;
+      
+      try {
+        // Clear container to avoid duplicate iframes
+        containerRef.current.innerHTML = '';
+
+        // Create an iframe and set credentialless so that it can load YouTube in COEP context
+        const iframe = document.createElement('iframe');
+        iframe.id = 'yt-player-iframe';
+        iframe.credentialless = true;
+        iframe.setAttribute('credentialless', 'true');
+        iframe.style.width = '1px';
+        iframe.style.height = '1px';
+        
+        // Construct the YouTube embed URL with options
+        const origin = window.location.origin;
+        iframe.src = `https://www.youtube-nocookie.com/embed/${music.currentTrack.youtubeId}?enablejsapi=1&origin=${encodeURIComponent(origin)}&autoplay=0&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&playsinline=1`;
+        
+        containerRef.current.appendChild(iframe);
+
+        playerRef.current = new window.YT.Player(iframe, {
+          events: {
+            onReady: (event) => {
+              event.target.setVolume(volume);
+              if (music.isPlaying) event.target.playVideo();
+            },
+            onStateChange: (event) => {
+              if (event.data === window.YT.PlayerState.ENDED) {
+                handleNext();
+              }
+              if (event.data === window.YT.PlayerState.PLAYING) {
+                setMusicIsPlaying(true);
+                unlockAchievement('audiophile');
+              }
+              if (event.data === window.YT.PlayerState.PAUSED) {
+                setMusicIsPlaying(false);
+              }
+            },
+            onError: (e) => {
+              console.error('YouTube Player Error:', e.data);
+              if ([2, 5, 100, 101, 150].includes(e.data)) {
+                handleNext();
+              }
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Failed to initialize YouTube player:', err);
+      }
+    };
+
+    // Move handleNext into a ref-like variable if we need it in the initial effect
+    // OR just use a stable handleNext (which it is now with useCallback)
+    // But we need to handle the circular dependency or just use the stable callback.
+    
+    if (window.YT && window.YT.Player) {
+      createPlayer();
+    } else {
+      const previousCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (previousCallback) previousCallback();
+        createPlayer();
+      };
+    }
+  }, [handleNext, music.currentTrack.youtubeId, music.isPlaying, setMusicIsPlaying, unlockAchievement, volume]);
+
+  useEffect(() => {
+    if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+      const state = playerRef.current.getPlayerState?.();
+      if (music.isPlaying) {
+        if (state !== window.YT?.PlayerState?.PLAYING) {
+          playerRef.current.playVideo();
+        }
+      } else {
+        if (state !== window.YT?.PlayerState?.PAUSED) {
+          playerRef.current.pauseVideo();
+        }
+      }
+    }
+  }, [music.isPlaying]);
+
+  useEffect(() => {
+    if (playerRef.current && playerRef.current.loadVideoById) {
+      playerRef.current.loadVideoById(music.currentTrack.youtubeId);
+    }
+    
+    // Fetch Last.fm Data for current track
+    const fetchTrackData = async () => {
+      const bio = await getArtistBio(music.currentTrack.artist.split(',')[0]);
+      if (bio) setLastFmArtistBio(bio);
+      
+      const similar = await getSimilarTracks(music.currentTrack.artist.split(',')[0], music.currentTrack.title);
+      if (similar) setLastFmSimilarTracks(similar);
+    };
+    fetchTrackData();
+  }, [music.currentTrack.id, music.currentTrack.youtubeId, setLastFmArtistBio, setLastFmSimilarTracks]);
+
+  useEffect(() => {
+    if (music.activeView === 'History' && (!music.lastFmData?.topTracks || music.lastFmData.topTracks.length === 0)) {
+      const fetchHistory = async () => {
+        setIsLoadingHistory(true);
+        const tracks = await getTopTracks(20);
+        setLastFmTopTracks(tracks);
+        setIsLoadingHistory(false);
+      };
+      fetchHistory();
+    }
+  }, [music.activeView, music.lastFmData?.topTracks, setLastFmTopTracks]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (playerRef.current && playerRef.current.getCurrentTime) {
+        setMusicCurrentTime(playerRef.current.getCurrentTime());
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [setMusicCurrentTime]);
+
 
   const handleVolumeChange = (e) => {
-    setMusicVolume(parseInt(e.target.value) / 100);
+    const newVol = parseInt(e.target.value);
+    setVolume(newVol);
+    if (playerRef.current && playerRef.current.setVolume) {
+      playerRef.current.setVolume(newVol);
+    }
   };
 
   const handleSeek = (e) => {
-    engineSeek((parseFloat(e.target.value) / 100) * music.currentTrack.duration);
+    const seekTo = (parseFloat(e.target.value) / 100) * music.currentTrack.duration;
+    if (playerRef.current && playerRef.current.seekTo) {
+      playerRef.current.seekTo(seekTo, true);
+      setMusicCurrentTime(seekTo);
+    }
   };
 
   const formatTime = (time) => {
@@ -117,7 +292,8 @@ const MusicApp = () => {
             {[
               { id: 'Home', icon: Home },
               { id: 'Explore', icon: Search },
-              { id: 'Library', icon: Library }
+              { id: 'Library', icon: Library },
+              { id: 'History', icon: Radio }
             ].map(item => (
               <button 
                 key={item.id} 
@@ -135,9 +311,6 @@ const MusicApp = () => {
               <p className="text-[10px] font-black uppercase tracking-widest text-os-primary mb-1">Now Playing</p>
               <p className="text-xs font-bold truncate">{music.currentTrack.title}</p>
             </div>
-            <p className="mt-3 text-[9px] leading-relaxed text-os-onSurfaceVariant/70">
-              Local tracks: Kevin MacLeod (incompetech.com), CC BY 4.0 &middot; SoundHelix (T. Sch&uuml;rger)
-            </p>
           </div>
         </motion.div>
       )}
@@ -408,6 +581,49 @@ const MusicApp = () => {
                 </div>
               </motion.div>
             )}
+
+            {music.activeView === 'History' && (
+              <motion.div 
+                key="history"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <div className="flex items-end gap-8 mb-12">
+                   <div className="w-48 h-48 md:w-64 md:h-64 rounded-3xl bg-gradient-to-br from-purple-600 to-red-500 flex items-center justify-center shadow-2xl border border-white/10">
+                      <Radio size={80} fill="black" strokeWidth={0} className="opacity-50" />
+                   </div>
+                   <div className="flex flex-col gap-2">
+                      <span className="text-xs font-black uppercase tracking-[0.3em] text-os-primary">Last.fm Connected</span>
+                      <h2 className="text-4xl md:text-7xl font-black tracking-tighter">Your Top Tracks</h2>
+                      <p className="text-os-onSurfaceVariant font-bold">Your most played tracks this week.</p>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {isLoadingHistory ? (
+                    <div className="col-span-full py-10 text-center text-os-onSurfaceVariant">Loading from Last.fm...</div>
+                  ) : music.lastFmData?.topTracks?.length > 0 ? (
+                    music.lastFmData.topTracks.map(track => (
+                      <div key={track.id} className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                        <div className="relative aspect-square mb-4 rounded-xl overflow-hidden shadow-lg">
+                           {track.cover ? (
+                             <img src={track.cover} className="w-full h-full object-cover" />
+                           ) : (
+                             <div className="w-full h-full bg-white/10 flex items-center justify-center"><Music size={32} className="opacity-20" /></div>
+                           )}
+                        </div>
+                        <h4 className="font-bold text-sm truncate">{track.title}</h4>
+                        <p className="text-xs text-os-onSurfaceVariant truncate">{track.artist}</p>
+                        <p className="text-[10px] text-os-primary mt-2">{track.playcount} plays</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full py-10 text-center text-os-onSurfaceVariant">No Last.fm data available. Make sure your API key is set in .env.</div>
+                  )}
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
@@ -446,7 +662,7 @@ const MusicApp = () => {
                 >
                   {music.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="translate-x-0.5" />}
                 </button>
-                <button className="text-os-onSurfaceVariant hover:text-sdl-ink transition-colors" onClick={nextTrack}><SkipForward size={22} fill="currentColor" /></button>
+                <button className="text-os-onSurfaceVariant hover:text-sdl-ink transition-colors" onClick={handleNext}><SkipForward size={22} fill="currentColor" /></button>
                 <button 
                   onClick={cycleRepeatMode}
                   className={`relative transition-colors ${music.repeatMode !== 'none' ? 'text-os-primary' : 'text-os-onSurfaceVariant hover:text-sdl-ink'}`}
@@ -546,14 +762,31 @@ const MusicApp = () => {
                      </motion.p>
                   </div>
 
-                  {/* Lyrics Placeholder */}
-                  <div className="h-48 md:h-64 overflow-hidden mask-fade relative">
-                     <div className="space-y-4 py-8">
-                        <p className="text-lg md:text-2xl font-bold opacity-30">Yeah, we&apos;re living in the moment</p>
-                        <p className="text-xl md:text-3xl font-black text-sdl-ink">Every heartbeat is a new song</p>
-                        <p className="text-lg md:text-2xl font-bold opacity-30">Lumina OS rhythm keeping us strong</p>
-                        <p className="text-lg md:text-2xl font-bold opacity-30">Vibing with the particles, all night long</p>
-                     </div>
+                  {/* Artist Bio & Similar */}
+                  <div className="h-48 md:h-64 overflow-y-auto custom-scrollbar relative pr-4">
+                     {music.lastFmData?.artistBio && (
+                       <div className="mb-6">
+                         <h5 className="text-xs font-black uppercase text-os-primary mb-2">About {music.currentTrack.artist}</h5>
+                         <p className="text-sm md:text-base text-sdl-ink/70 leading-relaxed font-medium">
+                           {music.lastFmData.artistBio.substring(0, 500)}...
+                         </p>
+                       </div>
+                     )}
+
+                     {music.lastFmData?.similarTracks?.length > 0 && (
+                       <div>
+                         <h5 className="text-xs font-black uppercase text-os-secondary mb-3">Similar Tracks (Last.fm)</h5>
+                         <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                           {music.lastFmData.similarTracks.map(t => (
+                             <div key={t.id} className="shrink-0 w-32">
+                               <img src={t.cover || 'https://via.placeholder.com/150'} className="w-32 h-32 rounded-xl mb-2 object-cover" />
+                               <p className="text-xs font-bold truncate">{t.title}</p>
+                               <p className="text-[10px] text-sdl-ink/50 truncate">{t.artist}</p>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     )}
                   </div>
 
                   <div className="space-y-6">
@@ -581,7 +814,7 @@ const MusicApp = () => {
                         >
                           {music.isPlaying ? <Pause size={40} fill="currentColor" /> : <Play size={40} fill="currentColor" className="translate-x-1" />}
                         </button>
-                        <button onClick={nextTrack} className="hover:scale-110 transition-transform"><SkipForward size={48} fill="currentColor" /></button>
+                        <button onClick={handleNext} className="hover:scale-110 transition-transform"><SkipForward size={48} fill="currentColor" /></button>
                         <button onClick={cycleRepeatMode} className={music.repeatMode !== 'none' ? 'text-os-primary' : 'opacity-40'}><Repeat size={28} /></button>
                      </div>
                   </div>
@@ -591,6 +824,7 @@ const MusicApp = () => {
         )}
       </AnimatePresence>
 
+      <div ref={containerRef} className="absolute -z-50 pointer-events-none opacity-0"></div>
     </div>
   );
 };

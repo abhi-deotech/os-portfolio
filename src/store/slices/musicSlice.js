@@ -1,35 +1,28 @@
-import { MUSIC_DATA } from '../../data/musicData';
-
-// Queue the transport operates on: liked songs in Library view, else everything.
-const getQueue = (music) => {
-  if (music.activeView === 'Library') {
-    const liked = MUSIC_DATA.filter((t) => music.likedSongs?.includes(t.id));
-    if (liked.length > 0) return liked;
-  }
-  return MUSIC_DATA;
-};
-
-const advanceTo = (music, track) => ({
-  music: {
-    ...music,
-    currentTrack: track,
-    currentTime: 0,
-    isPlaying: true,
-    history: [music.currentTrack.id, ...(music.history || [])].slice(0, 50)
-  }
-});
-
 export const createMusicSlice = (set) => ({
   music: {
     isPlaying: false,
-    currentTrack: MUSIC_DATA[0],
+    currentTrack: {
+      id: 'metro-niagara',
+      youtubeId: 'v9l4yv3w-0w',
+      title: 'Niagara Falls (Foot or 2)',
+      artist: 'Metro Boomin, Travis Scott, 21 Savage',
+      album: 'HEROES & VILLAINS',
+      cover: 'https://images.weserv.nl/?url=https://img.youtube.com/vi/v9l4yv3w-0w/hqdefault.jpg',
+      duration: 207
+    },
     volume: 0.7,
     currentTime: 0,
     likedSongs: [], // Track IDs of liked songs
     activeView: 'Home', // Current UI view (Home, Library, etc)
     shuffle: false,
     repeatMode: 'none', // 'none', 'one', 'all'
-    history: [] // Last played track IDs
+    history: [], // Last played track IDs
+    lastFmData: {
+      nowPlaying: null,
+      artistBio: null,
+      topTracks: [],
+      similarTracks: []
+    }
   },
 
   setMusicIsPlaying: (isPlaying) => set((state) => ({
@@ -65,34 +58,6 @@ export const createMusicSlice = (set) => ({
     };
   }),
 
-  nextTrack: () => set((state) => {
-    const m = state.music;
-    const list = getQueue(m);
-    let next;
-    if (m.shuffle) {
-      const others = list.filter((t) => t.id !== m.currentTrack.id);
-      next = others[Math.floor(Math.random() * others.length)];
-    } else {
-      const idx = list.findIndex((t) => t.id === m.currentTrack.id);
-      if (idx === -1) next = list[0];
-      else if (idx === list.length - 1) {
-        if (m.repeatMode === 'all') next = list[0];
-        else return { music: { ...m, isPlaying: false } }; // end of queue
-      } else next = list[idx + 1];
-    }
-    if (!next) return { music: { ...m, isPlaying: false } };
-    return advanceTo(m, next);
-  }),
-
-  prevTrack: () => set((state) => {
-    const m = state.music;
-    const list = getQueue(m);
-    const idx = list.findIndex((t) => t.id === m.currentTrack.id);
-    const prev = idx > 0 ? list[idx - 1] : list[list.length - 1];
-    if (!prev) return {};
-    return advanceTo(m, prev);
-  }),
-
   setMusicView: (view) => set((state) => ({
     music: { ...state.music, activeView: view }
   })),
@@ -108,4 +73,20 @@ export const createMusicSlice = (set) => ({
   setMusicVolume: (value) => set((state) => ({
     music: { ...state.music, volume: value }
   })),
+
+  setLastFmNowPlaying: (data) => set((state) => ({
+    music: { ...state.music, lastFmData: { ...state.music.lastFmData, nowPlaying: data } }
+  })),
+
+  setLastFmArtistBio: (bio) => set((state) => ({
+    music: { ...state.music, lastFmData: { ...state.music.lastFmData, artistBio: bio } }
+  })),
+
+  setLastFmTopTracks: (tracks) => set((state) => ({
+    music: { ...state.music, lastFmData: { ...state.music.lastFmData, topTracks: tracks } }
+  })),
+
+  setLastFmSimilarTracks: (tracks) => set((state) => ({
+    music: { ...state.music, lastFmData: { ...state.music.lastFmData, similarTracks: tracks } }
+  }))
 });

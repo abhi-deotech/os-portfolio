@@ -1,9 +1,7 @@
 import {
-  User, FileText, Code, HardDrive, Gamepad2, Music, Joystick,
+  User, FileText, Code, HardDrive, Gamepad2, Music, Joystick, Monitor, Image as Wallpaper,
   Activity, Mail, MessageSquare, Settings as SettingsIcon, Trophy, Globe, Brain, Book,
 } from 'lucide-react';
-
-const IS_PUTER_SHELL = import.meta.env.VITE_APP_MODE === 'puter-shell';
 
 /**
  * Centralized application configuration for Lumina OS.
@@ -31,9 +29,13 @@ const IS_PUTER_SHELL = import.meta.env.VITE_APP_MODE === 'puter-shell';
  * ── Hue spacing ───────────────────────────────────────────────────────────────────────────────
  *
  * The old palette had five apps on the same purple and three on the same green, which is a real
- * wayfinding loss: colour is the fastest way to hit a dock target. These eighteen are spread around
+ * wayfinding loss: colour is the fastest way to hit a dock target. These entries are spread around
  * the wheel with a ~13° minimum gap, kept near each app's historical hue wherever it had a distinct
  * one (Files stays amber at 80°, Resume stays pink at 352°, Browser stays cyan at 216°).
+ *
+ * Media, Photos and Benchmark were added on master after this file's SDL rewrite forked off; they're
+ * ported into the same hue/glyph shape here rather than left on the old literal-color render-function
+ * shape, and given clear-of-collision hues near their historical color (cyan, pink, spring-green).
  */
 export const APPS = [
   // --- CORE SYSTEM APPS ---
@@ -60,7 +62,7 @@ export const APPS = [
   },
   {
     id: 'aichat',
-    title: IS_PUTER_SHELL ? 'Lumina Assistant' : 'Lumina AI',
+    title: 'Lumina AI',
     glyph: Brain,
     hue: 316,           // violet — was os-primary
     legacyHex: '#cc97ff',
@@ -76,40 +78,38 @@ export const APPS = [
     pinned: true,
   },
 
-  // --- PORTFOLIO APPS (Conditional) ---
-  ...(!IS_PUTER_SHELL ? [
-    {
-      id: 'about',
-      title: 'About Me',
-      glyph: User,
-      hue: 16,          // rose — was os-primary, one of five apps sharing it
-      legacyHex: '#cc97ff',
-      featured: true,
-      pinned: false,
-    },
-    // NOTE — `cv` (Resume) and `skills` used to be declared here, `cv` even pinned and badged.
-    // Neither has ever had an implementing component: WindowContentRenderer has no case for either,
-    // so both fell through to `default: return null` and opened an empty, undismissable-looking
-    // window from the dock. They are removed rather than stubbed because the repo holds no resume
-    // or skills DATA to render, and inventing a career history is not a decision code should make.
-    // Re-add both entries (and the matching cases) once real content exists.
-    {
-      id: 'projects',
-      title: 'Projects',
-      glyph: Code,
-      hue: 252,         // azure — was os-secondary
-      legacyHex: '#00d2fd',
-      featured: true,
-      pinned: true,
-    },
-    {
-      id: 'mail',
-      title: 'Mail',
-      glyph: Mail,
-      hue: 160,         // spring green — closest to its historical #00f5a0
-      legacyHex: '#00f5a0',
-    },
-  ] : []),
+  // --- PORTFOLIO APPS ---
+  {
+    id: 'about',
+    title: 'About Me',
+    glyph: User,
+    hue: 16,          // rose — was os-primary, one of five apps sharing it
+    legacyHex: '#cc97ff',
+    featured: true,
+    pinned: false,
+  },
+  // NOTE — `cv` (Resume) and `skills` used to be declared here, `cv` even pinned and badged.
+  // Neither has ever had an implementing component: WindowContentRenderer has no case for either,
+  // so both fell through to `default: return null` and opened an empty, undismissable-looking
+  // window from the dock. They are removed rather than stubbed because the repo holds no resume
+  // or skills DATA to render, and inventing a career history is not a decision code should make.
+  // Re-add both entries (and the matching cases) once real content exists.
+  {
+    id: 'projects',
+    title: 'Projects',
+    glyph: Code,
+    hue: 252,         // azure — was os-secondary
+    legacyHex: '#00d2fd',
+    featured: true,
+    pinned: true,
+  },
+  {
+    id: 'mail',
+    title: 'Mail',
+    glyph: Mail,
+    hue: 160,         // spring green — closest to its historical #00f5a0
+    legacyHex: '#00f5a0',
+  },
 
   // --- PRODUCTIVITY & APPS ---
   {
@@ -121,12 +121,35 @@ export const APPS = [
     pinned: true,
   },
   {
+    id: 'media',
+    title: 'Media',
+    glyph: Monitor,
+    hue: 188,           // cyan — was #00d2fd
+    legacyHex: '#00d2fd',
+    pinned: true,
+  },
+  {
     id: 'music',
     title: 'Music',
     glyph: Music,
     hue: 300,           // purple — was os-primary, and the one that keeps it
     legacyHex: '#cc97ff',
     pinned: true,
+  },
+  {
+    id: 'photos',
+    title: 'Photos',
+    glyph: Wallpaper,
+    hue: 354,           // pink — was #ff86c3
+    legacyHex: '#ff86c3',
+    pinned: true,
+  },
+  {
+    id: 'benchmark',
+    title: 'Benchmark',
+    glyph: Activity,
+    hue: 145,           // spring green — was #00f5a0
+    legacyHex: '#00f5a0',
   },
   {
     id: 'browser',

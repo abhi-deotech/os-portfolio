@@ -1,6 +1,4 @@
-import localTracks from 'virtual:music-manifest';
-
-const YOUTUBE_TRACKS = [
+export const MUSIC_DATA = [
   // CHILL/SAFE (Permissive Embeds)
   {
     id: 'lofi-beats',
@@ -8,7 +6,7 @@ const YOUTUBE_TRACKS = [
     title: 'Lofi Study Radio',
     artist: 'Lofi Girl',
     album: 'Lumina Study Session',
-    cover: 'https://i.ytimg.com/vi/jfKfPfyJRdk/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/jfKfPfyJRdk/hqdefault.jpg',
     duration: 3600,
     genre: 'Indie'
   },
@@ -19,7 +17,7 @@ const YOUTUBE_TRACKS = [
     title: 'Niagara Falls (Foot or 2)',
     artist: 'Metro Boomin, Travis Scott, 21 Savage',
     album: 'HEROES & VILLAINS',
-    cover: 'https://i.ytimg.com/vi/Z8vDU6vUTj4/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/Z8vDU6vUTj4/hqdefault.jpg',
     duration: 207,
     genre: 'Trap'
   },
@@ -29,7 +27,7 @@ const YOUTUBE_TRACKS = [
     title: 'FE!N',
     artist: 'Travis Scott ft. Playboi Carti',
     album: 'UTOPIA',
-    cover: 'https://i.ytimg.com/vi/B9synWjqBn8/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/B9synWjqBn8/hqdefault.jpg',
     duration: 191,
     genre: 'Trap'
   },
@@ -39,7 +37,7 @@ const YOUTUBE_TRACKS = [
     title: 'Not Like Us',
     artist: 'Kendrick Lamar',
     album: 'Single',
-    cover: 'https://i.ytimg.com/vi/H58vbez_m4E/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/H58vbez_m4E/hqdefault.jpg',
     duration: 274,
     genre: 'Hip Hop'
   },
@@ -49,7 +47,7 @@ const YOUTUBE_TRACKS = [
     title: 'Mask Off',
     artist: 'Future',
     album: 'FUTURE',
-    cover: 'https://i.ytimg.com/vi/xvZqHgFz51I/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/xvZqHgFz51I/hqdefault.jpg',
     duration: 204,
     genre: 'Trap'
   },
@@ -59,7 +57,7 @@ const YOUTUBE_TRACKS = [
     title: 'Magnolia',
     artist: 'Playboi Carti',
     album: 'Playboi Carti',
-    cover: 'https://i.ytimg.com/vi/RLYksQvr5zY/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/RLYksQvr5zY/hqdefault.jpg',
     duration: 181,
     genre: 'Trap'
   },
@@ -69,7 +67,7 @@ const YOUTUBE_TRACKS = [
     title: 'pushin P',
     artist: 'Gunna, Future, ft. Young Thug',
     album: 'DS4Ever',
-    cover: 'https://i.ytimg.com/vi/9g08kucPQtE/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/9g08kucPQtE/hqdefault.jpg',
     duration: 136,
     genre: 'Trap'
   },
@@ -79,7 +77,7 @@ const YOUTUBE_TRACKS = [
     title: 'Too Many Nights',
     artist: 'Metro Boomin, Don Toliver, Future',
     album: 'HEROES & VILLAINS',
-    cover: 'https://i.ytimg.com/vi/3q_ijl-aaTI/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/3q_ijl-aaTI/hqdefault.jpg',
     duration: 199,
     genre: 'Trap'
   },
@@ -89,7 +87,7 @@ const YOUTUBE_TRACKS = [
     title: 'HUMBLE.',
     artist: 'Kendrick Lamar',
     album: 'DAMN.',
-    cover: 'https://i.ytimg.com/vi/tvTRZJ-4EyI/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/tvTRZJ-4EyI/hqdefault.jpg',
     duration: 177,
     genre: 'Hip Hop'
   },
@@ -99,7 +97,7 @@ const YOUTUBE_TRACKS = [
     title: "God's Plan",
     artist: 'Drake',
     album: 'Scorpion',
-    cover: 'https://i.ytimg.com/vi/xpVfcZ0ZcFM/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/xpVfcZ0ZcFM/hqdefault.jpg',
     duration: 198,
     genre: 'Hip Hop'
   },
@@ -109,7 +107,7 @@ const YOUTUBE_TRACKS = [
     title: 'SICKO MODE',
     artist: 'Travis Scott',
     album: 'ASTROWORLD',
-    cover: 'https://i.ytimg.com/vi/6ONRf7h3Mdk/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/6ONRf7h3Mdk/hqdefault.jpg',
     duration: 312,
     genre: 'Trap'
   },
@@ -121,7 +119,7 @@ const YOUTUBE_TRACKS = [
     title: 'Take Me Back To LA',
     artist: 'The Weeknd',
     album: 'Hurry Up Tomorrow',
-    cover: 'https://i.ytimg.com/vi/tYvKLO0wOcU/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/tYvKLO0wOcU/hqdefault.jpg',
     duration: 240,
     genre: 'R&B'
   },
@@ -131,7 +129,7 @@ const YOUTUBE_TRACKS = [
     title: 'Snooze',
     artist: 'SZA',
     album: 'SOS',
-    cover: 'https://i.ytimg.com/vi/2fP6_6EwEqY/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/2fP6_6EwEqY/hqdefault.jpg',
     duration: 201,
     genre: 'R&B'
   },
@@ -141,7 +139,7 @@ const YOUTUBE_TRACKS = [
     title: 'Passionfruit',
     artist: 'Drake',
     album: 'More Life',
-    cover: 'https://i.ytimg.com/vi/COz9lDCFHjw/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/COz9lDCFHjw/hqdefault.jpg',
     duration: 298,
     genre: 'R&B'
   },
@@ -151,7 +149,7 @@ const YOUTUBE_TRACKS = [
     title: 'telepatía',
     artist: 'Kali Uchis',
     album: 'Sin Miedo',
-    cover: 'https://i.ytimg.com/vi/bnVUHWCynig/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/bnVUHWCynig/hqdefault.jpg',
     duration: 160,
     genre: 'R&B'
   },
@@ -161,7 +159,7 @@ const YOUTUBE_TRACKS = [
     title: 'Die For You',
     artist: 'The Weeknd',
     album: 'Starboy',
-    cover: 'https://i.ytimg.com/vi/QLCpqdqeoII/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/QLCpqdqeoII/hqdefault.jpg',
     duration: 260,
     genre: 'R&B'
   },
@@ -171,7 +169,7 @@ const YOUTUBE_TRACKS = [
     title: 'Redbone',
     artist: 'Childish Gambino',
     album: '"Awaken, My Love!"',
-    cover: 'https://i.ytimg.com/vi/nxuzYWcY2O0/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/nxuzYWcY2O0/hqdefault.jpg',
     duration: 326,
     genre: 'R&B'
   },
@@ -181,7 +179,7 @@ const YOUTUBE_TRACKS = [
     title: 'Best Part',
     artist: 'Daniel Caesar ft. H.E.R.',
     album: 'Freudian',
-    cover: 'https://i.ytimg.com/vi/vBy7FaapGRo/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/vBy7FaapGRo/hqdefault.jpg',
     duration: 209,
     genre: 'R&B'
   },
@@ -191,7 +189,7 @@ const YOUTUBE_TRACKS = [
     title: 'Coffee',
     artist: 'Miguel',
     album: 'Wildheart',
-    cover: 'https://i.ytimg.com/vi/c3hPS6OdFbs/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/c3hPS6OdFbs/hqdefault.jpg',
     duration: 286,
     genre: 'R&B'
   },
@@ -203,7 +201,7 @@ const YOUTUBE_TRACKS = [
     title: 'Chamber of Reflection',
     artist: 'Mac DeMarco',
     album: 'Salad Days',
-    cover: 'https://i.ytimg.com/vi/NY8IS0ssnXQ/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/NY8IS0ssnXQ/hqdefault.jpg',
     duration: 231,
     genre: 'Indie'
   },
@@ -213,7 +211,7 @@ const YOUTUBE_TRACKS = [
     title: 'The Less I Know The Better',
     artist: 'Tame Impala',
     album: 'Currents',
-    cover: 'https://i.ytimg.com/vi/2SUwOgmvzK4/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/2SUwOgmvzK4/hqdefault.jpg',
     duration: 218,
     genre: 'Indie'
   },
@@ -223,7 +221,7 @@ const YOUTUBE_TRACKS = [
     title: 'Borderline',
     artist: 'Tame Impala',
     album: 'The Slow Rush',
-    cover: 'https://i.ytimg.com/vi/2g5xkLqIElU/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/2g5xkLqIElU/hqdefault.jpg',
     duration: 237,
     genre: 'Indie'
   },
@@ -233,7 +231,7 @@ const YOUTUBE_TRACKS = [
     title: 'Sweater Weather',
     artist: 'The Neighbourhood',
     album: 'I Love You.',
-    cover: 'https://i.ytimg.com/vi/GCdwKhTtNNw/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/GCdwKhTtNNw/hqdefault.jpg',
     duration: 240,
     genre: 'Indie'
   },
@@ -243,7 +241,7 @@ const YOUTUBE_TRACKS = [
     title: 'Heat Waves',
     artist: 'Glass Animals',
     album: 'Dreamland',
-    cover: 'https://i.ytimg.com/vi/mRD0-GxqHVo/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/mRD0-GxqHVo/hqdefault.jpg',
     duration: 238,
     genre: 'Indie'
   },
@@ -253,7 +251,7 @@ const YOUTUBE_TRACKS = [
     title: 'Fluorescent Adolescent',
     artist: 'Arctic Monkeys',
     album: 'Favourite Worst Nightmare',
-    cover: 'https://i.ytimg.com/vi/ma9I9VBKPiw/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/ma9I9VBKPiw/hqdefault.jpg',
     duration: 177,
     genre: 'Indie'
   },
@@ -265,7 +263,7 @@ const YOUTUBE_TRACKS = [
     title: 'Get Lucky',
     artist: 'Daft Punk',
     album: 'Random Access Memories',
-    cover: 'https://i.ytimg.com/vi/5NV6Rdv1a3I/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/5NV6Rdv1a3I/hqdefault.jpg',
     duration: 248,
     genre: 'Electronic'
   },
@@ -275,7 +273,7 @@ const YOUTUBE_TRACKS = [
     title: 'Starboy',
     artist: 'The Weeknd ft. Daft Punk',
     album: 'Starboy',
-    cover: 'https://i.ytimg.com/vi/34Na4j8AVgA/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/34Na4j8AVgA/hqdefault.jpg',
     duration: 230,
     genre: 'Electronic'
   },
@@ -285,7 +283,7 @@ const YOUTUBE_TRACKS = [
     title: 'Midnight City',
     artist: 'M83',
     album: 'Hurry Up, We\'re Dreaming',
-    cover: 'https://i.ytimg.com/vi/dX3k_QDnzHE/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/dX3k_QDnzHE/hqdefault.jpg',
     duration: 243,
     genre: 'Electronic'
   },
@@ -295,7 +293,7 @@ const YOUTUBE_TRACKS = [
     title: 'After Dark',
     artist: 'Mr.Kitty',
     album: 'Time',
-    cover: 'https://i.ytimg.com/vi/sVx1mJDeUjY/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/sVx1mJDeUjY/hqdefault.jpg',
     duration: 257,
     genre: 'Electronic'
   },
@@ -305,7 +303,7 @@ const YOUTUBE_TRACKS = [
     title: 'Blinding Lights',
     artist: 'The Weeknd',
     album: 'After Hours',
-    cover: 'https://i.ytimg.com/vi/4NRXx6U8ABQ/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/4NRXx6U8ABQ/hqdefault.jpg',
     duration: 200,
     genre: 'Pop'
   },
@@ -315,7 +313,7 @@ const YOUTUBE_TRACKS = [
     title: 'Levitating',
     artist: 'Dua Lipa',
     album: 'Future Nostalgia',
-    cover: 'https://i.ytimg.com/vi/TUVcZfQe-Kw/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/TUVcZfQe-Kw/hqdefault.jpg',
     duration: 203,
     genre: 'Pop'
   },
@@ -325,7 +323,7 @@ const YOUTUBE_TRACKS = [
     title: 'Stay',
     artist: 'The Kid LAROI & Justin Bieber',
     album: 'F*CK LOVE 3: OVER YOU',
-    cover: 'https://i.ytimg.com/vi/kTJczUoc26U/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/kTJczUoc26U/hqdefault.jpg',
     duration: 141,
     genre: 'Pop'
   },
@@ -335,17 +333,10 @@ const YOUTUBE_TRACKS = [
     title: 'As It Was',
     artist: 'Harry Styles',
     album: "Harry's House",
-    cover: 'https://i.ytimg.com/vi/H5v3kku4y6Q/mqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/H5v3kku4y6Q/hqdefault.jpg',
     duration: 167,
     genre: 'Pop'
   }
-];
-
-// Local tracks are discovered at build/dev time from public/assets/music/*.mp3
-// (see plugins/musicManifest.js) — drop a tagged MP3 there and it appears here.
-export const MUSIC_DATA = [
-  ...localTracks,
-  ...YOUTUBE_TRACKS.map((t) => ({ ...t, source: 'youtube' })),
 ];
 
 export const CATEGORIES = [

@@ -14,7 +14,6 @@ const ControlCenter = () => {
   const toggleControlCenter = useOSStore(state => state.toggleControlCenter);
   const music = useOSStore(state => state.music);
   const setMusicIsPlaying = useOSStore(state => state.setMusicIsPlaying);
-  const nextTrack = useOSStore(state => state.nextTrack);
   const openWindow = useOSStore(state => state.openWindow);
   const transparencyEffects = useOSStore(state => state.transparencyEffects);
   const brightness = useOSStore(state => state.brightness);
@@ -226,12 +225,12 @@ const ControlCenter = () => {
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         setMusicVolume(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
+                        playSound('click');
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === 'ArrowLeft') { setMusicVolume(Math.max(0, music.volume - 0.05)); }
-                        if (e.key === 'ArrowRight') { setMusicVolume(Math.min(1, music.volume + 0.05)); }
+                        if (e.key === 'ArrowLeft') { setMusicVolume(Math.max(0, music.volume - 0.05)); playSound('click'); }
+                        if (e.key === 'ArrowRight') { setMusicVolume(Math.min(1, music.volume + 0.05)); playSound('click'); }
                       }}
-
                    >
                       <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-sdl-accent/50 to-sdl-accent transition-all duration-300" style={{ width: `${volume}%` }} />
                    </div>
@@ -262,8 +261,7 @@ const ControlCenter = () => {
                       <button
                         type="button"
                         aria-label={music.isPlaying ? "Pause music" : "Play music"}
-                        onClick={() => { setMusicIsPlaying(!music.isPlaying); }}
-
+                        onClick={() => { setMusicIsPlaying(!music.isPlaying); playSound('click'); }}
                         className="w-10 h-10 rounded-full bg-veil/5 flex items-center justify-center cursor-pointer hover:bg-veil/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 flex-shrink-0"
                       >
                         <CustomIcon icon={music.isPlaying ? Pause : Play} size={14} color="text-sdl-ink" />
@@ -304,8 +302,7 @@ const ControlCenter = () => {
                       <button
                         type="button"
                         aria-label={music.isPlaying ? "Pause music" : "Play music"}
-                        onClick={() => { setMusicIsPlaying(!music.isPlaying); }}
-
+                        onClick={() => { setMusicIsPlaying(!music.isPlaying); playSound('click'); }}
                         className="w-10 h-10 rounded-full bg-veil/5 hover:bg-veil/10 flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                       >
                         <CustomIcon icon={music.isPlaying ? Pause : Play} size={14} color="text-sdl-ink" />
@@ -314,7 +311,7 @@ const ControlCenter = () => {
                         type="button"
                         aria-label="Skip track"
                         className="w-10 h-10 rounded-full bg-veil/5 hover:bg-veil/10 flex items-center justify-center cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-                        onClick={() => { nextTrack(); playSound('click'); }}
+                        onClick={() => { playSound('click'); }}
                       >
                         <CustomIcon icon={SkipForward} size={14} color="text-sdl-ink" />
                       </button>

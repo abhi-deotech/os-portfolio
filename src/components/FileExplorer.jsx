@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Tree } from 'react-arborist';
 import { 
   Folder, FolderOpen, FileText, Plus, Trash2, Edit3, 
@@ -165,17 +165,9 @@ const FileExplorer = () => {
   const recentFiles = useOSStore(state => state.recentFiles);
   const openWindow = useOSStore(state => state.openWindow);
   
-  const { isPuterSignedIn, puterFiles, loadRealPuterFiles } = useOSStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const [activeTab, setActiveTab] = useState('This PC'); // 'This PC', 'Recent', 'Starred', 'Cloud'
-
-  // Load Puter files when tab changes to Cloud
-  useEffect(() => {
-    if (activeTab === 'Cloud' && isPuterSignedIn) {
-      loadRealPuterFiles();
-    }
-  }, [activeTab, isPuterSignedIn, loadRealPuterFiles]);
+  const [activeTab, setActiveTab] = useState('This PC'); // 'This PC', 'Recent', 'Starred'
 
   // Derive breadcrumbs for selected node
   const breadcrumbs = useMemo(() => {
@@ -312,7 +304,6 @@ const FileExplorer = () => {
               <div className="space-y-1">
                 {[
                   { id: 'This PC', icon: Home, label: 'Internal Storage' },
-                  { id: 'Cloud', icon: HardDrive, label: 'Cloud Drive', disabled: !isPuterSignedIn },
                   { id: 'Starred', icon: Star, label: 'Starred Items' },
                   { id: 'Recent', icon: Clock, label: 'Recent Activity' }
                 ].map(item => (
@@ -407,35 +398,6 @@ const FileExplorer = () => {
             >
               {Node}
             </Tree>
-          ) : activeTab === 'Cloud' ? (
-            <div className="h-full">
-              {puterFiles.length > 0 ? (
-                <Tree
-                  data={puterFiles}
-                  idAccessor="id"
-                  childrenAccessor="children"
-                  width="100%"
-                  indent={16}
-                  rowHeight={34}
-                  onActivate={(node) => {
-                if (activationCameFromPointer) { activationCameFromPointer = false; return; }
-                activateNode(node, openWindow);
-              }}
-                  renderCursor={() => (
-                    <div className="h-0.5 bg-os-primary/40 rounded-full mx-2 shadow-[0_0_8px_var(--sdl-glow)]" />
-                  )}
-                >
-                  {Node}
-                </Tree>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center opacity-50">
-                   <div className="w-16 h-16 rounded-full bg-os-primary/10 flex items-center justify-center mb-4 text-os-primary">
-                      <RefreshCw size={32} className="animate-spin" />
-                   </div>
-                   <h3 className="text-sm font-black uppercase tracking-widest">Accessing Neural Cloud...</h3>
-                </div>
-              )}
-            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center opacity-50">
                <div className="w-16 h-16 rounded-full bg-os-outline/10 flex items-center justify-center mb-4">

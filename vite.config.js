@@ -1,34 +1,34 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import compression from 'vite-plugin-compression'
-import musicManifest from './plugins/musicManifest'
-
-// MP3s (and cover images) are already compressed — recompressing wastes build time
-const compressionFilter = /\.(js|mjs|json|css|html|svg)$/i
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    musicManifest(),
     // Brotli compression for production
     compression({
       algorithm: 'brotliCompress',
       ext: '.br',
-      filter: compressionFilter,
     }),
     // Gzip fallback
     compression({
       algorithm: 'gzip',
       ext: '.gz',
-      filter: compressionFilter,
     }),
   ],
-  // COOP/COEP intentionally omitted: they broke the YouTube IFrame API's
-  // postMessage handshake in Firefox (the "ready" event never fired), which
-  // silently killed all YouTube playback. The only feature that wanted them
-  // (@webcontainer/api, wired to the unfinished `node`/`npm` terminal
-  // commands) already fails gracefully without cross-origin isolation.
+  server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    },
+  },
+  preview: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    },
+  },
   build: {
     rollupOptions: {
       output: {

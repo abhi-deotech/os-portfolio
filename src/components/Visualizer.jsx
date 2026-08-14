@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-import { getLiveAnalyser } from '../utils/musicEngine';
 
 const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
   const canvasRef = useRef(null);
@@ -20,7 +19,6 @@ const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
     const barCount = 48;
     const bars = [];
     const peaks = new Array(barCount).fill(0);
-    let freqData = null;
     
     // Physical constants for the "Music Simulator"
     const damping = 0.15;
@@ -52,23 +50,8 @@ const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
       const mid = Math.sin(time * 8) * 0.3 + 0.3;
       const treble = Math.random() * 0.2;
 
-      // Real spectrum when the engine is playing a local track; the analyser is
-      // polled imperatively each frame (not via props) so the effect never resets.
-      const analyser = getLiveAnalyser();
-      if (analyser) {
-        if (!freqData || freqData.length !== analyser.frequencyBinCount) {
-          freqData = new Uint8Array(analyser.frequencyBinCount);
-        }
-        analyser.getByteFrequencyData(freqData);
-      }
-
       bars.forEach((bar, i) => {
-        if (analyser) {
-          // Map the 48 bars onto the musically active lower ~80% of the bins
-          const bin = Math.floor((i / barCount) * freqData.length * 0.8);
-          bar.targetHeight = (freqData[bin] / 255) * canvas.height * 0.9;
-          bar.height += (bar.targetHeight - bar.height) * 0.4;
-        } else if (isPlaying) {
+        if (isPlaying) {
           // Calculate theoretical "Spectral Intensity" for this bar's frequency slice
           let spectralIntensity = 0;
           

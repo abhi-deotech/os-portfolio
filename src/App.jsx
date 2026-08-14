@@ -30,7 +30,6 @@ import Taskbar from './components/Taskbar';
 import useOSStore from './store/osStore';
 import { applyTheme } from './theme/applyTheme';
 import './theme/grammar.css';
-import { attach as attachMusicEngine } from './utils/musicEngine';
 import { useIsMobile } from './hooks/useMediaQuery';
 import './index.css';
 
@@ -83,10 +82,6 @@ function App() {
   const [bootComplete, setBootComplete] = useState(false);
   const idleTimer = useRef(null);
 
-  useEffect(() => {
-    attachMusicEngine(useOSStore);
-  }, []);
-
   // A `hasInteracted` flag and its three global listeners used to live here. Nothing ever read the
   // flag — not this file, not any other — so the effect registered and tore down three window
   // listeners to set a value with no consumer. useSoundEffects does its own AudioContext.resume()
@@ -125,8 +120,8 @@ function App() {
       window.removeEventListener('mousemove', handleActivity);
       window.removeEventListener('keydown', handleActivity);
       if (idleTimer.current) clearTimeout(idleTimer.current);
-      };
-      }, [isAuthenticated]);
+    };
+  }, [isAuthenticated]);
 
   // Theme goes onto documentElement, not onto the JSX below. This hook sits ABOVE the early
   // returns at the end of this component, so boot, login and portaled context menus are themed too.

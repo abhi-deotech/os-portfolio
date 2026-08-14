@@ -106,38 +106,6 @@ export const createPuterSlice = (set, get) => {
       }
     },
 
-    puterFiles: [],
-    
-    // Load real Puter Cloud files
-    loadRealPuterFiles: async () => {
-      const puter = getPuter();
-      if (!puter || !get().isPuterSignedIn) return;
-
-      try {
-        set({ isPuterConnecting: true });
-        // readdir returns an array of FSItem objects
-        const items = await puter.fs.readdir('/');
-        
-        // Map Puter FSItems to our VFS format for consistency in the UI
-        const mappedItems = items.map(item => ({
-          id: `puter-${item.id || Math.random()}`,
-          name: item.name,
-          children: item.is_dir ? [] : undefined,
-          isPuterNode: true,
-          puterPath: item.path,
-          size: item.size,
-          modified: item.modified
-        }));
-
-        set({ puterFiles: mappedItems, puterSyncError: null });
-      } catch (err) {
-        console.error("Failed to list Puter files:", err);
-        set({ puterSyncError: `Cloud Drive: ${err.message}` });
-      } finally {
-        set({ isPuterConnecting: false });
-      }
-    },
-
     // Sync Virtual File System to Puter Cloud
     syncFilesToPuter: async () => {
       const puter = getPuter();
