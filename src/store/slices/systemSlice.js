@@ -4,6 +4,11 @@ import { DEFAULT_ICON_THEME, isKnownIconTheme } from '../../theme/icons';
 import { randomAppearance } from '../../theme/randomize';
 import { isKnownAchievement } from '../../config/achievements';
 
+// Toasts (achievements + one-off "Surprise Me" style messages) share one queue with no manual
+// dismiss until now — capping it stops rapid-fire triggers (e.g. mashing "Surprise Me") from
+// piling up a wall of cards that all have to individually time out.
+const MAX_TOASTS = 3;
+
 // Seed the theme fields SYNCHRONOUSLY from the localStorage mirror. Persistence is IndexedDB, which
 // is async, so React's first render would otherwise disagree with the DOM the pre-paint script has
 // already stamped — visible on anything that branches on the colorway id in JS (the Settings
@@ -167,9 +172,9 @@ export const createSystemSlice = (set, get) => ({
         if (get().isPuterSignedIn) get().syncPrefsToPuter();
       }, 0);
 
-      return { 
+      return {
         achievements: newAchievements,
-        achievementQueue: [...state.achievementQueue, achievementId]
+        achievementQueue: [...state.achievementQueue, achievementId].slice(-MAX_TOASTS)
       };
     }),
 
@@ -192,7 +197,7 @@ export const createSystemSlice = (set, get) => ({
       achievementQueue: [
         ...state.achievementQueue,
         { id: `toast-${state.achievementQueue.length}-${title}`, title, desc, kicker },
-      ],
+      ].slice(-MAX_TOASTS),
     })),
 
   /**

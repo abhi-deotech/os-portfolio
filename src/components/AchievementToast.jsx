@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Sparkles } from 'lucide-react';
+import { Trophy, Sparkles, X } from 'lucide-react';
 import useOSStore from '../store/osStore';
 import { ACHIEVEMENT_BY_ID } from '../config/achievements';
 
@@ -37,17 +37,25 @@ const AchievementToast = ({ achievementId, onComplete }) => {
       className={`relative w-80 bg-sdl-surface/90 ${transparencyEffects ? 'backdrop-blur-xl' : ''} border border-os-primary/30 rounded-2xl p-4 flex items-center gap-4 shadow-[var(--sdl-lift)] overflow-hidden shadow-os-primary/10 pointer-events-auto`}
     >
       <div className="absolute inset-0 bg-gradient-to-r from-os-primary/5 to-transparent pointer-events-none" />
+      <button
+        type="button"
+        onClick={onComplete}
+        aria-label="Dismiss notification"
+        className="absolute top-2 right-2 p-1 rounded-lg text-sdl-sec/60 hover:text-sdl-ink hover:bg-veil/10 transition-colors"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
       <div className="p-3 rounded-xl bg-os-primary/20 text-os-primary">
         {isCustom ? <Sparkles className="w-6 h-6" /> : <Trophy className="w-6 h-6" />}
       </div>
-      <div>
+      <div className="pr-3">
         <h4 className="text-xs font-bold text-os-primary uppercase tracking-widest mb-1">
           {isCustom ? (achievement.kicker || 'Applied') : 'Achievement Unlocked'}
         </h4>
         <h3 className="text-sm font-bold text-sdl-ink mb-0.5">{achievement.title}</h3>
         <p className="text-[10px] text-sdl-sec leading-tight">{achievement.desc}</p>
       </div>
-      <motion.div 
+      <motion.div
         initial={{ width: '100%' }}
         animate={{ width: 0 }}
         transition={{ duration: 5, ease: 'linear' }}
