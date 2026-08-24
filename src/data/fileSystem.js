@@ -31,8 +31,8 @@ export const DEFAULT_FILE_SYSTEM = [
     type: 'folder',
     children: [
       { id: 'file-lumina-os', name: 'Lumina-OS.md', type: 'text', content: '# Lumina OS\nInteractive portfolio operating system simulation.' },
-      { id: 'file-nexus-x', name: 'Nexus-X.md', type: 'text', content: '# Nexus-X Engine\nHigh-performance WebGL rendering engine.' },
-      { id: 'file-neural-chat', name: 'Neural-Chat.md', type: 'text', content: '# Neural-Link Chat\nReal-time collaborative workspace with AI.' },
+      { id: 'file-workleisure', name: 'WorkLeisure.md', type: 'text', content: '# WorkLeisure\nBooking and membership platform for restaurants that double as workspaces.\nExpress/MongoDB API with Socket.IO, a React 18 portal serving six user roles, and a Flutter mobile wrapper.\n\nLive: https://www.workleisure.in' },
+      { id: 'file-tribecart', name: 'TribeCart.md', type: 'text', content: '# TribeCart\npnpm/Turbo monorepo: three Next.js apps (customer, seller, admin) over five Go microservices talking gRPC through shared protobuf contracts.\n\nSource: https://github.com/abhi-deotech/TribeCart' },
       { id: 'project-benchmark', name: 'Benchmark.exe', type: 'executable', content: 'Quantum Benchmarking Tool' },
     ]
   },

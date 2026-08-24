@@ -2,7 +2,11 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, File, AppWindow, Command, X, ArrowRight } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import { GAMES } from '../config/games';
 
+// This list held eight apps and not one game, so searching "snake" or "2048" — the most
+// guessable thing in the OS to search for — returned nothing at all. The games come from the
+// registry, so a new game is searchable the moment it is registered.
 const SPOTLIGHT_APPS = [
   { id: 'terminal', name: 'Terminal', type: 'app', icon: Command },
   { id: 'settings', name: 'Settings', type: 'app', icon: AppWindow },
@@ -12,6 +16,8 @@ const SPOTLIGHT_APPS = [
   { id: 'chat', name: 'Guestbook', type: 'app', icon: AppWindow },
   { id: 'files', name: 'File Explorer', type: 'app', icon: AppWindow },
   { id: 'notepad', name: 'Notepad', type: 'app', icon: AppWindow },
+  { id: 'games', name: 'Game Center', type: 'app', icon: AppWindow },
+  ...GAMES.map((g) => ({ id: g.id, name: g.title, type: 'game', icon: g.icon })),
 ];
 
 const Spotlight = () => {
@@ -89,6 +95,9 @@ const Spotlight = () => {
   const handleSelect = (result) => {
     if (result.type === 'app') {
       openWindow(result.id);
+    } else if (result.type === 'game') {
+      openWindow(result.id);
+      unlockAchievement('gamer');
     } else if (result.type === 'file') {
       if (result.type === 'pdf') {
          // handle PDF opening if relevant, but for now we'll stick to notepad/text

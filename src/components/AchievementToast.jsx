@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Sparkles } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import { ACHIEVEMENT_BY_ID } from '../config/achievements';
 
 /**
  * `achievementId` is either an id from the table below, or a `{ title, desc }` object for a one-off
@@ -11,24 +12,12 @@ import useOSStore from '../store/osStore';
  */
 const AchievementToast = ({ achievementId, onComplete }) => {
   const { transparencyEffects } = useOSStore();
-  const achievementsList = {
-    first_login: { title: 'Hello World', desc: 'Successfully logged into Lumina OS.' },
-    search_pro: { title: 'Spotlight Master', desc: 'Used the global search for the first time.' },
-    terminal_wiz: { title: 'Command Line Guru', desc: 'Executed 5 terminal commands.' },
-    hacker: { title: 'Mainframe Access', desc: 'Tried to SSH into a remote host.' },
-    writer: { title: 'Poet in Exile', desc: 'Saved your first note in Notepad.' },
-    monitor: { title: 'System Admin', desc: 'Opened the Task Manager to monitor resources.' },
-    gamer: { title: 'NexusX Explorer', desc: 'Launched your first game in the Game Center.' },
-    audiophile: { title: 'Music Lover', desc: 'Played a track in the Music app.' },
-    decorator: { title: 'Interior Designer', desc: 'Customized your desktop theme in Settings.' },
-    speed_demon: { title: 'Speed Demon', desc: 'Personalized your system performance with a benchmark.' },
-    architect: { title: 'Deep Diver', desc: 'Explored the system architecture documentation.' },
-    socialite: { title: 'Well Connected', desc: 'Visited my LinkedIn or GitHub profile.' },
-    easter_egg: { title: 'Rabbit Hole', desc: 'Found the secret matrix mode.' },
-  };
 
+  // Was a private 13-entry object. It omitted deep_thinker, devops_escape and system_pro — which
+  // the panel DID list, so those three unlocked in total silence — and all five game ids, which
+  // neither list had. It also disagreed with the panel on `architect`. One registry now.
   const isCustom = typeof achievementId === 'object' && achievementId !== null;
-  const achievement = isCustom ? achievementId : achievementsList[achievementId];
+  const achievement = isCustom ? achievementId : ACHIEVEMENT_BY_ID[achievementId];
 
   useEffect(() => {
     const timer = setTimeout(onComplete, 5000);

@@ -28,6 +28,7 @@ import Desktop from './components/Desktop';
 import Taskbar from './components/Taskbar';
 
 import useOSStore from './store/osStore';
+import { GAME_BY_ID } from './config/games';
 import { applyTheme } from './theme/applyTheme';
 import './theme/grammar.css';
 import { useIsMobile } from './hooks/useMediaQuery';
@@ -76,7 +77,6 @@ function App() {
   const resetSettingsToDefault = useOSStore(state => state.resetSettingsToDefault);
   const randomizeAppearance = useOSStore(state => state.randomizeAppearance);
   const isBSOD = useOSStore(state => state.isBSOD);
-  const activeRetroGame = useOSStore(state => state.activeRetroGame);
 
   const [isIdle, setIsIdle] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
@@ -161,7 +161,11 @@ function App() {
       onContextMenu={handleDesktopContextMenu}
     >
       <LiveWallpaper />
-      {!isMobile && !activeRetroGame && <Widgets />}
+      {/* Widgets step aside while the emulator runs. This used to read a separate `activeRetroGame`
+          field that `setRetroGame` set on launch and `closeWindow` never cleared — so closing the
+          arcade with the window X left the desktop widget-less for the rest of the session.
+          Derived from openWindows, which closeWindow already maintains, it cannot get stuck. */}
+      {!isMobile && !openWindows.includes('retroarcade') && <Widgets />}
 
       {/* Context Menus — Desktop */}
       {!isMobile && (
@@ -217,7 +221,12 @@ function App() {
                 <Window
                   key={id}
                   id={id}
-                  title={id.charAt(0).toUpperCase() + id.slice(1)}
+                  // Titles were derived as `id[0].toUpperCase() + id.slice(1)`, which produced
+                  // "Retroarcade" and "Taskmanager". A registered game supplies its real title,
+                  // and its own window size — Window defaults to 900x650 and App never passed
+                  // anything else, so a 420px Snake board sat in the same frame as Memory Match.
+                  title={GAME_BY_ID[id]?.title ?? id.charAt(0).toUpperCase() + id.slice(1)}
+                  {...(GAME_BY_ID[id]?.window ?? {})}
                   isActive={activeWindow === id}
                   isMinimized={minimizedWindows.includes(id)}
                   onClose={() => closeWindow(id)}

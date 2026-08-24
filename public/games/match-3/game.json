@@ -1,0 +1,15 @@
+{
+  "id": "match-3",
+  "title": "Match 3",
+  "tagline": "Swap tiles to line up three.",
+  "genre": "puzzle",
+  "icon": "Grid3x3",
+  "hue": 330,
+  "controls": { "keys": ["Mouse"], "touch": "tap", "desc": "Click or tap two adjacent tiles to swap them." },
+  "window": { "width": 680, "height": 700 },
+  "credit": {
+    "author": "Rembound (Rembound.com)",
+    "url": "https://github.com/rembound/Match-3-Game-HTML5",
+    "license": "MIT"
+  }
+}

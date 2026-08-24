@@ -1,6 +1,18 @@
 import React, { Suspense, useMemo } from 'react';
 import SuspenseLoading from './common/SuspenseLoading';
 import useOSStore from '../store/osStore';
+import { GAME_MODULES, GAME_BY_ID, isUserGameId } from '../config/games';
+
+/**
+ * One React.lazy per registry entry, built from GAME_MODULES so the lazy wrappers cannot drift
+ * out of sync with the registry the way the hand-written `case` list did. Built once at module
+ * scope — React.lazy must not be called during render, or every render remounts the game.
+ */
+const GAME_COMPONENTS = Object.fromEntries(
+  Object.entries(GAME_MODULES).map(([id, loader]) => [id, React.lazy(loader)])
+);
+
+const SandboxedGame = React.lazy(() => import('./games/SandboxedGame'));
 
 // Lazy loaded components
 const Terminal = React.lazy(() => import('./Terminal'));
@@ -10,16 +22,10 @@ const MediaPlayer = React.lazy(() => import('./MediaPlayer'));
 const PhotoViewer = React.lazy(() => import('./PhotoViewer'));
 const MusicApp = React.lazy(() => import('./MusicApp'));
 const Games = React.lazy(() => import('./Games'));
-const Snake = React.lazy(() => import('./games/Snake'));
-const MemoryGame = React.lazy(() => import('./games/MemoryGame'));
-const TriviaGame = React.lazy(() => import('./games/TriviaGame'));
-const Game2048 = React.lazy(() => import('./games/Game2048'));
-const Sudoku = React.lazy(() => import('./games/Sudoku'));
 const Benchmark = React.lazy(() => import('./Benchmark'));
 const AIChat = React.lazy(() => import('./AIChat'));
 const MailApp = React.lazy(() => import('./MailApp'));
 const LuminaChat = React.lazy(() => import('./LuminaChat'));
-const RetroArcade = React.lazy(() => import('./RetroArcade'));
 const DocumentationApp = React.lazy(() => import('./DocumentationApp'));
 const Notepad = React.lazy(() => import('./Notepad'));
 const TaskManager = React.lazy(() => import('./TaskManager'));
@@ -32,6 +38,7 @@ const WindowContentRenderer = ({ id }) => {
   const findNodeById = useOSStore(state => state.findNodeById);
   const activeMediaFile = useOSStore(state => state.activeMediaFile);
   const activePhotoFile = useOSStore(state => state.activePhotoFile);
+  const browserNav = useOSStore(state => state.browserNav);
   const closeWindow = useOSStore(state => state.closeWindow);
 
   const content = useMemo(() => {
@@ -54,16 +61,6 @@ const WindowContentRenderer = ({ id }) => {
         return <MusicApp />;
       case 'games':
         return <Games />;
-      case 'snake':
-        return <Snake onBack={() => closeWindow('snake')} />;
-      case 'memory':
-        return <MemoryGame onBack={() => closeWindow('memory')} />;
-      case 'trivia':
-        return <TriviaGame onBack={() => closeWindow('trivia')} />;
-      case '2048':
-        return <Game2048 onBack={() => closeWindow('2048')} />;
-      case 'sudoku':
-        return <Sudoku onBack={() => closeWindow('sudoku')} />;
       case 'benchmark':
         return <Benchmark />;
       case 'aichat':
@@ -72,8 +69,6 @@ const WindowContentRenderer = ({ id }) => {
         return <MailApp />;
       case 'chat':
         return <LuminaChat />;
-      case 'retroarcade':
-        return <RetroArcade />;
       case 'documentation':
         return <DocumentationApp />;
       case 'notepad':
@@ -83,11 +78,42 @@ const WindowContentRenderer = ({ id }) => {
       case 'achievements':
         return <Achievements />;
       case 'browser':
-        return <Browser />;
-      default:
-        return null;
+        // Keyed on the navigation counter so that `openBrowser(url)` — a project's "Live Demo"
+        // button — remounts Flow-Net at the new address even when the window is already open.
+        // The counter is what makes re-launching the URL already on screen work too.
+        return <Browser key={browserNav} />;
+      default: {
+        // Games resolve from the registry rather than from a `case` each. This arm is what makes
+        // the registry real: previously the switch ended in `default: return null`, so a window id
+        // that wasn't already compiled in here opened as empty chrome — a titled, draggable,
+        // resizable window containing nothing. Two ids in apps.jsx had already fallen into it.
+        const GameComponent = GAME_COMPONENTS[id];
+        if (GameComponent) return <GameComponent onBack={() => closeWindow(id)} />;
+
+        // Folder games (public/games/<slug>/) and games the visitor sideloaded both run as
+        // untrusted code in a sandboxed frame. They are not compiled into the bundle at all, so
+        // they can only ever be reached through this arm — which is the point of it existing.
+        const entry = GAME_BY_ID[id];
+        if (entry?.source === 'folder') {
+          return <SandboxedGame gameId={id} entry={entry.entry} title={entry.title} onBack={() => closeWindow(id)} />;
+        }
+        if (isUserGameId(id)) {
+          return <SandboxedGame gameId={id} title={id} onBack={() => closeWindow(id)} />;
+        }
+
+        // Not a game and not a known app: say so, rather than rendering an empty frame that
+        // looks like a load that silently failed.
+        return (
+          <div className="h-full w-full flex flex-col items-center justify-center gap-2 p-8 text-center">
+            <p className="font-bold text-sdl-ink">Nothing is registered for “{id}”.</p>
+            <p className="text-sdl-sec text-sm">
+              Add it to <code className="font-mono text-xs">src/config/games.js</code> or to this switch.
+            </p>
+          </div>
+        );
+      }
     }
-  }, [id, findNodeById, activeMediaFile, activePhotoFile, closeWindow]);
+  }, [id, findNodeById, activeMediaFile, activePhotoFile, browserNav, closeWindow]);
 
   if (!content) return null;
 

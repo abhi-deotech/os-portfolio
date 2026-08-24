@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Globe, ArrowLeft, ArrowRight, RotateCw, ExternalLink, Bookmark, ShieldAlert, Lock, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useOSStore from '../store/osStore';
 
 const BLOCKED_DOMAINS = [
   'github.com', 
@@ -13,21 +14,33 @@ const BLOCKED_DOMAINS = [
   'google.com/search'
 ];
 
+const HOME_URL = 'https://en.m.wikipedia.org/wiki/Main_Page';
+
+// The two shipped products that are live AND verified frameable (200, no X-Frame-Options, no CSP
+// `frame-ancestors`) lead, so the first thing in the bookmark bar is real work. They are the same
+// URLs the Projects app's "Live" buttons hand to `openBrowser` — see `src/config/projects.js`.
+const BOOKMARKS = [
+  { title: 'WorkLeisure', url: 'https://www.workleisure.in' },
+  { title: 'Winndo', url: 'https://www.winndo.com' },
+  { title: 'Wikipedia', url: HOME_URL },
+  { title: 'Excalidraw', url: 'https://excalidraw.com/' },
+  { title: 'Can I Use', url: 'https://caniuse.com/' },
+];
+
 const Browser = () => {
-  const [url, setUrl] = useState('https://en.m.wikipedia.org/wiki/Main_Page');
-  const [iframeUrl, setIframeUrl] = useState('https://en.m.wikipedia.org/wiki/Main_Page');
+  // Set by `openBrowser(url)` when a project's Live button launches Flow-Net at a demo.
+  // Seeded once per mount. There is one window per id, so Flow-Net may already be open when a
+  // project's Live button fires — the navigation is delivered by REMOUNTING this component
+  // (`WindowContentRenderer` keys it on `browserNav`) rather than by an effect syncing the store
+  // into local state. An effect would have to setState synchronously on every launch, and
+  // resetting the address bar and loading flag is precisely what navigating means anyway.
+  const browserUrl = useOSStore((state) => state.browserUrl);
+
+  const [url, setUrl] = useState(browserUrl || HOME_URL);
+  const [iframeUrl, setIframeUrl] = useState(browserUrl || HOME_URL);
   const [isLoading, setIsLoading] = useState(false);
 
-  const bookmarks = [
-    // { title: 'Google', url: 'https://www.google.com/search?q=Search&igu=1' },
-    // { title: 'YouTube', url: 'https://www.youtube.com/embed/jfKfP3yIBBQ' },
-    { title: 'Wikipedia', url: 'https://en.m.wikipedia.org/wiki/Main_Page' },
-    { title: 'Excalidraw', url: 'https://excalidraw.com/' },
-    { title: 'Can I Use', url: 'https://caniuse.com/' },
-
-    
-    // { title: 'DuckDuckGo', url: 'https://duckduckgo.com/lite' },
-  ];
+  const bookmarks = BOOKMARKS;
 
   const checkBlocked = useCallback((targetUrl) => {
     return BLOCKED_DOMAINS.some(domain => targetUrl.toLowerCase().includes(domain.toLowerCase()));
@@ -158,7 +171,7 @@ const Browser = () => {
                   <ExternalLink size={16} /> Open externally
                 </button>
                 <button 
-                  onClick={() => { setUrl('https://google.com'); setIframeUrl('https://google.com?igu=1'); }}
+                  onClick={() => { setUrl(HOME_URL); setIframeUrl(HOME_URL); }}
                   className="flex items-center justify-center gap-3 px-8 py-4 bg-white/5 border border-white/10 text-white/60 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-white/10 active:scale-95 transition-all"
                 >
                    Go Home

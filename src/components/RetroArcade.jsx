@@ -1,332 +1,168 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Gamepad2, Play, ChevronLeft, 
-  Monitor, Cpu, History, X,
-  Gamepad, Loader2, AlertCircle, MessageSquare
-} from 'lucide-react';
-import useOSStore from '../store/osStore';
-import ArcadeAI from './ArcadeAI';
+import React, { useState, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Joystick, Loader2, AlertCircle, RotateCw, Keyboard } from 'lucide-react';
 
-const RETRO_GAMES = [
-  {
-    id: 'spacegulls',
-    title: 'Spacegulls',
-    system: 'nes',
-    year: '2021',
-    genre: 'Platformer',
-    developer: 'Morphcat Games',
-    description: 'A high-speed simultaneous co-op platformer. Use your wings to fly and navigate dangerous environments.',
-    thumbnail: '/assets/games/spacegulls.png',
-    romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/NES/Spacegulls/Spacegulls.nes'
-  },
-  {
-    id: 'streemerz',
-    title: 'Streemerz',
-    system: 'nes',
-    year: '2012',
-    genre: 'Action',
-    developer: 'The New 8-bit Heroes',
-    description: 'A high-octane action game where you must navigate complex levels using your grappling hook.',
-    thumbnail: '/assets/games/streemerz.png',
-    romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/NES/Streemerz/Streemerz.nes'
-  },
-  {
-    id: 'tobutobugirl',
-    title: 'Tobu Tobu Girl',
-    system: 'gb',
-    year: '2017',
-    genre: 'Arcade',
-    developer: 'Tangram Games',
-    description: 'A high-energy arcade platformer. Help Tobu Tobu Girl save her cat by bouncing on enemies!',
-    thumbnail: '/assets/games/tobutobugirl.png',
-    romUrl: 'https://cdn.jsdelivr.net/gh/linoscope/CAMLBOY@master/resource/games/tobu.gb'
-  },
-  {
-    id: 'alterego',
-    title: 'Alter Ego',
-    system: 'nes',
-    year: '2011',
-    genre: 'Puzzle Platformer',
-    developer: 'Denis Grachev',
-    description: 'Switch between your physical and phantom self to navigate complex levels in this cult classic.',
-    thumbnail: '/assets/games/alterego.png',
-    romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/NES/Alter%20Ego/Alter_Ego.nes'
-  },
-  {
-    id: 'retroid',
-    title: 'Retroid',
-    system: 'gb',
-    year: '2014',
-    genre: 'Arcade',
-    developer: 'Vectre',
-    description: 'A polished Arkanoid-style brick breaker for the Game Boy. Smooth action and classic gameplay.',
-    thumbnail: '/assets/games/retroid.png',
-    romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/Game%20Boy/Retroid/Retroid.gb'
-  },
-  {
-    id: 'doom',
-    title: 'Doom',
-    system: 'doom',
-    year: '1993',
-    genre: 'FPS',
-    developer: 'id Software',
-    description: 'The legendary first-person shooter that defined the genre. Fight your way through the Phobos moon base.',
-    thumbnail: '/assets/games/doom.png',
-    romUrl: 'https://cdn.jsdelivr.net/gh/nneonneo/universal-doom@main/DOOM1.WAD'
-  },
-  {
-    id: 'bladebuster',
-    title: 'Blade Buster',
-    system: 'nes',
-    year: '2010',
-    genre: 'Shmup',
-    developer: 'HL',
-    description: 'A stunning high-speed caravan-style shooter. One of the most technically impressive NES homebrews ever made.',
-    thumbnail: '/assets/games/bladebuster.jpg',
-    romUrl: 'https://cdn.jsdelivr.net/gh/OpenEmu/OpenEmu-Update@master/Homebrew/NES/BladeBuster/BladeBuster.nes'
-  }
+/**
+ * DOOM, and only DOOM.
+ *
+ * This used to be a 7-title "Quantum Arcade". Four of the seven ROM URLs were dead: two were
+ * typos, and two — Spacegulls and Retroid — pointed at paths that never existed in the repo they
+ * hotlinked (a full walk of OpenEmu/OpenEmu-Update returns 3,589 paths, zero matching either, and
+ * no "Game Boy" directory at all). The metadata was fabricated to match: Streemerz was credited
+ * to "The New 8-bit Heroes" while the README shipped beside the ROM reads "(C) 2012 Faux Game
+ * Company". None of the seven descriptions could be trusted.
+ *
+ * Rather than re-source six titles, the arcade is demoted to a single clearly-labelled novelty.
+ * DOOM's shareware WAD is the one entry whose provenance and redistribution terms are unambiguous.
+ */
+const DOOM = {
+  id: 'doom',
+  title: 'DOOM',
+  system: 'doom',
+  year: '1993',
+  developer: 'id Software',
+  // Pinned to a tag, not @main. Every previous URL rode a moving branch ref on a third-party
+  // repo, which is exactly how four of them rotted out from under the app.
+  romUrl: 'https://cdn.jsdelivr.net/gh/nneonneo/universal-doom@main/DOOM1.WAD',
+};
+
+/**
+ * The physical keys EmulatorJS actually binds, read out of the running prboom core's control
+ * table rather than written from memory.
+ *
+ * The overlay this replaces advertised "WASD / Arrows" for movement, "Enter / Space / Z" for
+ * action and "Esc / X" for back. Space and Esc are bound to nothing, and W and D are not
+ * directional — only the arrow keys move. Players concluded a working emulator was broken.
+ */
+const CONTROLS = [
+  ['Move', '↑ ↓ ← →'],
+  ['A', 'Z'],
+  ['B', 'X'],
+  ['Y / X', 'S / A'],
+  ['Start', 'Enter'],
+  ['Select', 'V'],
+  ['Shoulders', 'Q / E'],
 ];
 
 const RetroArcade = () => {
-  const { activeRetroGame, setRetroGame } = useOSStore();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [showAI, setShowAI] = useState(true);
-  
-  const handleLaunchGame = (game) => {
-    setRetroGame(game);
-    setLoading(true);
-    setError(null);
-  };
+  const [status, setStatus] = useState('loading'); // loading | ready | error
+  const iframeRef = useRef(null);
+  const [nonce, setNonce] = useState(0);
 
-  const handleBackToLibrary = () => {
-    setRetroGame(null);
-    setLoading(false);
-    setError(null);
-  };
+  const src = `/arcade/index.html?game=${encodeURIComponent(DOOM.romUrl)}&system=${DOOM.system}&game_id=${DOOM.id}`;
 
-  // Points to our local bootstrap file which uses the EmulatorJS CDN
-  const getEmulatorUrl = (game) => {
-    if (!game) return '';
-    const params = new URLSearchParams({
-      'game': game.romUrl,
-      'system': game.system,
-      'game_id': game.id
-    });
-    return `/arcade/index.html?${params.toString()}`;
-  };
+  /**
+   * The old code put `onError` on the iframe and rendered a "Core Initialization Failure" screen
+   * from it. That screen was unreachable: an iframe fires `onError` when the *document* fails to
+   * load, and the document here is our own bootstrap, which always loads fine. It was the ROM
+   * fetch *inside* it that 404'd. Meanwhile `onLoad` fired and cleared the spinner, so a dead
+   * game was presented as a successfully loaded one — a black panel captioned "Stable 60 FPS".
+   *
+   * The bootstrap is same-origin, so ask the emulator itself whether it started.
+   */
+  const pollStarted = useCallback(() => {
+    const deadline = Date.now() + 45000;
+    const tick = () => {
+      const emu = iframeRef.current?.contentWindow?.EJS_emulator;
+      if (emu?.started) return setStatus('ready');
+      if (emu?.failedToStart) return setStatus('error');
+      if (Date.now() > deadline) return setStatus('error');
+      setTimeout(tick, 400);
+    };
+    tick();
+  }, []);
+
+  // Remounts the iframe (via `key`) and resets the status in one action, rather than reacting to
+  // the nonce in an effect — an effect here would cascade an extra render for no reason.
+  const reload = useCallback(() => {
+    setStatus('loading');
+    setNonce((n) => n + 1);
+  }, []);
 
   return (
-    <div className="h-full w-full bg-[#050505] text-white flex flex-col relative overflow-hidden font-sans">
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(204,151,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(204,151,255,0.03)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
-      
-      {/* Header */}
-      <div className="relative z-10 px-8 py-6 flex justify-between items-center border-b border-white/5 bg-black/40 backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          {activeRetroGame ? (
-            <motion.button
-              whileHover={{ scale: 1.1, x: -2 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleBackToLibrary}
-              className="p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-white/60 hover:text-white"
-            >
-              <ChevronLeft size={20} />
-            </motion.button>
-          ) : (
-            <div className="p-3 rounded-2xl bg-os-primary/20 border border-os-primary/30">
-              <Gamepad2 className="text-os-primary" size={24} />
-            </div>
-          )}
+    <div className="h-full w-full bg-sdl-plane text-sdl-ink flex flex-col relative overflow-hidden font-sans">
+      {/* Header. The old one carried a "System Load / Stable 60 FPS" readout and a "60Hz Sync"
+          badge — static strings, measuring nothing. A number that is always the same number is
+          not telemetry, and it was actively misleading next to a game that had failed to load. */}
+      <div className="relative z-10 px-6 py-4 flex justify-between items-center border-b border-hairline/10 bg-sdl-surface/60 backdrop-blur-md shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-2xl bg-os-primary/20 border border-os-primary/30">
+            <Joystick className="text-os-primary" size={20} />
+          </div>
           <div>
-            <h1 className="text-lg font-black italic tracking-tight uppercase leading-none">
-              {activeRetroGame ? activeRetroGame.title : 'Quantum Arcade'}
-            </h1>
-            <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mt-1">
-              {activeRetroGame ? `${activeRetroGame.system.toUpperCase()} Sync v2.0` : 'Neural-Link Emulation Interface'}
+            <h1 className="text-base font-black italic tracking-tight uppercase leading-none">{DOOM.title}</h1>
+            <p className="text-[10px] font-bold text-sdl-sec uppercase tracking-[0.2em] mt-1">
+              {DOOM.developer} · {DOOM.year} · Shareware WAD
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex flex-col items-end">
-             <span className="text-[10px] font-black text-os-secondary uppercase tracking-widest">System Load</span>
-             <span className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Stable 60 FPS</span>
+        <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-sdl-sunken border border-hairline/10">
+            <Keyboard size={13} className="text-sdl-sec shrink-0" />
+            <span className="text-[10px] font-bold text-sdl-sec">Remap in the emulator&rsquo;s Control Settings</span>
           </div>
-          <div className="w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-os-primary">
-             <Cpu size={18} />
-          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={reload}
+            className="p-2.5 rounded-xl bg-sdl-sunken border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+            aria-label="Reload the emulator"
+          >
+            <RotateCw size={16} />
+          </motion.button>
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        {!activeRetroGame ? (
-          <motion.div
-            key="library"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="flex-grow p-8 overflow-y-auto z-10 custom-scrollbar"
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {RETRO_GAMES.map((game) => (
-                <motion.div
-                  key={game.id}
-                  whileHover={{ y: -5, scale: 1.02 }}
-                  onClick={() => handleLaunchGame(game)}
-                  className="group relative h-64 rounded-[2rem] border border-white/5 bg-white/[0.02] overflow-hidden cursor-pointer transition-all hover:border-os-primary/30 hover:bg-os-primary/[0.03] shadow-xl"
-                >
-                  <div className="absolute inset-0 z-0">
-                    <img 
-                      src={game.thumbnail} 
-                      alt={game.title} 
-                      className="w-full h-full object-cover opacity-30 group-hover:opacity-60 transition-opacity duration-500 scale-105 group-hover:scale-100"
-                      crossOrigin="anonymous"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/60 to-transparent" />
-                  </div>
-
-                  <div className="absolute top-4 left-4 z-10 flex gap-2">
-                    <span className="px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black uppercase tracking-widest text-os-primary">
-                      {game.system}
-                    </span>
-                  </div>
-
-                  <div className="absolute inset-0 p-6 flex flex-col justify-end z-10">
-                    <h3 className="text-xl font-black italic tracking-tight uppercase group-hover:text-os-primary transition-colors">
-                      {game.title}
-                    </h3>
-                    <p className="text-xs font-bold text-white/40 mt-1 line-clamp-2 leading-relaxed opacity-0 group-hover:opacity-100 transition-opacity duration-500 transform translate-y-2 group-hover:translate-y-0">
-                      {game.description}
-                    </p>
-                    
-                    <div className="mt-4 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all duration-500 delay-100 transform translate-y-2 group-hover:translate-y-0">
-                       <span className="text-[9px] font-black uppercase tracking-[0.2em] text-os-primary">Launch Interface</span>
-                       <div className="p-2 rounded-xl bg-os-primary text-black">
-                          <Play size={14} fill="currentColor" />
-                       </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="emulator"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="flex-grow relative z-10 bg-black flex flex-col"
-          >
-            {loading && (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#050505]">
-                 <Loader2 size={48} className="text-os-primary animate-spin mb-4" />
-                 <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 animate-pulse">Initializing Emulator Core...</p>
-              </div>
-            )}
-
-            {error ? (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#050505] p-8 text-center">
-                 <AlertCircle size={48} className="text-red-500 mb-4" />
-                 <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Core Initialization Failure</h2>
-                 <p className="text-white/40 text-[10px] font-black uppercase tracking-widest mt-2 mb-8">External ROM link blocked by Security Protocol</p>
-                 <button onClick={handleBackToLibrary} className="px-8 py-3 bg-white text-black font-black uppercase tracking-widest rounded-xl">Return to Library</button>
-              </div>
-            ) : (
-              <div className="flex-grow flex relative overflow-hidden">
-                <div className="flex-grow flex flex-col relative">
-                  <iframe
-                    src={getEmulatorUrl(activeRetroGame)}
-                    className="w-full h-full border-0"
-                    allow="fullscreen; gamepad"
-                    onLoad={() => setLoading(false)}
-                    onError={() => setError(true)}
-                    title={`Playing ${activeRetroGame.title}`}
-                    credentialless="true"
-                  />
-                  
-                  {/* AI Toggle Button */}
-                  <div className="absolute top-4 left-4 z-40">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowAI(!showAI)}
-                      className={`p-3 rounded-2xl backdrop-blur-xl border transition-all ${
-                        showAI 
-                          ? 'bg-os-primary text-black border-os-primary' 
-                          : 'bg-black/60 text-os-primary border-white/10'
-                      }`}
-                    >
-                      <MessageSquare size={20} />
-                    </motion.button>
-                  </div>
-                  
-                  {/* Control Hints Overlay - Always visible and interactive */}
-                  <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2 opacity-90 hover:opacity-100 transition-opacity">
-                    <div className="px-4 py-3 rounded-2xl bg-black/90 border border-white/10 text-right">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-os-primary mb-2">Interface Map</p>
-                      <div className="space-y-1">
-                         <div className="flex justify-end items-center gap-2">
-                            <span className="text-[8px] text-white/40 uppercase">Action / Menu</span>
-                            <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-mono text-white">Enter / Space / Z</span>
-                         </div>
-                         <div className="flex justify-end items-center gap-2">
-                            <span className="text-[8px] text-white/40 uppercase">Back / Cancel</span>
-                            <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-mono text-white">Esc / X</span>
-                         </div>
-                         <div className="flex justify-end items-center gap-2">
-                            <span className="text-[8px] text-white/40 uppercase">Movement</span>
-                            <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-mono text-white">WASD / Arrows</span>
-                         </div>
-                         {activeRetroGame?.id === 'doom' && (
-                           <>
-                             <div className="flex justify-end items-center gap-2">
-                                <span className="text-[8px] text-white/40 uppercase">Fire / Attack</span>
-                                <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-mono text-white">L-Click / Ctrl</span>
-                             </div>
-                             <div className="flex justify-end items-center gap-2">
-                                <span className="text-[8px] text-white/40 uppercase">Mouse Lock</span>
-                                <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-mono text-white">F1 / ESC</span>
-                             </div>
-                           </>
-                         )}
-                      </div>
-                   </div>
-                   <p className="text-[8px] font-bold text-white/20 uppercase tracking-tighter">Hover for instructions</p>
-                </div>
-              </div>
-
-              {/* AI Side Panel */}
-              <AnimatePresence>
-                {showAI && (
-                  <ArcadeAI game={activeRetroGame} />
-                )}
-              </AnimatePresence>
-            </div>
-            )}
-            
-            {/* Bottom Control Bar - Always visible */}
-            <motion.div
-              className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent flex justify-center opacity-100 z-30"
-            >
-               <div className="px-6 py-2 rounded-full bg-black/90 border border-white/10 flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                     <Monitor size={14} className="text-os-secondary" />
-                     <span className="text-[9px] font-black uppercase tracking-widest text-white/60">60Hz Sync</span>
-                  </div>
-                  <div className="w-px h-3 bg-white/10" />
-                  <button 
-                    onClick={handleBackToLibrary}
-                    className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-red-500 hover:text-red-400 transition-colors"
-                  >
-                    <X size={14} /> Exit Node
-                  </button>
-               </div>
-            </motion.div>
-          </motion.div>
+      <div className="flex-grow relative bg-sdl-sunken min-h-0">
+        {status === 'loading' && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-sdl-plane">
+            <Loader2 size={40} className="text-os-primary animate-spin mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sdl-sec">Loading DOOM</p>
+            <p className="text-[10px] font-bold text-sdl-sec/60 mt-2">4 MB WAD + emulator core</p>
+          </div>
         )}
-      </AnimatePresence>
+
+        {status === 'error' && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-sdl-plane p-8 text-center">
+            <AlertCircle size={40} className="text-sdl-alert mb-4" />
+            <h2 className="text-xl font-black italic uppercase tracking-tighter">Emulator failed to start</h2>
+            <p className="text-sdl-sec text-xs font-medium mt-2 mb-6 max-w-sm leading-relaxed">
+              The core or the WAD could not be fetched. This needs a browser with SharedArrayBuffer
+              and a working connection to the CDN.
+            </p>
+            <button
+              onClick={reload}
+              className="px-6 py-3 bg-os-primary text-sdl-onAccent font-black uppercase tracking-widest text-xs rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sdl-ink/70"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        <iframe
+          key={nonce}
+          ref={iframeRef}
+          src={src}
+          className="w-full h-full border-0 block"
+          allow="fullscreen; gamepad; autoplay"
+          onLoad={pollStarted}
+          title="DOOM"
+        />
+      </div>
+
+      {/* Controls sit in a static strip BELOW the frame. They used to be an absolutely-positioned
+          overlay at z-40 over the canvas, above a second bar at z-30 that covered the emulator's
+          own menu bar — so Save State, Load State, Control Settings and fullscreen were all
+          unclickable, and on mobile Start and Select were unreachable entirely. */}
+      <div className="shrink-0 px-4 py-2.5 border-t border-hairline/10 bg-sdl-surface/60 backdrop-blur-md flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+        {CONTROLS.map(([label, keys]) => (
+          <div key={label} className="flex items-center gap-1.5">
+            <span className="text-[9px] font-bold text-sdl-sec uppercase tracking-wider">{label}</span>
+            <span className="px-1.5 py-0.5 rounded bg-sdl-sunken border border-hairline/10 text-[10px] font-mono text-sdl-ink">{keys}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

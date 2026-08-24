@@ -8,13 +8,6 @@
     "white": 1,
     "stock": 1
   },
-  "src/components/AchievementToast.jsx": {
-    "white": 1
-  },
-  "src/components/ArcadeAI.jsx": {
-    "hex": 1,
-    "white": 3
-  },
   "src/components/Benchmark.jsx": {
     "hex": 1,
     "stock": 7
@@ -43,11 +36,6 @@
   "src/components/FileExplorer.jsx": {
     "hex": 1,
     "stock": 10
-  },
-  "src/components/Games.jsx": {
-    "hex": 68,
-    "white": 1,
-    "stock": 1
   },
   "src/components/LoginScreen.jsx": {
     "hex": 4,
@@ -86,11 +74,6 @@
     "hex": 10,
     "white": 1
   },
-  "src/components/RetroArcade.jsx": {
-    "hex": 5,
-    "white": 51,
-    "stock": 3
-  },
   "src/components/Settings.jsx": {
     "hex": 27,
     "white": 5,
@@ -101,9 +84,6 @@
     "white": 2,
     "stock": 4
   },
-  "src/components/Spotlight.jsx": {
-    "white": 2
-  },
   "src/components/SystemDashboard.jsx": {
     "hex": 1,
     "white": 3
@@ -112,11 +92,6 @@
     "hex": 7,
     "white": 4,
     "stock": 1
-  },
-  "src/components/TaskManager.jsx": {
-    "hex": 2,
-    "white": 1,
-    "stock": 12
   },
   "src/components/Taskbar.jsx": {
     "hex": 1,
@@ -129,28 +104,6 @@
   },
   "src/components/common/MarkdownRenderer.jsx": {
     "stock": 3
-  },
-  "src/components/games/Game2048.jsx": {
-    "hex": 11,
-    "white": 5
-  },
-  "src/components/games/MemoryGame.jsx": {
-    "hex": 12,
-    "white": 2
-  },
-  "src/components/games/Snake.jsx": {
-    "hex": 4,
-    "white": 1
-  },
-  "src/components/games/Sudoku.jsx": {
-    "hex": 1,
-    "white": 1,
-    "stock": 2
-  },
-  "src/components/games/TriviaGame.jsx": {
-    "hex": 7,
-    "white": 2,
-    "stock": 9
   },
   "src/components/sdl/DesignLanguage.jsx": {
     "hex": 3

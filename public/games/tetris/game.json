@@ -1,0 +1,15 @@
+{
+  "id": "tetris",
+  "title": "Tetris",
+  "tagline": "Clear lines before the stack reaches the top.",
+  "genre": "puzzle",
+  "icon": "Layers",
+  "hue": 268,
+  "controls": { "keys": ["←", "→", "↓", "↑"], "touch": "none", "desc": "Arrow keys to move and rotate. Keyboard only." },
+  "window": { "width": 560, "height": 760 },
+  "credit": {
+    "author": "Dionysis Zindros",
+    "url": "https://github.com/dionyziz/canvas-tetris",
+    "license": "MIT"
+  }
+}

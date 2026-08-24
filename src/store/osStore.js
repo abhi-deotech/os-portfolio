@@ -9,6 +9,7 @@ import { createWindowSlice } from './slices/windowSlice';
 import { createContainerSlice } from './slices/containerSlice';
 import { createAiSlice } from './slices/aiSlice';
 import { createPuterSlice } from './slices/puterSlice';
+import { createGamesSlice } from './slices/gamesSlice';
 import { MUSIC_DATA } from '../data/musicData';
 
 /**
@@ -27,6 +28,7 @@ const useOSStore = create(
       ...createContainerSlice(set, get),
       ...createAiSlice(set, get),
       ...createPuterSlice(set, get),
+      ...createGamesSlice(set, get),
     }),
     {
       name: 'os-settings',
@@ -142,6 +144,8 @@ const useOSStore = create(
         terminalTheme: state.terminalTheme,
         installedApps: state.installedApps,
         achievements: state.achievements,
+        userGames: state.userGames,
+        gameStats: state.gameStats,
         systemMetrics: state.systemMetrics,
         lastSyncTime: state.lastSyncTime,
         syncError: state.syncError,

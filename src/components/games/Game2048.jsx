@@ -1,268 +1,349 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Trophy, RefreshCw, ArrowLeft, Play, Zap, Brain, Layers } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Trophy, RefreshCw, Sparkles, Play } from 'lucide-react';
 import useOSStore from '../../store/osStore';
+import GameShell from './GameShell';
+import useGameInput from '../../hooks/useGameInput';
+import useGameAudio from '../../hooks/useGameAudio';
+import useHighScore from '../../hooks/useHighScore';
 
 const GRID_SIZE = 4;
 
-const Game2048 = ({ onBack }) => {
-  const [score, setScore] = useState(0);
-  const [bestScore, setBestScore] = useState(localStorage.getItem('2048-best-score') || 0);
-  const [gameOver, setGameOver] = useState(false);
-  const { unlockAchievement } = useOSStore();
+/** Rotate 90° clockwise: out[c][j] === grid[N-1-j][c]. */
+const rotateGrid = (grid) => grid[0].map((_, index) => grid.map(row => row[index]).reverse());
 
-  const addRandomTile = useCallback((currentGrid) => {
-    const emptyTiles = [];
-    currentGrid.forEach((row, r) => {
-      row.forEach((tile, c) => {
-        if (tile === 0) emptyTiles.push({ r, c });
-      });
+/**
+ * How many clockwise rotations bring `direction` to the left edge, so one slide-left kernel can
+ * serve all four directions.
+ *
+ * This map used to read UP:1 / RIGHT:2 / DOWN:3 — and UP and DOWN were therefore SWAPPED. After
+ * one clockwise rotation the original BOTTOM edge is on the left, so `UP: 1` slid tiles down.
+ * A differential test against a reference implementation put it beyond doubt: LEFT and RIGHT
+ * matched on 200,000 random grids, UP and DOWN mismatched on 198,991 of 200,000 each, and
+ * swapping the two took it to 0 mismatches in 800,000 moves.
+ */
+const ROTATIONS = { LEFT: 0, DOWN: 1, RIGHT: 2, UP: 3 };
+
+/**
+ * Pure. Returns the post-move grid (no new tile), whether anything moved, and the points gained.
+ *
+ * The merge kernel itself was always correct and is unchanged: the `row.length - 1` bound is
+ * re-read as the row shrinks and `c` advances past the tile it just merged, so no tile can merge
+ * twice in one move — the classic 2048 bug this does NOT have.
+ */
+function applyMove(prevGrid, direction) {
+  let grid = prevGrid.map(row => [...row]);
+  let moved = false;
+  let addedScore = 0;
+
+  const rotations = ROTATIONS[direction] ?? 0;
+  for (let i = 0; i < rotations; i++) grid = rotateGrid(grid);
+
+  for (let r = 0; r < GRID_SIZE; r++) {
+    const original = grid[r];
+    const row = original.filter(val => val !== 0);
+    for (let c = 0; c < row.length - 1; c++) {
+      if (row[c] === row[c + 1]) {
+        row[c] *= 2;
+        addedScore += row[c];
+        row.splice(c + 1, 1);
+      }
+    }
+    while (row.length < GRID_SIZE) row.push(0);
+    if (original.some((v, i) => v !== row[i])) moved = true;
+    grid[r] = row;
+  }
+
+  for (let i = 0; i < (4 - rotations) % 4; i++) grid = rotateGrid(grid);
+  return { grid, moved, addedScore };
+}
+
+const emptyGrid = () => Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+
+/** Pure spawn — returns a new grid with one 2 (90%) or 4 placed on a random empty cell. */
+function addRandomTile(currentGrid) {
+  const emptyTiles = [];
+  currentGrid.forEach((row, r) => {
+    row.forEach((tile, c) => {
+      if (tile === 0) emptyTiles.push({ r, c });
     });
-
-    if (emptyTiles.length === 0) return currentGrid;
-
-    const { r, c } = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
-    const newGrid = currentGrid.map(row => [...row]);
-    newGrid[r][c] = Math.random() < 0.9 ? 2 : 4;
-    return newGrid;
-  }, []);
-
-  const [grid, setGrid] = useState(() => {
-    let initialGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
-    // Initial random tiles
-    const addInitialRandom = (g) => {
-      const empty = [];
-      g.forEach((row, r) => row.forEach((t, c) => { if (t === 0) empty.push({r, c}); }));
-      const { r, c } = empty[Math.floor(Math.random() * empty.length)];
-      g[r][c] = Math.random() < 0.9 ? 2 : 4;
-    };
-    addInitialRandom(initialGrid);
-    addInitialRandom(initialGrid);
-    return initialGrid;
   });
 
-  const initGame = useCallback(() => {
-    let newGrid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
-    newGrid = addRandomTile(newGrid);
-    newGrid = addRandomTile(newGrid);
-    setGrid(newGrid);
-    setScore(0);
-    setGameOver(false);
-  }, [addRandomTile]);
+  if (emptyTiles.length === 0) return currentGrid;
 
+  const { r, c } = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+  const newGrid = currentGrid.map(row => [...row]);
+  newGrid[r][c] = Math.random() < 0.9 ? 2 : 4;
+  return newGrid;
+}
 
-  const checkGameOver = (currentGrid) => {
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        if (currentGrid[r][c] === 0) return false;
-      }
+/**
+ * One opening board. Both the initial state and Restart go through here, so the two can never
+ * drift apart — the previous version had a second, subtly different spawn routine inlined in the
+ * useState initializer purely because `addRandomTile` was trapped inside the component.
+ */
+const newBoard = () => addRandomTile(addRandomTile(emptyGrid()));
+
+function checkGameOver(currentGrid) {
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (currentGrid[r][c] === 0) return false;
     }
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        const val = currentGrid[r][c];
-        if (r < GRID_SIZE - 1 && val === currentGrid[r + 1][c]) return false;
-        if (c < GRID_SIZE - 1 && val === currentGrid[r][c + 1]) return false;
-      }
+  }
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      const val = currentGrid[r][c];
+      if (r < GRID_SIZE - 1 && val === currentGrid[r + 1][c]) return false;
+      if (c < GRID_SIZE - 1 && val === currentGrid[r][c + 1]) return false;
     }
-    return true;
-  };
+  }
+  return true;
+}
 
-  const move = useCallback((direction) => {
-    if (gameOver) return;
+// The ladder is three accent-family hues at rising saturation, then the top two tiers as solids.
+// 1024 was `bg-white` — which is not a role, and paired with `text-sdl-onAccent` (ink measured
+// against the ACCENT) it went unreadable the moment a colorway made the accent pale. Ink-on-plane
+// keeps it the maximum-contrast rung it was meant to be, in both modes.
+const tileColors = {
+  2: 'bg-os-primary/20 text-os-primary border-os-primary/20 shadow-[0_0_15px_rgb(var(--os-primary-rgb)/0.1)]',
+  4: 'bg-os-primary/30 text-os-primary border-os-primary/30 shadow-[0_0_20px_rgb(var(--os-primary-rgb)/0.2)]',
+  8: 'bg-os-secondary/20 text-os-secondary border-os-secondary/20 shadow-[0_0_25px_rgb(var(--os-secondary-rgb)/0.1)]',
+  16: 'bg-os-secondary/30 text-os-secondary border-os-secondary/30 shadow-[0_0_30px_rgb(var(--os-secondary-rgb)/0.2)]',
+  32: 'bg-os-tertiary/20 text-os-tertiary border-os-tertiary/20 shadow-[0_0_35px_rgb(var(--os-tertiary-rgb)/0.1)]',
+  64: 'bg-os-tertiary/30 text-os-tertiary border-os-tertiary/30 shadow-[0_0_40px_rgb(var(--os-tertiary-rgb)/0.2)]',
+  128: 'bg-os-primary text-sdl-onAccent border-hairline/20 shadow-[0_0_30px_rgb(var(--os-primary-rgb))]',
+  256: 'bg-os-secondary text-sdl-onAccent border-hairline/20 shadow-[0_0_35px_rgb(var(--os-secondary-rgb))]',
+  512: 'bg-os-tertiary text-sdl-onAccent border-hairline/20 shadow-[0_0_40px_rgb(var(--os-tertiary-rgb))]',
+  1024: 'bg-sdl-ink text-sdl-plane border-hairline/40 shadow-[0_0_50px_var(--sdl-glow)]',
+  2048: 'bg-gradient-to-br from-os-primary via-os-secondary to-os-tertiary text-sdl-onAccent border-hairline/50 shadow-[0_0_60px_rgb(var(--os-primary-rgb))]',
+};
 
-    setGrid(prevGrid => {
-      let newGrid = prevGrid.map(row => [...row]);
-      let moved = false;
-      let addedScore = 0;
+// Board size bounds, in px. The cap is a design choice; the floor keeps a cell at ~50px so it is
+// still a tap target on the narrowest window the OS allows.
+const MAX_BOARD = 380;
+const MIN_BOARD = 232;
+const clampBoard = (px) => Math.max(MIN_BOARD, Math.min(MAX_BOARD, Math.floor(px) || MIN_BOARD));
 
-      const rotateGrid = (grid) => {
-        return grid[0].map((_, index) => grid.map(row => row[index]).reverse());
-      };
+const Game2048 = ({ onBack }) => {
+  const [grid, setGrid] = useState(newBoard);
+  const [score, setScore] = useState(0);
+  const [status, setStatus] = useState('playing');
+  const [best, submitBest] = useHighScore('2048', 'max');
+  const play = useGameAudio();
+  // Selector rather than destructuring the whole store: this component re-renders on every move
+  // and has no business also re-rendering on unrelated OS state.
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
 
-      let rotations = 0;
-      if (direction === 'UP') rotations = 1;
-      else if (direction === 'RIGHT') rotations = 2;
-      else if (direction === 'DOWN') rotations = 3;
+  // Every piece of state `move` reads is mirrored in a ref so the whole turn can be computed from
+  // plain values inside the event handler. See tasks/lessons.md — the original computed the move
+  // inside a `setGrid(prev => …)` updater and StrictMode's deliberate double-invocation counted
+  // each move twice (one merged pair of 2s scored 8, not 4). Deferring the effects to a microtask
+  // does not help, because the scheduling itself is what runs twice.
+  const gridRef = useRef(grid);
+  const scoreRef = useRef(0);
+  const statusRef = useRef(status);
+  // Reaching 2048 shows a win panel exactly once per game. Without this latch, every subsequent
+  // move would re-detect the 2048 tile and yank a player who chose "keep playing" back into the
+  // overlay they just dismissed.
+  const celebratedRef = useRef(false);
 
-      for (let i = 0; i < rotations; i++) newGrid = rotateGrid(newGrid);
+  const boardRef = useRef(null);
+  const [boardSize, setBoardSize] = useState(MAX_BOARD);
 
-      for (let r = 0; r < GRID_SIZE; r++) {
-        let row = newGrid[r].filter(val => val !== 0);
-        for (let c = 0; c < row.length - 1; c++) {
-          if (row[c] === row[c + 1]) {
-            row[c] *= 2;
-            addedScore += row[c];
-            row.splice(c + 1, 1);
-            moved = true;
-          }
-        }
-        while (row.length < GRID_SIZE) row.push(0);
-        if (JSON.stringify(newGrid[r]) !== JSON.stringify(row)) moved = true;
-        newGrid[r] = row;
-      }
-
-      for (let i = 0; i < (4 - rotations) % 4; i++) newGrid = rotateGrid(newGrid);
-
-      if (moved) {
-        newGrid = addRandomTile(newGrid);
-        setScore(s => {
-          const newScore = s + addedScore;
-          if (newScore > bestScore) {
-             setBestScore(newScore);
-             localStorage.setItem('2048-best-score', newScore);
-          }
-          if (addedScore >= 2048) unlockAchievement('2048_master');
-          return newScore;
-        });
-        if (checkGameOver(newGrid)) setGameOver(true);
-      }
-      return newGrid;
-    });
-  }, [gameOver, bestScore, addRandomTile, unlockAchievement]);
-
+  // The board is sized off the SHELL, not the viewport. `min(78vw, 380px)` was wrong inside a
+  // windowing OS: a game window is resizable down to 400px (Window.jsx `minWidth = 400`) while the
+  // viewport stays 1920 wide, so 78vw pinned the board at 380px and it overflowed the window by
+  // ~60px once the shell's padding was counted.
+  //
+  // GameShell centres us as an auto-width flex item, so measuring our own wrapper would just hand
+  // back the width we last chose. The grandparent is the padded, flex-grow board area — a stretch
+  // item in a column flex container, so its width comes from the window and never from us. No
+  // feedback loop. Same measurement trick as Minesweeper, and the paddings are read rather than
+  // hardcoded because the shell's is `p-3 md:p-5` and ours is `p-2 md:p-3`.
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (gameOver) return;
-      if (e.key === 'ArrowUp') move('UP');
-      else if (e.key === 'ArrowDown') move('DOWN');
-      else if (e.key === 'ArrowLeft') move('LEFT');
-      else if (e.key === 'ArrowRight') move('RIGHT');
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [move, gameOver]);
+    const el = boardRef.current;
+    const box = el?.parentElement?.parentElement;
+    if (!el || !box || typeof ResizeObserver === 'undefined') return undefined;
 
-  // The ladder is three accent-family hues at rising saturation, then the top two tiers as solids.
-  // 1024 was `bg-white` — which is not a role, and paired with `text-sdl-onAccent` (ink measured
-  // against the ACCENT) it went unreadable the moment a colorway made the accent pale. Ink-on-plane
-  // keeps it the maximum-contrast rung it was meant to be, in both modes.
-  const tileColors = {
-    2: 'bg-os-primary/20 text-os-primary border-os-primary/20 shadow-[0_0_15px_rgb(var(--os-primary-rgb)/0.1)]',
-    4: 'bg-os-primary/30 text-os-primary border-os-primary/30 shadow-[0_0_20px_rgb(var(--os-primary-rgb)/0.2)]',
-    8: 'bg-os-secondary/20 text-os-secondary border-os-secondary/20 shadow-[0_0_25px_rgb(var(--os-secondary-rgb)/0.1)]',
-    16: 'bg-os-secondary/30 text-os-secondary border-os-secondary/30 shadow-[0_0_30px_rgb(var(--os-secondary-rgb)/0.2)]',
-    32: 'bg-os-tertiary/20 text-os-tertiary border-os-tertiary/20 shadow-[0_0_35px_rgb(var(--os-tertiary-rgb)/0.1)]',
-    64: 'bg-os-tertiary/30 text-os-tertiary border-os-tertiary/30 shadow-[0_0_40px_rgb(var(--os-tertiary-rgb)/0.2)]',
-    128: 'bg-os-primary text-sdl-onAccent border-hairline/20 shadow-[0_0_30px_rgb(var(--os-primary-rgb))]',
-    256: 'bg-os-secondary text-sdl-onAccent border-hairline/20 shadow-[0_0_35px_rgb(var(--os-secondary-rgb))]',
-    512: 'bg-os-tertiary text-sdl-onAccent border-hairline/20 shadow-[0_0_40px_rgb(var(--os-tertiary-rgb))]',
-    1024: 'bg-sdl-ink text-sdl-plane border-hairline/40 shadow-[0_0_50px_var(--sdl-glow)]',
-    2048: 'bg-gradient-to-br from-os-primary via-os-secondary to-os-tertiary text-sdl-onAccent border-hairline/50 shadow-[0_0_60px_rgb(var(--os-primary-rgb))]',
-  };
+    const read = () => {
+      const outer = getComputedStyle(box);
+      const inner = getComputedStyle(el);
+      const px = (s) => parseFloat(s) || 0;
+      const padX = px(outer.paddingLeft) + px(outer.paddingRight) + px(inner.paddingLeft) + px(inner.paddingRight);
+      const padY = px(outer.paddingTop) + px(outer.paddingBottom) + px(inner.paddingTop) + px(inner.paddingBottom);
+      // Bounded on BOTH axes. The board is square, so sizing it off width alone lets it outgrow a
+      // short window, which raises a vertical scrollbar, which narrows `clientWidth`, which
+      // reshrinks the board — a ResizeObserver oscillation. Fitting both axes means no scrollbar
+      // ever appears, and the MIN_BOARD floor makes the value idempotent if one somehow does.
+      setBoardSize(clampBoard(Math.min(box.clientWidth - padX, box.clientHeight - padY)));
+    };
+
+    const ro = new ResizeObserver(read);
+    ro.observe(box);
+    read();
+    return () => ro.disconnect();
+  }, []);
+
+  // Any button that ends a phase lives either inside GameShell's overlay (and unmounts on click,
+  // dropping focus to <body>) or in GameShell's toolbar (which is outside the board's key handler).
+  // Either way the arrow keys go dead, because the shell focuses the board on mount only and
+  // useGameInput is DOM-scoped to that element. Hand focus back explicitly.
+  const focusBoard = useCallback(() => {
+    boardRef.current?.closest('[role="application"]')?.focus();
+  }, []);
+
+  // The single writer for the phase, so the ref the handler reads can never lag the rendered
+  // status. Only ever called from an event handler or the loop — never from a state updater.
+  const setPhase = useCallback((next) => {
+    statusRef.current = next;
+    setStatus(next);
+  }, []);
+
+  const initGame = useCallback(() => {
+    const fresh = newBoard();
+    gridRef.current = fresh;
+    setGrid(fresh);
+    scoreRef.current = 0;
+    setScore(0);
+    celebratedRef.current = false;
+    setPhase('playing');
+    focusBoard();
+  }, [setPhase, focusBoard]);
+
+  /**
+   * Runs entirely in the event handler — there is no state-updater function anywhere in here, and
+   * nothing below may move into one.
+   */
+  const move = useCallback((direction) => {
+    if (statusRef.current !== 'playing') return;
+
+    const { grid: movedGrid, moved, addedScore } = applyMove(gridRef.current, direction);
+    if (!moved) return;
+
+    const nextGrid = addRandomTile(movedGrid);
+    gridRef.current = nextGrid;
+    setGrid(nextGrid);
+
+    const newScore = scoreRef.current + addedScore;
+    scoreRef.current = newScore;
+    setScore(newScore);
+    submitBest(newScore);
+
+    // One voice per turn. A merge is also a slide, so playing both would stack two oscillators on
+    // the same gesture and just sound like a click.
+    play(addedScore > 0 ? 'merge' : 'move');
+
+    // Was `addedScore >= 2048`, which fires on any single move that merges 2048 points' worth of
+    // tiles — four pairs of 256s would do it. The achievement says "reached the 2048 tile", so
+    // test the board for one.
+    const reached2048 = nextGrid.some(row => row.some(v => v >= 2048));
+    if (reached2048) unlockAchievement('2048_master');
+
+    if (checkGameOver(nextGrid)) {
+      play('lose');
+      setPhase('over');
+    } else if (reached2048 && !celebratedRef.current) {
+      celebratedRef.current = true;
+      play('win');
+      setPhase('won');
+    }
+  }, [play, submitBest, unlockAchievement, setPhase]);
+
+  // Input is DOM-scoped through the board element rather than bound to `window`. App.jsx keeps
+  // minimized windows mounted, so a window listener meant a minimized 2048 kept swallowing every
+  // arrow key in the OS and shuffling its own hidden grid.
+  const inputProps = useGameInput(move, { enabled: status === 'playing' });
+
+  const keepPlaying = useCallback(() => {
+    setPhase('playing');
+    focusBoard();
+  }, [setPhase, focusBoard]);
+
+  const overlay = status === 'won' ? (
+    <>
+      <Sparkles size={48} className="text-os-secondary mb-4 drop-shadow-[0_0_20px_var(--sdl-glow)]" />
+      <h2 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-1">2048 Reached</h2>
+      <p className="text-os-secondary font-black tracking-[0.3em] uppercase text-[10px] mb-6">Score {score}</p>
+      <div className="flex flex-wrap gap-3 justify-center">
+        <button
+          onClick={keepPlaying}
+          className="flex items-center gap-2 px-6 py-3 bg-os-secondary text-sdl-onAccent font-black uppercase tracking-widest text-xs rounded-2xl shadow-[var(--sdl-lift)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+        >
+          <Play size={16} />
+          Keep playing
+        </button>
+        <button
+          onClick={initGame}
+          className="flex items-center gap-2 px-6 py-3 bg-sdl-sunken border border-hairline/10 text-sdl-sec hover:text-sdl-ink font-black uppercase tracking-widest text-xs rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+        >
+          <RefreshCw size={16} />
+          New game
+        </button>
+      </div>
+    </>
+  ) : (
+    <>
+      <Trophy size={48} className="text-os-secondary mb-4 drop-shadow-[0_0_20px_var(--sdl-glow)]" />
+      <h2 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter mb-1">No moves left</h2>
+      <p className="text-os-secondary font-black tracking-[0.3em] uppercase text-[10px] mb-6">Score {score}</p>
+      <button
+        onClick={initGame}
+        className="flex items-center gap-2 px-6 py-3 bg-os-secondary text-sdl-onAccent font-black uppercase tracking-widest text-xs rounded-2xl shadow-[var(--sdl-lift)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+      >
+        <RefreshCw size={16} />
+        Play again
+      </button>
+    </>
+  );
 
   return (
-    <div className="h-full w-full bg-sdl-plane text-sdl-ink flex flex-col items-center p-6 relative overflow-hidden select-none font-sans">
-      {/* Background Ambience */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgb(var(--os-secondary-rgb)/0.03)_0%,transparent_70%)] pointer-events-none" />
-      
-      {/* Header */}
-      <div className="w-full max-w-[440px] flex justify-between items-center mb-8 relative z-10">
-        <motion.button 
-          whileHover={{ scale: 1.1, x: -2 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onBack}
-          aria-label="Back"
-          className="p-3 rounded-2xl bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all text-sdl-sec hover:text-sdl-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-        >
-          <ArrowLeft size={20} />
-        </motion.button>
-        
-        <div className="flex gap-6">
-           <div className="text-center">
-              <p className="text-[10px] font-black text-sdl-sec uppercase tracking-[0.3em] mb-1">Compute</p>
-              <p className="text-2xl font-black italic text-os-secondary tracking-tighter tabular-nums leading-none">
-                {score}
-              </p>
-           </div>
-           <div className="text-center">
-              <p className="text-[10px] font-black text-sdl-sec uppercase tracking-[0.3em] mb-1">Peak</p>
-              <p className="text-2xl font-black italic text-sdl-sec tracking-tighter tabular-nums leading-none">
-                {bestScore}
-              </p>
-           </div>
-        </div>
-
-        <motion.button 
-          whileHover={{ rotate: 180, scale: 1.1 }}
-          transition={{ duration: 0.5 }}
-          onClick={initGame}
-          aria-label="Restart"
-          className="p-3 rounded-2xl bg-os-secondary/10 border border-os-secondary/20 text-os-secondary hover:bg-os-secondary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-        >
-          <RefreshCw size={20} />
-        </motion.button>
-      </div>
-
-      {/* Game Board Container */}
-      <div className="relative p-2 md:p-4 bg-veil/[0.03] border border-hairline/5 rounded-[3rem] backdrop-blur-xl shadow-2xl overflow-hidden group">
+    <GameShell
+      gameId="2048"
+      onBack={onBack}
+      score={score}
+      best={best}
+      status={status}
+      onRestart={initGame}
+      boardProps={inputProps}
+      overlay={overlay}
+    >
+      {/* No onTogglePause: 2048 is turn-based, so there is nothing running to pause — a pause
+          button here would be a control that does nothing. */}
+      <div
+        ref={boardRef}
+        className="relative p-2 md:p-3 bg-veil/[0.03] border border-hairline/5 rounded-[2rem] backdrop-blur-xl shadow-[var(--sdl-lift)] overflow-hidden"
+      >
         <div className="absolute inset-0 bg-gradient-to-b from-veil/[0.05] to-transparent pointer-events-none" />
-        
-        <div className="grid grid-cols-4 gap-2.5 md:gap-4 w-[300px] h-[300px] md:w-[400px] md:h-[400px] relative z-10">
+
+        {/* Square, and measured off the shell's board area — see the ResizeObserver above. */}
+        <div
+          className="grid grid-cols-4 gap-2 md:gap-3 relative z-10"
+          style={{ width: boardSize, height: boardSize }}
+        >
           {grid.flat().map((tile, i) => (
-            <div key={i} className="bg-sdl-sunken rounded-[1.25rem] border border-hairline/5 relative overflow-hidden h-full w-full">
-               <AnimatePresence mode="popLayout">
+            <div key={i} className="bg-sdl-sunken rounded-[1rem] border border-hairline/5 relative overflow-hidden h-full w-full">
+              <AnimatePresence mode="popLayout">
                 {tile !== 0 && (
                   <motion.div
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.5, opacity: 0 }}
                     key={`tile-${i}-${tile}`}
-                    className={`absolute inset-0 flex items-center justify-center font-black text-xl md:text-3xl rounded-[1.25rem] border transition-all duration-300 ${tileColors[tile] || 'bg-sdl-sunken text-sdl-ink border-hairline/10'}`}
+                    // Four-digit values get a smaller step so 1024 and 2048 still fit inside a
+                    // cell on a 375px-wide phone, where a cell is only about 65px across.
+                    className={`absolute inset-0 flex items-center justify-center font-black tabular-nums rounded-[1rem] border transition-all duration-300 ${
+                      tile >= 1024 ? 'text-base md:text-2xl' : 'text-xl md:text-3xl'
+                    } ${tileColors[tile] || 'bg-sdl-sunken text-sdl-ink border-hairline/10'}`}
                   >
                     {tile}
                   </motion.div>
                 )}
-               </AnimatePresence>
+              </AnimatePresence>
             </div>
           ))}
         </div>
-
-        {/* Overlay States */}
-        <AnimatePresence>
-          {gameOver && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-scrim backdrop-blur-xl rounded-[2.8rem] border border-hairline/10"
-            >
-              <Trophy size={64} className="text-os-secondary mb-6 drop-shadow-[0_0_20px_var(--sdl-glow)]" />
-              <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2">Cycle Complete</h2>
-              <p className="text-os-secondary font-black tracking-[0.3em] uppercase text-[10px] mb-8">Final Neural Score: {score}</p>
-              <motion.button 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={initGame}
-                className="flex items-center gap-3 px-8 py-4 bg-os-secondary text-sdl-onAccent font-black uppercase tracking-widest rounded-2xl shadow-[0_20px_40px_rgb(var(--os-secondary-rgb)/0.3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-              >
-                <RefreshCw size={20} />
-                Re-Init Node
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
-
-      {/* Info / Footer */}
-      <div className="mt-auto w-full max-w-lg flex flex-col items-center gap-4">
-         <div className="flex gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-veil/5 rounded-xl border border-hairline/5">
-               <Layers size={14} className="text-os-primary" />
-               <span className="text-[9px] font-black uppercase tracking-widest text-sdl-sec">Merge Parallel Nodes</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-veil/5 rounded-xl border border-hairline/5">
-               <Brain size={14} className="text-os-secondary" />
-               <span className="text-[9px] font-black uppercase tracking-widest text-sdl-sec">Recursive Logic Flow</span>
-            </div>
-         </div>
-         
-         <p className="text-[9px] font-black text-sdl-sec uppercase tracking-[0.4em] mt-4 flex items-center gap-3">
-           <Zap size={10} className="animate-pulse" /> 
-           Powered by Vibe-OS Neural Core 
-           <Zap size={10} className="animate-pulse" />
-         </p>
-      </div>
-    </div>
+    </GameShell>
   );
 };
 

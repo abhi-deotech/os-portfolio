@@ -2,6 +2,7 @@ import { readMirror } from '../../theme/applyTheme';
 import { DEFAULT_COLORWAY, isKnownColorway } from '../../theme/registry';
 import { DEFAULT_ICON_THEME, isKnownIconTheme } from '../../theme/icons';
 import { randomAppearance } from '../../theme/randomize';
+import { isKnownAchievement } from '../../config/achievements';
 
 // Seed the theme fields SYNCHRONOUSLY from the localStorage mirror. Persistence is IndexedDB, which
 // is async, so React's first render would otherwise disagree with the DOM the pre-paint script has
@@ -147,7 +148,19 @@ export const createSystemSlice = (set, get) => ({
   unlockAchievement: (achievementId) =>
     set((state) => {
       if (state.achievements.includes(achievementId)) return state;
-      
+
+      // Five ids (2048_master, snake_pro, sudoku_pro, memory_master, trivia_expert) were fired
+      // from the games for months while existing in no registry: they inflated the "unlocked N
+      // of 16" counter past the number of visible cards and rendered no toast. Nothing failed
+      // loudly, so nothing got fixed. This makes the next orphan fail loudly, in dev only.
+      if (import.meta.env.DEV && !isKnownAchievement(achievementId)) {
+        console.warn(
+          `[achievements] "${achievementId}" is not in src/config/achievements.js — it will ` +
+          `count toward the unlocked total but render no card and no toast. Add it there.`
+        );
+      }
+
+
       const newAchievements = [...state.achievements, achievementId];
       // Sync in background after setting state
       setTimeout(() => {

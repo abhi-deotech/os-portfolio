@@ -296,3 +296,31 @@ To add a new application:
    - Add a case in the renderer switch/mapping.
 3. Add icon metadata to `desktopIcons` in `src/store/osStore.js`.
 4. (Optional) Add terminal command in `Terminal.jsx`.
+
+### Games
+
+Games do **not** follow the steps above — they are data, not a `case`. Adding one used to mean
+editing seven files across five disagreeing lists (the launcher, the window renderer, `apps.jsx`,
+Spotlight, Task Manager, and two separate achievement tables), which is why the section rotted.
+
+There are three ways in, in increasing order of trust:
+
+| Kind | Where it lives | How it runs |
+|---|---|---|
+| **Builtin** | a React component in `src/components/games/` | in-process, wrapped in `GameShell` |
+| **Folder** | `public/games/<slug>/` + `game.json` | sandboxed iframe, `src=` |
+| **Sideload** | dropped in by a visitor, stored in IndexedDB | sandboxed iframe, `srcdoc=` |
+
+For a builtin: add one object to `BUILTIN_GAMES` in `src/config/games.js` and one line to
+`GAME_MODULES`. Everything else — the launcher tile, the dock, Spotlight, Task Manager, the window
+title and size, the how-to-play card — derives from that entry. Build the game on `GameShell` plus
+`useGameLoop` / `useGameInput` / `useGameAudio` / `useHighScore`, which supply the loop, DOM-scoped
+input, sound and persistence. Never bind `keydown` on `window`: minimized windows stay mounted, so
+a window-level listener makes a hidden game eat every key in the OS.
+
+For a folder game, see `public/games/README.md`. Run `npm run games:sync` (wired into `npm run
+build`) to validate the manifests and regenerate the index.
+
+Both iframe kinds run with `sandbox="allow-scripts"` and no `allow-same-origin`, so the document
+has an opaque security origin and cannot reach `localStorage`, `indexedDB` or `parent`. Verified
+by measurement, not assumption — see the note at the top of `SandboxedGame.jsx`.

@@ -1,29 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Trophy, Star, Terminal as TermIcon, Edit3, Search, Activity, Zap, Gamepad2, Music, Palette, Gauge, Book, Share2, Brain } from 'lucide-react';
+import { Trophy } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import { ACHIEVEMENTS } from '../config/achievements';
+import { useColorway } from '../theme/useColorway';
+import { iconStyle } from '../theme/icons';
 
 const Achievements = () => {
   const { achievements } = useOSStore();
+  // Each badge used to carry a private `from-blue-400 to-blue-600` gradient — a second palette
+  // that ignored the colorway. Identity is the hue; the colorway sets chroma and lightness.
+  const cw = useColorway();
+  const faceOf = (hue) => iconStyle('harmonized', cw, { hue });
 
-  const allAchievements = [
-    { id: 'first_login', title: 'Hello World', desc: 'Successfully logged into Lumina OS.', icon: <Star className="w-5 h-5" />, color: 'from-blue-400 to-blue-600' },
-    { id: 'search_pro', title: 'Spotlight Master', desc: 'Used the global search for the first time.', icon: <Search className="w-5 h-5" />, color: 'from-purple-400 to-purple-600' },
-    { id: 'terminal_wiz', title: 'Command Line Guru', desc: 'Executed 5 terminal commands.', icon: <TermIcon className="w-5 h-5" />, color: 'from-green-400 to-green-600' },
-    { id: 'hacker', title: 'Mainframe Access', desc: 'Tried to SSH into a remote host.', icon: <Zap className="w-5 h-5" />, color: 'from-red-400 to-red-600' },
-    { id: 'writer', title: 'Poet in Exile', desc: 'Saved your first note in Notepad.', icon: <Edit3 className="w-5 h-5" />, color: 'from-cyan-400 to-cyan-600' },
-    { id: 'monitor', title: 'System Admin', desc: 'Opened the Task Manager to monitor resources.', icon: <Activity className="w-5 h-5" />, color: 'from-os-primary to-blue-500' },
-    { id: 'gamer', title: 'NexusX Explorer', desc: 'Launched your first game in the Game Center.', icon: <Gamepad2 className="w-5 h-5" />, color: 'from-orange-400 to-red-500' },
-    { id: 'audiophile', title: 'Music Lover', desc: 'Played a track in the Music app.', icon: <Music className="w-5 h-5" />, color: 'from-pink-400 to-rose-600' },
-    { id: 'decorator', title: 'Interior Designer', desc: 'Customized your desktop theme in Settings.', icon: <Palette className="w-5 h-5" />, color: 'from-indigo-400 to-violet-600' },
-    { id: 'speed_demon', title: 'Speed Demon', desc: 'Personalized your system performance with a benchmark.', icon: <Gauge className="w-5 h-5" />, color: 'from-yellow-400 to-amber-600' },
-    { id: 'architect', title: 'System Architect', desc: 'Created a new folder or file in the filesystem.', icon: <Book className="w-5 h-5" />, color: 'from-emerald-400 to-teal-600' },
-    { id: 'deep_thinker', title: 'Deep Thinker', desc: 'Engaged in a detailed conversation with Lumina AI.', icon: <Brain className="w-5 h-5" />, color: 'from-blue-500 to-indigo-600' },
-    { id: 'socialite', title: 'Well Connected', desc: 'Visited my LinkedIn or GitHub profile.', icon: <Share2 className="w-5 h-5" />, color: 'from-sky-400 to-blue-500' },
-    { id: 'system_pro', title: 'Power User', desc: 'Managed advanced system processes in Task Manager.', icon: <Activity className="w-5 h-5" />, color: 'from-orange-500 to-red-600' },
-    { id: 'devops_escape', title: 'DevOps Escape Artist', desc: 'Successfully escaped the simulated Vim trap.', icon: <TermIcon className="w-5 h-5" />, color: 'from-purple-500 to-pink-600' },
-    { id: 'easter_egg', title: 'Rabbit Hole', desc: 'Found the secret matrix mode.', icon: <Trophy className="w-5 h-5" />, color: 'from-yellow-400 to-orange-500' },
-  ];
+  // Was a private 16-entry array that disagreed with AchievementToast's private 13-entry one,
+  // and omitted all five ids the games actually fire. See src/config/achievements.js.
+  const allAchievements = ACHIEVEMENTS;
 
   return (
     <div className="h-full w-full bg-sdl-plane/40 backdrop-blur-xl p-6 overflow-y-auto scrollbar-hide">
@@ -40,6 +32,8 @@ const Achievements = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {allAchievements.map((ach) => {
           const isUnlocked = achievements.includes(ach.id);
+          const face = faceOf(ach.hue);
+          const Glyph = ach.icon;
           return (
             /* The hover wash moved from a `whileHover` backgroundColor to a CSS variant, same 5% it
                always was. Motion only substitutes a CSS variable when it is the WHOLE value, so a
@@ -51,8 +45,11 @@ const Achievements = () => {
                 isUnlocked ? 'border-hairline/10 bg-veil/5 opacity-100' : 'border-hairline/5 bg-veil/[0.02] opacity-40 grayscale'
               }`}
             >
-              <div className={`p-3 rounded-lg bg-gradient-to-br ${ach.color} shadow-[var(--sdl-lift)]`}>
-                {ach.icon}
+              <div
+                className="p-3 rounded-lg border shadow-[var(--sdl-lift)]"
+                style={{ backgroundColor: face.tile, borderColor: face.tileBorder }}
+              >
+                <Glyph className="w-5 h-5" style={{ color: face.glyph }} />
               </div>
               <div className="flex-grow">
                 <h3 className={`font-bold ${isUnlocked ? 'text-sdl-ink' : 'text-sdl-sec'}`}>{ach.title}</h3>

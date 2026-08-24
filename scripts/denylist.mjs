@@ -10,7 +10,10 @@ export const DENYLIST = {
   'src/hooks/useTerminal.js': '8 third-party terminal palettes (dracula, solarized, monokai) — a shipped feature and other people\'s identities',
   'src/config/apps.jsx': 'app icon colours are brand identity; a real OS keeps them. Icon THEMES handle recolouring instead',
   'src/data/musicData.js': 'playlist gradient identities are content',
-  'src/components/Achievements.jsx': 'all 30 are from-X/to-Y badge gradient pairs — gamification identity, not chrome',
+  // Achievements.jsx was exempted here for "30 from-X/to-Y badge gradient pairs". Those are gone:
+  // each badge now declares an OKLCH hue and iconStyle() renders it at the active colorway's own
+  // chroma, so the file is fully tokenized and the exemption would only hide future drift.
+  'src/components/games/AddGameDialog.jsx': 'one hex inside the example game SOURCE shown to the user — a sideloaded game is a separate document with an opaque origin, so it cannot reach the token layer and must use a literal',
   'src/components/BSOD.jsx': 'deliberately off-theme — a blue screen is a blue screen',
   'src/components/wallpapers/QuantumParticles.jsx': 'generative canvas content',
   'src/components/Screensaver.jsx': 'generative content',
@@ -40,9 +43,13 @@ export const SHELL = [
  */
 export const MEDIA_FILES = [
   'src/components/MediaPlayer.jsx', 'src/components/PhotoViewer.jsx',
-  'src/components/RetroArcade.jsx', 'src/components/Screensaver.jsx',
+  'src/components/Screensaver.jsx',
   'src/components/Visualizer.jsx', 'src/components/BSOD.jsx', 'src/components/Browser.jsx',
 ];
+// RetroArcade.jsx was on this list on the strength of the letterbox rationale above, and used it
+// to carry 51 white/black literals plus 5 raw hexes — the third-worst debt in the repo. It renders
+// an iframe, not a video: nothing in it is mode-invariant. It is fully tokenized now and its
+// allowance is 0, so the exemption is gone with the debt.
 
 /**
  * Strip comments before counting.

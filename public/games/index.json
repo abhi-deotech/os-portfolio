@@ -1,0 +1,86 @@
+[
+  {
+    "id": "bubble-shooter",
+    "title": "Bubble Shooter",
+    "tagline": "Match three to clear the board.",
+    "genre": "arcade",
+    "hue": 206,
+    "icon": "Circle",
+    "source": "folder",
+    "entry": "/games/bubble-shooter/index.html",
+    "cover": null,
+    "credit": {
+      "author": "Rembound (Rembound.com)",
+      "url": "https://github.com/rembound/Bubble-Shooter-HTML5",
+      "license": "MIT"
+    },
+    "controls": {
+      "keys": [
+        "Mouse"
+      ],
+      "touch": "tap",
+      "desc": "Aim with the mouse or your finger, click or tap to fire."
+    },
+    "window": {
+      "width": 700,
+      "height": 700
+    }
+  },
+  {
+    "id": "match-3",
+    "title": "Match 3",
+    "tagline": "Swap tiles to line up three.",
+    "genre": "puzzle",
+    "hue": 330,
+    "icon": "Grid3x3",
+    "source": "folder",
+    "entry": "/games/match-3/index.html",
+    "cover": null,
+    "credit": {
+      "author": "Rembound (Rembound.com)",
+      "url": "https://github.com/rembound/Match-3-Game-HTML5",
+      "license": "MIT"
+    },
+    "controls": {
+      "keys": [
+        "Mouse"
+      ],
+      "touch": "tap",
+      "desc": "Click or tap two adjacent tiles to swap them."
+    },
+    "window": {
+      "width": 680,
+      "height": 700
+    }
+  },
+  {
+    "id": "tetris",
+    "title": "Tetris",
+    "tagline": "Clear lines before the stack reaches the top.",
+    "genre": "puzzle",
+    "hue": 268,
+    "icon": "Layers",
+    "source": "folder",
+    "entry": "/games/tetris/index.html",
+    "cover": null,
+    "credit": {
+      "author": "Dionysis Zindros",
+      "url": "https://github.com/dionyziz/canvas-tetris",
+      "license": "MIT"
+    },
+    "controls": {
+      "keys": [
+        "←",
+        "→",
+        "↓",
+        "↑"
+      ],
+      "touch": "none",
+      "desc": "Arrow keys to move and rotate. Keyboard only."
+    },
+    "window": {
+      "width": 560,
+      "height": 760
+    }
+  }
+]

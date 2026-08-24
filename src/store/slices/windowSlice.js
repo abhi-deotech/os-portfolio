@@ -53,6 +53,31 @@ export const createWindowSlice = (set) => ({
       };
     }),
 
+  // Opening Flow-Net AT a URL, which is what a project's "Live" button does.
+  //
+  // This is a dedicated action rather than a sixth arm of `openWindow`'s `if (id === ...)` chain
+  // because that chain ends in `state.trackRecentFile(fileId)` — it assumes its second argument is
+  // a virtual-file-system node id. A URL is not one, so routing through it would push a bare URL
+  // string into the Recents list. `openNotepad` above sets the same precedent for the same reason.
+  openBrowser: (url) =>
+    set((state) => ({
+      browserUrl: url,
+      // A monotonic tick, because the URL alone is not enough to drive the navigation. Launch a
+      // demo, type something else into the address bar, then hit the same demo's Live button
+      // again: `browserUrl` is unchanged, so an effect watching only it never re-fires and the
+      // click silently does nothing. The counter always changes.
+      browserNav: (state.browserNav || 0) + 1,
+      openWindows: state.openWindows.includes('browser')
+        ? state.openWindows
+        : [...state.openWindows, 'browser'],
+      // Flow-Net may already be open and minimized behind the Projects window, so this has to
+      // clear the minimized list as well as focus — otherwise clicking Live appears to do nothing.
+      minimizedWindows: (state.minimizedWindows || []).filter((w) => w !== 'browser'),
+      activeWindow: 'browser',
+      isControlCenterOpen: false,
+      isAppLauncherOpen: false,
+    })),
+
   closeWindow: (id) =>
     set((state) => {
       const snapped = { ...(state.snappedWindows || {}) };

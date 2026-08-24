@@ -8,7 +8,11 @@ export const createFileSystemSlice = (set, get) => ({
   activeMediaFile: null,
   activePhotoFile: null,
   activeMusicFile: null,
-  activeRetroGame: null,
+  // The URL Flow-Net should load, set by `openBrowser`. Deliberately NOT in the persist
+  // `partialize` — a reload should land on the browser's own home page, not resurrect whichever
+  // project demo happened to be open three sessions ago.
+  browserUrl: null,
+  browserNav: 0,
   isSyncing: false,
   lastSyncTime: null,
   syncError: null,
@@ -150,7 +154,6 @@ export const createFileSystemSlice = (set, get) => ({
   setIsSyncing: (isSyncing) => set({ isSyncing }),
   setLastSyncTime: (lastSyncTime) => set({ lastSyncTime }),
   setSyncError: (syncError) => set({ syncError }),
-  setRetroGame: (game) => set({ activeRetroGame: game }),
 
   syncDocumentation: (files) =>
     set((state) => {

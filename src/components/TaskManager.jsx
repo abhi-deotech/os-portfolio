@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Activity, X, Shield, Cpu, Zap, HardDrive } from 'lucide-react';
 import useOSStore from '../store/osStore';
 import { APP_BY_ID } from '../config/apps';
+import { GAMES } from '../config/games';
 import AppIcon from './common/AppIcon';
 
 
@@ -22,6 +23,9 @@ const PROCESS_NAMES = {
   files: 'File Explorer',
   browser: 'Flow-Net Browser',
   aichat: 'Lumina Neural Link',
+  // No game was listed, so a running Snake showed up as the bare window id. Registered games
+  // name themselves; the "(game)" suffix is task-manager voice, matching "Terminal (zsh)".
+  ...Object.fromEntries(GAMES.map((g) => [g.id, `${g.title} (game)`])),
 };
 
 const TaskManager = () => {

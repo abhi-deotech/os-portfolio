@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Code, ExternalLink, Layers, Cpu, Globe, 
-  Smartphone, Database, Server, Palette, Search, Filter,
-  ArrowRight, Sparkles, Star
+import {
+  Code, ExternalLink, Layers, Search, Filter,
+  ArrowRight, Sparkles, Hammer
 } from 'lucide-react';
 import useOSStore from '../store/osStore';
 import { useVizPalette } from '../theme/useColorway';
+import { PROJECTS, PROJECT_CATEGORIES, PROJECT_TOTALS } from '../config/projects';
 
 const GithubIcon = ({ size = 20, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -14,92 +14,21 @@ const GithubIcon = ({ size = 20, className = "" }) => (
   </svg>
 );
 
-const PROJECTS = [
-  {
-    id: 'p1',
-    title: 'Lumina OS',
-    description: 'A cutting-edge, interactive operating system simulation built with React and Framer Motion. Features a virtual file system, terminal, and multi-window management.',
-    tags: ['React', 'Zustand', 'Framer Motion', 'Tailwind'],
-    category: 'Full Stack',
-    icon: Layers,
-    github: 'https://github.com/abhi-deotech/os-portfolio',
-    demo: 'https://lumina-os.dev',
-    featured: true,
-    stats: { stars: 128, forks: 45 }
-  },
-  {
-    id: 'p2',
-    title: 'Nexus-X Engine',
-    description: 'High-performance WebGL rendering engine for real-time 3D visualizations in the browser. Optimized for massive point cloud data.',
-    tags: ['Three.js', 'WebGL', 'TypeScript', 'GLSL'],
-    category: 'Graphics',
-    icon: Cpu,
-    github: 'https://github.com/abhi-deotech/nexus-x',
-    demo: 'https://nexus.dev',
-    featured: true,
-    stats: { stars: 85, forks: 12 }
-  },
-  {
-    id: 'p3',
-    title: 'Neural-Link Chat',
-    description: 'Real-time collaborative workspace with AI-integrated message threading and automated meeting summaries.',
-    tags: ['Node.js', 'Socket.io', 'OpenAI', 'Redis'],
-    category: 'AI / Realtime',
-    icon: Globe,
-    github: 'https://github.com/abhi-deotech/neural-chat',
-    demo: 'https://chat.neural.dev',
-    featured: false,
-    stats: { stars: 56, forks: 8 }
-  },
-  {
-    id: 'p4',
-    title: 'Cyber-Vault Mobile',
-    description: 'Biometric-secured cryptocurrency wallet with cold-storage simulation and real-time market analytics.',
-    tags: ['React Native', 'Web3.js', 'Biometrics', 'Redux'],
-    category: 'Mobile',
-    icon: Smartphone,
-    github: 'https://github.com/abhi-deotech/cyber-vault',
-    demo: 'https://vault.dev',
-    featured: false,
-    stats: { stars: 42, forks: 5 }
-  },
-  {
-    id: 'p5',
-    title: 'Quantum Analytics',
-    description: 'Data processing pipeline for analyzing large-scale astronomical datasets using distributed computing patterns.',
-    tags: ['Go', 'Python', 'Docker', 'Kubernetes'],
-    category: 'Backend',
-    icon: Database,
-    github: 'https://github.com/abhi-deotech/quantum-analytics',
-    demo: 'https://stats.quantum.dev',
-    featured: false,
-    stats: { stars: 94, forks: 21 }
-  },
-  {
-    id: 'p6',
-    title: 'Aether Design System',
-    description: 'A comprehensive, glassmorphic design system for building futuristic user interfaces with React and Tailwind CSS.',
-    tags: ['Design', 'React', 'Tailwind', 'CSS'],
-    category: 'Design',
-    icon: Palette,
-    github: 'https://github.com/abhi-deotech/aether-ui',
-    demo: 'https://aether.dev',
-    featured: true,
-    stats: { stars: 210, forks: 38 }
-  }
-];
-
 /**
- * Six peer cards that have to be told apart is exactly the categorical case, so a card's identity is
+ * Peer cards that have to be told apart is exactly the categorical case, so a card's identity is
  * its slot in the active colorway's own series rather than a fixed hex. The six hexes that used to
  * live on the records were the retired legacy-neon palette, which meant every card rendered the same
  * six colours on all sixteen colorways — including the ten light ones, where #9effc8 measures under
  * 1.5:1 on the plane. Position is taken in PROJECTS, not in the filtered list, so filtering does not
- * shuffle the colours; `cat` ships five entries, so the sixth wraps rather than falling back.
+ * shuffle the colours; `cat` ships five entries, which the registry is sized to match exactly.
  */
 const seriesColor = (viz, i) => (viz.cat?.length ? viz.cat[i % viz.cat.length] : null);
 
+const LINK_CLASS =
+  'flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50';
+
 const ProjectCard = ({ project, series }) => {
+  const openBrowser = useOSStore((state) => state.openBrowser);
   const glyph = series || 'var(--sdl-accent)';
   const wash = series ? `${series}15` : 'var(--sdl-soft)';
 
@@ -127,9 +56,10 @@ const ProjectCard = ({ project, series }) => {
                 Featured
              </div>
            )}
-           <div className="flex items-center gap-1 text-[10px] font-bold text-os-onSurfaceVariant/40">
-              <Star size={10} />
-              {project.stats.stars}
+           {/* Was a star count. There were no stars — the number was written by hand, and so were
+               the other five. A date range read off the repository's own git log can be checked. */}
+           <div className="text-[10px] font-bold text-os-onSurfaceVariant/40 uppercase tracking-widest whitespace-nowrap">
+              {project.period}
            </div>
         </div>
       </div>
@@ -151,26 +81,45 @@ const ProjectCard = ({ project, series }) => {
         </div>
       </div>
 
-      {/* Footer Links */}
+      {/*
+        Footer links render only where they resolve. Every card used to get both buttons
+        unconditionally, which was fine while the six projects were invented and their URLs
+        therefore always "existed". Against real work the two cases diverge: the client platforms
+        are live but their repositories are private under an org a visitor cannot see, and the
+        personal repositories are public but have nothing deployed. A Code button that 404s costs
+        more trust than the missing button does, so the surviving button takes the whole row.
+      */}
       <div className="flex items-center gap-3 mt-8 pt-6 border-t border-hairline/5">
-        <a 
-          href={project.github} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-veil/5 border border-hairline/10 text-xs font-black uppercase tracking-widest hover:bg-veil/10 transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-        >
-          <GithubIcon size={14} />
-          Code
-        </a>
-        <a 
-          href={project.demo} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-os-primary text-sdl-onAccent text-xs font-black uppercase tracking-widest hover:scale-105 transition-all active:scale-95 shadow-lg shadow-os-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-        >
-          <ExternalLink size={14} />
-          Live
-        </a>
+        {project.github && (
+          <a
+            href={project.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${LINK_CLASS} flex-1 bg-veil/5 border border-hairline/10 hover:bg-veil/10`}
+          >
+            <GithubIcon size={14} />
+            Code
+          </a>
+        )}
+        {project.demo && (
+          // Opens INSIDE the OS — Flow-Net, not a new tab. A portfolio that simulates a desktop
+          // should be able to show you a shipped product without leaving the desktop.
+          <button
+            type="button"
+            onClick={() => openBrowser(project.demo)}
+            title={`Open ${project.title} in Flow-Net`}
+            className={`${LINK_CLASS} flex-1 bg-os-primary text-sdl-onAccent hover:scale-105 shadow-lg shadow-os-primary/20`}
+          >
+            <ExternalLink size={14} />
+            Live Demo
+          </button>
+        )}
+        {!project.github && !project.demo && (
+          <div className={`${LINK_CLASS} flex-1 bg-veil/5 border border-hairline/10 text-os-onSurfaceVariant/50 cursor-default`}>
+            <Hammer size={14} />
+            {project.status || 'Unreleased'}
+          </div>
+        )}
       </div>
     </motion.div>
   );
@@ -181,7 +130,7 @@ const Projects = () => {
   const [search, setSearch] = useState('');
   const viz = useVizPalette();
 
-  const categories = ['All', ...new Set(PROJECTS.map(p => p.category))];
+  const categories = PROJECT_CATEGORIES;
 
   const filteredProjects = PROJECTS.filter(p => {
     const matchesFilter = filter === 'All' || p.category === filter;
@@ -206,7 +155,9 @@ const Projects = () => {
                 FEATURED <span className="text-os-primary">PROJECTS</span>
               </h1>
               <p className="text-lg text-os-onSurfaceVariant max-w-xl font-medium">
-                A curated selection of my most impactful work, ranging from core OS simulations to high-performance graphics engines.
+                Platforms I&apos;ve shipped and systems I&apos;m building — from booking and B2B commerce
+                running in production to the desktop you&apos;re reading this on. Live ones open right
+                here, in Flow-Net.
               </p>
            </div>
 
@@ -278,18 +229,24 @@ const Projects = () => {
 
         {/* Footer Stats */}
         <div className="pt-24 pb-12 flex flex-col md:flex-row items-center justify-between border-t border-hairline/5 gap-8">
+           {/*
+             These read "Total Deployments 24 / GitHub Commits 1.2K+ / Happy Clients 15" — three
+             figures with no source behind them, which is also why they could never go stale.
+             PROJECT_TOTALS derives from the registry, so the counters cannot disagree with the
+             cards directly above them.
+           */}
            <div className="flex gap-12">
               <div>
-                 <p className="text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest mb-1">Total Deployments</p>
-                 <p className="text-3xl font-black text-sdl-ink">24</p>
+                 <p className="text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest mb-1">Live in Production</p>
+                 <p className="text-3xl font-black text-sdl-ink">{PROJECT_TOTALS.live}</p>
               </div>
               <div>
-                 <p className="text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest mb-1">GitHub Commits</p>
-                 <p className="text-3xl font-black text-os-secondary">1.2K+</p>
+                 <p className="text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest mb-1">Open Source</p>
+                 <p className="text-3xl font-black text-os-secondary">{PROJECT_TOTALS.openSource}</p>
               </div>
               <div>
-                 <p className="text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest mb-1">Happy Clients</p>
-                 <p className="text-3xl font-black text-os-tertiary">15</p>
+                 <p className="text-[10px] font-black text-os-onSurfaceVariant uppercase tracking-widest mb-1">Technologies</p>
+                 <p className="text-3xl font-black text-os-tertiary">{PROJECT_TOTALS.technologies}</p>
               </div>
            </div>
            

@@ -8,14 +8,15 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/games-manifest.mjs && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "census": "node scripts/token-census.mjs",
     "token-lint": "node scripts/token-lint.mjs",
     "token-lint:strict": "node scripts/token-lint.mjs --strict",
     "sdl:check": "node scripts/sdl-sync-check.mjs",
-    "shots": "node --experimental-websocket scripts/shot.mjs"
+    "shots": "node --experimental-websocket scripts/shot.mjs",
+    "games:sync": "node scripts/games-manifest.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

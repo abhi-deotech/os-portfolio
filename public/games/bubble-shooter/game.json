@@ -1,0 +1,15 @@
+{
+  "id": "bubble-shooter",
+  "title": "Bubble Shooter",
+  "tagline": "Match three to clear the board.",
+  "genre": "arcade",
+  "icon": "Circle",
+  "hue": 206,
+  "controls": { "keys": ["Mouse"], "touch": "tap", "desc": "Aim with the mouse or your finger, click or tap to fire." },
+  "window": { "width": 700, "height": 700 },
+  "credit": {
+    "author": "Rembound (Rembound.com)",
+    "url": "https://github.com/rembound/Bubble-Shooter-HTML5",
+    "license": "MIT"
+  }
+}
