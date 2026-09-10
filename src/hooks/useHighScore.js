@@ -43,7 +43,25 @@ function readAll() {
 }
 
 /**
+ * One synchronous snapshot of every persisted best, keyed by game id.
+ *
+ * The launcher badges a dozen cards at once from this; mounting a useHighScore per card would
+ * cost a hook (and a JSON.parse) per game for values that all live under the same storage key.
+ * Delegating to readAll keeps the legacy-key migration on this path too, and inherits its
+ * guarantee of `{}` on missing storage, corrupt JSON, or a browser that throws on access.
+ *
+ * @returns {Record<string, number>}
+ */
+export function readAllGameStats() {
+  return readAll();
+}
+
+/**
  * Persisted personal best for one game.
+ *
+ * `gameId` is any string key — registry ids, folder-game slugs and minted sideload ids
+ * ('user:…') all land in the same map — so hosts for games that are not compiled in
+ * (SandboxedGame) can use this too.
  *
  * @param {string} gameId              registry id, used as the storage key
  * @param {'max'|'min'} [direction]    'min' for games where lower is better (Memory's move count)

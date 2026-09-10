@@ -5,7 +5,10 @@ import useOSStore from '../store/osStore';
 import MarkdownRenderer from './common/MarkdownRenderer';
 
 const Notepad = () => {
-  const { activeNotepadFile, fileSystem, updateFileContent, unlockAchievement } = useOSStore();
+  const activeNotepadFile = useOSStore((s) => s.activeNotepadFile);
+  const fileSystem = useOSStore((s) => s.fileSystem);
+  const updateFileContent = useOSStore((s) => s.updateFileContent);
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
   const [content, setContent] = useState('');
   const [fileName, setFileName] = useState('Untitled');
   const [isPreview, setIsPreview] = useState(false);

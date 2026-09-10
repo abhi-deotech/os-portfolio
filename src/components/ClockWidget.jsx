@@ -29,7 +29,19 @@ const ClockWidget = () => {
     <motion.div 
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="p-6 rounded-[2.5rem] bg-veil/[0.03] backdrop-blur-3xl border border-hairline/10 flex flex-col gap-4 select-none group hover:bg-veil/[0.05] transition-colors shadow-2xl"
+      /* `glass` + `lift`, not a hand-rolled bg/blur/border/shadow stack.
+       *
+       * This was `bg-veil/[0.03] backdrop-blur-3xl` — a 3% fill behind a **64px** blur. Two
+       * problems. A blur that wide over a photo wallpaper is the classic trigger for backdrop
+       * repaint seams: when anything nearby repaints (hovering a desktop icon is enough), the
+       * compositor re-blurs only the dirty rectangle and the boundary shows up as a vertical band
+       * straight through the widget. `--sdl-glass-blur` is 24px, well inside where that happens.
+       *
+       * Second, a 3% veil is near-invisible over a light colorway, and this widget never read
+       * `transparencyEffects`, so turning transparency off did nothing to it. The role token is
+       * mode-aware and already collapses to an opaque fill when the user disables glass.
+       */
+      className="p-6 rounded-[2.5rem] glass lift lift-hover flex flex-col gap-4 select-none group transition-shadow"
     >
       <div className="flex justify-between items-start">
         <div className="space-y-1">

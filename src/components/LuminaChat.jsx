@@ -18,7 +18,7 @@ const MOCK_GLOBAL_MESSAGES = [
 ];
 
 const LuminaChat = () => {
-  const { userRole } = useOSStore();
+  const userRole = useOSStore((s) => s.userRole);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [username] = useState(() => userRole === 'admin' ? 'Abhimanyu' : 'Guest_' + Math.floor(Math.random() * 1000));

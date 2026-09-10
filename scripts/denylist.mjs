@@ -6,10 +6,16 @@
  * party's brand identity. Each entry carries its reason — do not prune one without reading it.
  */
 export const DENYLIST = {
-  'src/data/fileSystem.js': 'ships STYLING.md/TERMINAL.md as in-app READABLE TEXT, including literal CSS var declarations and hex tables',
+  // fileSystem.js was exempted here for "ships STYLING.md/TERMINAL.md as in-app READABLE TEXT,
+  // including literal CSS var declarations and hex tables". It no longer does: the four docs are
+  // `?raw` imports of the repo-root .md files rather than pasted string literals, so the colour
+  // lives in Markdown that this linter does not scan (EXT is .js/.jsx only). The file now contains
+  // no colour token at all, and keeping the exemption would only hide future drift.
   'src/hooks/useTerminal.js': '8 third-party terminal palettes (dracula, solarized, monokai) — a shipped feature and other people\'s identities',
   'src/config/apps.jsx': 'app icon colours are brand identity; a real OS keeps them. Icon THEMES handle recolouring instead',
-  'src/data/musicData.js': 'playlist gradient identities are content',
+  // musicData.js was exempted for "playlist gradient identities are content". The category rows
+  // now declare an OKLCH hue rendered through iconStyle at the active colorway's chroma — the
+  // same contract as apps.jsx hues — so the file carries no colour literal at all.
   // Achievements.jsx was exempted here for "30 from-X/to-Y badge gradient pairs". Those are gone:
   // each badge now declares an OKLCH hue and iconStyle() renders it at the active colorway's own
   // chroma, so the file is fully tokenized and the exemption would only hide future drift.
@@ -44,8 +50,12 @@ export const SHELL = [
 export const MEDIA_FILES = [
   'src/components/MediaPlayer.jsx', 'src/components/PhotoViewer.jsx',
   'src/components/Screensaver.jsx',
-  'src/components/Visualizer.jsx', 'src/components/BSOD.jsx', 'src/components/Browser.jsx',
+  'src/components/Visualizer.jsx', 'src/components/BSOD.jsx',
 ];
+// Browser.jsx sat on this list under the letterbox rationale, which the 2026-08-14 audit already
+// called "a weaker fit than for the other four files". The tabbed rewrite is fully tokenized —
+// its chrome is chrome, and the only mode-invariant surface left is the page the iframe itself
+// paints, which no lint rule can see anyway. Exemption removed with the debt, like RetroArcade's.
 // RetroArcade.jsx was on this list on the strength of the letterbox rationale above, and used it
 // to carry 51 white/black literals plus 5 raw hexes — the third-worst debt in the repo. It renders
 // an iframe, not a video: nothing in it is mode-invariant. It is fully tokenized now and its

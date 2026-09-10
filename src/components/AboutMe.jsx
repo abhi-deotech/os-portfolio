@@ -2,6 +2,10 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, MapPin, Briefcase, GraduationCap, Code, Award, Calendar, Globe, Languages } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import {
+  identity, positions, education, certifications, skills, awards, profileUrls,
+  tenure, formatMonth,
+} from '../config/profile';
 
 const GithubIcon = ({ size = 20, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
@@ -24,12 +28,21 @@ const TwitterIcon = ({ size = 20, className = "" }) => (
 const AboutMe = () => {
   // No `color` field: the marks render in currentColor so the tile's hover state can hand them the
   // accent. The hexes that used to sit here were third-party brand identities, and nothing read them.
+  //
+  // Hrefs come from src/config/profile.js so this row cannot drift from the Social widget again.
+  // The mail tile drops out entirely while `handles.email` is null — the address that used to be
+  // hardcoded here was not real, and a dead mailto is worse than one fewer icon. The "Initiate
+  // Contact" button at the foot of this page opens the in-app Mail window and still works.
   const socialLinks = [
-    { icon: GithubIcon, label: 'GitHub', href: 'https://github.com/abhi-deotech' },
-    { icon: LinkedinIcon, label: 'LinkedIn', href: 'https://linkedin.com/in/abhimanyu-saxena-b656a4183' },
-    { icon: TwitterIcon, label: 'Twitter', href: 'https://twitter.com/abhi_deotech' },
-    { icon: Mail, label: 'Email', href: 'mailto:contact@abhi.dev' }
-  ];
+    { icon: GithubIcon, label: 'GitHub', href: profileUrls.github },
+    { icon: LinkedinIcon, label: 'LinkedIn', href: profileUrls.linkedin },
+    { icon: TwitterIcon, label: 'Twitter', href: profileUrls.twitter },
+    { icon: Mail, label: 'Email', href: profileUrls.email },
+  ].filter((l) => l.href);
+
+  const dobLabel = new Date(`${identity.dob}T12:00:00`).toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  });
 
   return (
     <div className="h-full w-full bg-sdl-plane/60 text-os-onSurface overflow-y-auto scrollbar-hide">
@@ -60,10 +73,10 @@ const AboutMe = () => {
               transition={{ delay: 0.1 }}
             >
               <h1 className="text-4xl md:text-6xl font-black tracking-tight text-sdl-ink mb-2 underline decoration-os-primary/30 underline-offset-8">
-                ABHIMANYU <span className="text-os-primary">SAXENA</span>
+                {identity.given.toUpperCase()} <span className="text-os-primary">{identity.family.toUpperCase()}</span>
               </h1>
               <p className="text-xl md:text-2xl font-bold text-os-onSurfaceVariant">
-                Software Engineer | Team Lead
+                {identity.headline}
               </p>
             </motion.div>
 
@@ -75,11 +88,11 @@ const AboutMe = () => {
             >
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sm font-medium">
                 <MapPin size={16} className="text-os-secondary" />
-                <span>Kota, Rajasthan, India</span>
+                <span>{identity.location}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-veil/5 border border-hairline/10 text-sm font-medium">
                 <Briefcase size={16} className="text-os-tertiary" />
-                <span>Team Lead @ Deotechsolutions</span>
+                <span>{positions[0].title.split('|').pop().trim()} @ {positions[0].company}</span>
               </div>
             </motion.div>
 
@@ -117,10 +130,7 @@ const AboutMe = () => {
             <div className="h-px flex-1 bg-gradient-to-r from-os-primary/30 to-transparent" />
           </div>
           <p className="text-lg md:text-xl text-os-onSurfaceVariant leading-relaxed font-medium">
-            Passionate and versatile Software Engineer with a strong background in computer science. 
-            Targeting opportunities in Software Development, exploring roles in Electronics, IoT, 
-            and other technology domains. Proficient full stack developer with nearly 3 years of 
-            industry experience in end-to-end application development, deployment, and maintenance.
+            {identity.objective}
           </p>
         </motion.section>
 
@@ -137,16 +147,16 @@ const AboutMe = () => {
               <h3 className="text-xl font-black uppercase tracking-widest">Experience</h3>
             </div>
             <div className="space-y-6">
-              {[
-                { title: 'Software Engineer | Team Lead', company: 'Deotechsolutions', year: 'July 2025 - Present', desc: 'Led development teams in building scalable web applications and established coding standards.' },
-                { title: 'Software Engineer', company: 'LendFoundry', year: 'Sep 2021 - July 2024', desc: 'Developed and maintained web-based applications using modern JavaScript frameworks.' }
-              ].map((job, idx) => (
-                <div key={idx} className="relative pl-6 border-l-2 border-os-secondary/20 group hover:border-os-secondary transition-colors">
+              {positions.map((job) => (
+                <div key={`${job.company}-${job.start}`} className="relative pl-6 border-l-2 border-os-secondary/20 group hover:border-os-secondary transition-colors">
                   <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-secondary shadow-[0_0_10px_rgb(var(--os-secondary-rgb)_/_0.5)] scale-0 group-hover:scale-100 transition-transform" />
                   <h4 className="font-bold text-sdl-ink">{job.title}</h4>
                   <p className="text-sm text-os-onSurfaceVariant font-medium">{job.company}</p>
-                  <p className="text-[10px] text-os-onSurfaceVariant/50 font-black tracking-widest mt-1 uppercase">{job.year}</p>
-                  <p className="text-xs text-os-onSurfaceVariant/70 mt-2 line-clamp-2">{job.desc}</p>
+                  {/* Duration is derived from the stored dates, so it ages by itself. */}
+                  <p className="text-[10px] text-os-onSurfaceVariant/50 font-black tracking-widest mt-1 uppercase">
+                    {formatMonth(job.start)} - {formatMonth(job.end)} · {tenure(job)}
+                  </p>
+                  <p className="text-xs text-os-onSurfaceVariant/70 mt-2 line-clamp-2">{job.bullets[0]}</p>
                 </div>
               ))}
             </div>
@@ -163,11 +173,8 @@ const AboutMe = () => {
               <h3 className="text-xl font-black uppercase tracking-widest">Education</h3>
             </div>
             <div className="space-y-6">
-              {[
-                { title: 'B.Tech in Computer Science', school: 'SRM Institute of Science & Technology', year: '2020' },
-                { title: 'Full Stack Web Development', school: 'Udacity Nanodegree', year: 'Jan 2021' }
-              ].map((edu, idx) => (
-                <div key={idx} className="relative pl-6 border-l-2 border-os-tertiary/20 group hover:border-os-tertiary transition-colors">
+              {[...education, ...certifications].map((edu) => (
+                <div key={edu.title} className="relative pl-6 border-l-2 border-os-tertiary/20 group hover:border-os-tertiary transition-colors">
                   <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-os-tertiary shadow-[0_0_10px_rgb(var(--os-tertiary-rgb)_/_0.5)] scale-0 group-hover:scale-100 transition-transform" />
                   <h4 className="font-bold text-sdl-ink">{edu.title}</h4>
                   <p className="text-sm text-os-onSurfaceVariant font-medium">{edu.school}</p>
@@ -192,10 +199,10 @@ const AboutMe = () => {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Languages', skills: ['JavaScript', 'Golang', 'C++', 'Python'] },
-              { label: 'Frontend', skills: ['React.js', 'Vite', 'Tailwind', 'Framer Motion'] },
-              { label: 'Tools & IoT', skills: ['Docker', 'Git', 'IoT', 'Linux'] },
-              { label: 'Competencies', skills: ['Requirement Analysis', 'API Integration', 'Full Stack', 'Agile'] }
+              { label: 'Languages', skills: skills.languages },
+              { label: 'Frontend', skills: skills.frontend },
+              { label: 'Tools & IoT', skills: skills.tools },
+              { label: 'Competencies', skills: skills.competencies }
             ].map((cat, idx) => (
               <div key={idx} className="p-6 rounded-2xl bg-veil/[0.02] border border-hairline/5 hover:bg-veil/[0.05] transition-colors">
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-os-secondary mb-4">{cat.label}</h4>
@@ -225,14 +232,14 @@ const AboutMe = () => {
                     <h3 className="text-xl font-black uppercase tracking-widest">Achievements</h3>
                 </div>
                 <ul className="space-y-4">
-                    <li className="flex gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-os-primary mt-1.5 shrink-0" />
-                        <p className="text-sm text-os-onSurfaceVariant">Received <strong>SPOT Award</strong> at Lend Foundry for outstanding project delivery and collaboration.</p>
-                    </li>
-                    <li className="flex gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-os-primary mt-1.5 shrink-0" />
-                        <p className="text-sm text-os-onSurfaceVariant">Conducted multiple peer training and mentoring sessions during onboarding cycles.</p>
-                    </li>
+                    {awards.map((a) => (
+                      <li key={a.title} className="flex gap-3">
+                          <div className="w-1.5 h-1.5 rounded-full bg-os-primary mt-1.5 shrink-0" />
+                          <p className="text-sm text-os-onSurfaceVariant">
+                            <strong>{a.title}</strong> · {a.org} — {a.detail}
+                          </p>
+                      </li>
+                    ))}
                 </ul>
             </motion.div>
 
@@ -249,15 +256,15 @@ const AboutMe = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">D.O.B</p>
-                        <p className="text-sm font-bold text-sdl-ink">17 Feb 1998</p>
+                        <p className="text-sm font-bold text-sdl-ink">{dobLabel}</p>
                     </div>
                     <div>
                         <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">Languages</p>
-                        <p className="text-sm font-bold text-sdl-ink">English, Hindi</p>
+                        <p className="text-sm font-bold text-sdl-ink">{identity.languages.join(', ')}</p>
                     </div>
                     <div className="col-span-2">
                         <p className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-1">Location</p>
-                        <p className="text-sm font-bold text-sdl-ink">1-C-27 S.F.S Talwandi, Kota, RJ</p>
+                        <p className="text-sm font-bold text-sdl-ink">{identity.location}</p>
                     </div>
                 </div>
             </motion.div>

@@ -9,6 +9,15 @@ import { isKnownAchievement } from '../../config/achievements';
 // piling up a wall of cards that all have to individually time out.
 const MAX_TOASTS = 3;
 
+// Monotonic, because the queue length is NOT a unique id.
+//
+// `pushToast` keyed its entries `toast-${queue.length}-${title}`, and the queue is capped at
+// MAX_TOASTS by `.slice(-MAX_TOASTS)`. Once it is full the length stays pinned at 3, so every
+// subsequent push produced the same key — mashing "Surprise Me" logged
+// `Encountered two children with the same key, toast-3-Surprise Me` and React was free to drop or
+// duplicate the cards. A counter cannot collide regardless of what the queue does.
+let toastSeq = 0;
+
 // Seed the theme fields SYNCHRONOUSLY from the localStorage mirror. Persistence is IndexedDB, which
 // is async, so React's first render would otherwise disagree with the DOM the pre-paint script has
 // already stamped — visible on anything that branches on the colorway id in JS (the Settings
@@ -196,7 +205,7 @@ export const createSystemSlice = (set, get) => ({
     set((state) => ({
       achievementQueue: [
         ...state.achievementQueue,
-        { id: `toast-${state.achievementQueue.length}-${title}`, title, desc, kicker },
+        { id: `toast-${(toastSeq += 1)}-${title}`, title, desc, kicker },
       ].slice(-MAX_TOASTS),
     })),
 
@@ -206,9 +215,14 @@ export const createSystemSlice = (set, get) => ({
    */
   randomizeAppearance: () => {
     const { colorway, wallpaper } = get();
-    const { label, ...patch } = randomAppearance({ colorway, wallpaper });
+    // `label` and `title` are toast copy, not state. They MUST be stripped before `set` — anything
+    // left in the patch becomes a store field, and `title` in particular would collide with nothing
+    // today and something confusing later.
+    const { label, title, ...patch } = randomAppearance({ colorway, wallpaper });
     set(patch);
-    get().pushToast({ kicker: 'New Look', title: 'Surprise Me', desc: label });
+    // A curated look has a name of its own ("Midnight Arcade"); a generated one does not, and
+    // falls back to the button's name with the ingredients underneath.
+    get().pushToast({ kicker: 'New Look', title: title || 'Surprise Me', desc: label });
     get().unlockAchievement('decorator');
     if (get().isPuterSignedIn) get().syncPrefsToPuter();
   },

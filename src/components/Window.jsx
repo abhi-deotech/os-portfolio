@@ -6,6 +6,7 @@ import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import useSoundEffects from '../hooks/useSoundEffects';
 import WindowGlass from './WindowGlass';
+import { MENU_BAR_H } from './MenuBar';
 
 /**
  * Window container component for Lumina OS applications.
@@ -29,7 +30,19 @@ import WindowGlass from './WindowGlass';
  * @param {number} [props.minHeight=300] - Minimum resize height
  */
 const Window = ({ id, title, children, isMinimized, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
-  const { closeWindow, toggleMinimizeWindow, toggleMaximizeWindow, snapWindow, focusWindow, activeWindow, maximizedWindows, snappedWindows, setIsDragging, isDragging, transparencyEffects } = useOSStore();
+  // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
+  // every state change anywhere in the OS, not just the fields it reads.
+  const closeWindow = useOSStore((s) => s.closeWindow);
+  const toggleMinimizeWindow = useOSStore((s) => s.toggleMinimizeWindow);
+  const toggleMaximizeWindow = useOSStore((s) => s.toggleMaximizeWindow);
+  const snapWindow = useOSStore((s) => s.snapWindow);
+  const focusWindow = useOSStore((s) => s.focusWindow);
+  const activeWindow = useOSStore((s) => s.activeWindow);
+  const maximizedWindows = useOSStore((s) => s.maximizedWindows);
+  const snappedWindows = useOSStore((s) => s.snappedWindows);
+  const setIsDragging = useOSStore((s) => s.setIsDragging);
+  const isDragging = useOSStore((s) => s.isDragging);
+  const transparencyEffects = useOSStore((s) => s.transparencyEffects);
   const isMobile = useIsMobile();
   const { playSound } = useSoundEffects();
   const isActive = activeWindow === id;
@@ -65,6 +78,26 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
   const ACTIVE_SHADOW = '0 32px 64px rgb(var(--sdl-plane-rgb) / 0.5), 0 0 20px rgb(var(--sdl-accent-rgb) / 0.2)';
 
   const isSnapped = snappedWindows?.[id];
+
+  /**
+   * Maximized and edge-snapped windows are `position: fixed`, so they measure from the viewport,
+   * not from the App shell's flex column — which means they do NOT inherit the menu bar's offset
+   * the way the Desktop layer does. Without this they start at y=0 and their own title bar (traffic
+   * lights included) renders underneath the bar, which paints above them.
+   *
+   * 0 on mobile: MenuBar returns null there, so there is nothing to clear.
+   */
+  const topInset = isMobile ? 0 : MENU_BAR_H;
+
+  /**
+   * One height for both the Framer `animate` target and the inline `style`. They previously
+   * disagreed — `style` said `calc(100vh - 80px)` on mobile while `animate` said a flat `100%`, and
+   * animate wins, so a maximized window has been overshooting the bottom of the screen by the
+   * height of whatever chrome it was supposed to clear.
+   */
+  const fillHeight = isMobile
+    ? 'calc(100vh - 80px)'
+    : `calc(100vh - ${topInset}px)`;
 
   useEffect(() => {
     if (!isActive || isMobile) return;
@@ -109,12 +142,12 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
     animate: { 
       scale: 1, 
       opacity: 1, 
-      ...(isMaximized ? { top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', borderRadius: 0, x: 0, y: 0 } : {}),
+      ...(isMaximized ? { top: topInset, left: 0, right: 0, bottom: 0, width: '100%', height: fillHeight, borderRadius: 0, x: 0, y: 0 } : {}),
       ...(isSnapped ? {
-        top: 0,
+        top: topInset,
         left: isSnapped === 'right' ? '50vw' : 0,
         width: '50vw',
-        height: '100%',
+        height: fillHeight,
         borderRadius: 0,
         x: 0,
         y: 0
@@ -154,8 +187,11 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            /* Inline top wins over the inset-* class, so the preview lands where the window
+               actually will — under the menu bar, not over it. */
+            style={{ top: topInset + 16 }}
             className={`fixed z-[40] bg-os-primary/10 border-2 border-os-primary/30 backdrop-blur-sm transition-all duration-300 pointer-events-none ${
-              snapTarget === 'top' ? 'inset-4 rounded-3xl' : 
+              snapTarget === 'top' ? 'inset-4 rounded-3xl' :
               snapTarget === 'left' ? 'inset-y-4 left-4 w-[48%] rounded-3xl' :
               'inset-y-4 right-4 w-[48%] rounded-3xl'
             }`}
@@ -184,12 +220,12 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
         style={{
           ...(!isMaximized && !isSnapped ? { width, height, minWidth, minHeight, top: '50%', left: '50%' } : { 
             position: 'fixed',
-            top: 0,
+            top: topInset,
             left: isSnapped === 'right' ? '50vw' : 0,
             right: isSnapped === 'left' ? '50vw' : 0,
             bottom: isMobile ? '80px' : 0,
             width: isSnapped ? '50vw' : '100vw',
-            height: isMobile ? 'calc(100vh - 80px)' : '100vh',
+            height: fillHeight,
             x: 0,
             y: 0
           }),

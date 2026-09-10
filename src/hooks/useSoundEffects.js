@@ -21,7 +21,9 @@ import useOSStore from '../store/osStore';
  * playSound('achievement');
  */
 const useSoundEffects = () => {
-  const { soundEnabled } = useOSStore();
+  // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
+  // every state change anywhere in the OS, not just the fields it reads.
+  const soundEnabled = useOSStore((s) => s.soundEnabled);
   const audioCtx = useRef(null);
 
   useEffect(() => {

@@ -1,211 +1,483 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Globe, ArrowLeft, ArrowRight, RotateCw, ExternalLink, Bookmark, ShieldAlert, Lock, Info } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Globe, ArrowLeft, ArrowRight, RotateCw, ExternalLink, Star, Plus, X, Lock,
+  Search, ShieldAlert, Compass,
+} from 'lucide-react';
 import useOSStore from '../store/osStore';
+import {
+  START_URL, MAX_TABS, TAB_HOARDER_AT, LOAD_TIMEOUT_MS,
+  isBlockedUrl, resolveInput, hostOf, makeTab, navigateTabState, backTabState, forwardTabState,
+  canGoBack, canGoForward, pushHistoryEntry, loadBookmarks, saveBookmarks, loadHistory, saveHistory,
+} from './browser/browserCore';
+import Favicon from './browser/Favicon';
+import StartPage from './browser/StartPage';
+import BlockedSplash from './browser/BlockedSplash';
 
-const BLOCKED_DOMAINS = [
-  'github.com', 
-  'linkedin.com', 
-  'twitter.com', 
-  'x.com', 
-  'facebook.com', 
-  'instagram.com', 
-  'netflix.com', 
-  'google.com/search'
-];
+/**
+ * Flow-Net — the OS browser, now with real tabs.
+ *
+ * ── How external navigation arrives ──────────────────────────────────────────────────────────
+ * `openBrowser(url)` (a project's "Live Demo" button) writes `browserUrl` and ticks the
+ * `browserNav` counter. The old contract delivered that by REMOUNTING this component
+ * (`WindowContentRenderer` keyed it on `browserNav`) — acceptable when the whole app was one
+ * address bar, unacceptable now that a remount would wipe every open tab. Instead this component
+ * subscribes to the counter itself and opens a NEW TAB per tick.
+ *
+ * The StrictMode guard: effects run twice in dev, so the effect compares `browserNav` against
+ * `consumedNavRef` — initialised to the MOUNT-TIME counter value, because a launch that opened
+ * the window is already consumed as the initial tab below. Without that initialisation the mount
+ * effect would treat the launch as unconsumed and open the URL a second time; without the ref at
+ * all, StrictMode's double-run would duplicate every subsequent launch.
+ *
+ * ── What Back/Forward can honestly track ─────────────────────────────────────────────────────
+ * Link clicks INSIDE the cross-origin iframes are invisible to us (same-origin policy hides the
+ * frame's location), so each tab's stack records chrome-initiated navigations only — same
+ * limitation as the old single-frame version, now stated. See browserCore.js for the tab model.
+ *
+ * ── StrictMode discipline ────────────────────────────────────────────────────────────────────
+ * Store effects (achievements, timers) are never called inside a setState updater — StrictMode
+ * invokes updaters twice (tasks/lessons.md). Handlers compute next state or use PURE functional
+ * updaters, and run effects in the handler body. Bookmarks/history live in state; two small
+ * effects mirror them to localStorage, so no handler ever writes storage.
+ */
 
-const HOME_URL = 'https://en.m.wikipedia.org/wiki/Main_Page';
+const TOOL_BTN =
+  'p-2 rounded-xl text-sdl-sec hover:bg-veil/5 hover:text-sdl-ink transition-colors ' +
+  'disabled:opacity-40 disabled:pointer-events-none ' +
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50';
 
-// The two shipped products that are live AND verified frameable (200, no X-Frame-Options, no CSP
-// `frame-ancestors`) lead, so the first thing in the bookmark bar is real work. They are the same
-// URLs the Projects app's "Live" buttons hand to `openBrowser` — see `src/config/projects.js`.
-const BOOKMARKS = [
-  { title: 'WorkLeisure', url: 'https://www.workleisure.in' },
-  { title: 'Winndo', url: 'https://www.winndo.com' },
-  { title: 'Wikipedia', url: HOME_URL },
-  { title: 'Excalidraw', url: 'https://excalidraw.com/' },
-  { title: 'Can I Use', url: 'https://caniuse.com/' },
-];
+const tabLabel = (tab) => (tab.url === START_URL ? 'Start' : hostOf(tab.url) || tab.url);
 
 const Browser = () => {
-  // Set by `openBrowser(url)` when a project's Live button launches Flow-Net at a demo.
-  // Seeded once per mount. There is one window per id, so Flow-Net may already be open when a
-  // project's Live button fires — the navigation is delivered by REMOUNTING this component
-  // (`WindowContentRenderer` keys it on `browserNav`) rather than by an effect syncing the store
-  // into local state. An effect would have to setState synchronously on every launch, and
-  // resetting the address bar and loading flag is precisely what navigating means anyway.
-  const browserUrl = useOSStore((state) => state.browserUrl);
+  // Selectors, not `useOSStore()` — a whole-store subscription re-renders on every OS tick.
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
+  const browserNav = useOSStore((s) => s.browserNav);
+  const browserUrl = useOSStore((s) => s.browserUrl);
 
-  const [url, setUrl] = useState(browserUrl || HOME_URL);
-  const [iframeUrl, setIframeUrl] = useState(browserUrl || HOME_URL);
-  const [isLoading, setIsLoading] = useState(false);
+  // Mount-time snapshot, held as never-set state (a lazy ref init would trip the
+  // react-hooks/refs rule): the pending launch URL becomes the first tab, and its counter value
+  // is marked consumed — see header comment.
+  const [boot] = useState(() => ({ nav: browserNav, tab: makeTab(browserUrl || START_URL) }));
 
-  const bookmarks = BOOKMARKS;
+  const [tabs, setTabs] = useState(() => [boot.tab]);
+  const [activeId, setActiveId] = useState(boot.tab.id);
+  const [bookmarks, setBookmarks] = useState(loadBookmarks);
+  // The boot tab's visit is part of the INITIAL history rather than recorded by a mount effect —
+  // a setState-in-effect there is a cascading render the hooks lint rightly rejects.
+  const [history, setHistory] = useState(() => {
+    const base = loadHistory();
+    const { tab } = boot;
+    return tab.url !== START_URL && !isBlockedUrl(tab.url)
+      ? pushHistoryEntry(base, tab.url)
+      : base;
+  });
 
-  const checkBlocked = useCallback((targetUrl) => {
-    return BLOCKED_DOMAINS.some(domain => targetUrl.toLowerCase().includes(domain.toLowerCase()));
+  const consumedNavRef = useRef(boot.nav);
+  const addressRef = useRef(null);
+  const loadTimersRef = useRef({});
+
+  // Post-commit mirrors so the callbacks the `browserNav` effect depends on can stay
+  // referentially stable instead of being rebuilt around closure state every render.
+  const tabsRef = useRef(tabs);
+  const activeIdRef = useRef(activeId);
+  useEffect(() => {
+    tabsRef.current = tabs;
+    activeIdRef.current = activeId;
+  });
+
+  const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
+
+  /* ── loading safety net ──
+   * `loading` is cleared by the iframe's onLoad, but a page whose CSP kills the load never fires
+   * it — the timer stops a spinner from running forever on a frame that will stay blank. */
+  const disarmLoadTimer = useCallback((tabId) => {
+    clearTimeout(loadTimersRef.current[tabId]);
+    delete loadTimersRef.current[tabId];
   }, []);
 
-  const isBlocked = useMemo(() => checkBlocked(iframeUrl), [iframeUrl, checkBlocked]);
+  const stopLoading = useCallback((tabId) => {
+    setTabs((prev) => {
+      const t = prev.find((x) => x.id === tabId);
+      if (!t || !t.loading) return prev;
+      return prev.map((x) => (x.id === tabId ? { ...x, loading: false } : x));
+    });
+  }, []);
 
-  const handleGo = (e) => {
-    if (e) e.preventDefault();
-    let targetUrl = url.trim();
-    if (!targetUrl) return;
-    
-    if (!targetUrl.startsWith('http')) {
-      if (targetUrl.includes('.') && !targetUrl.includes(' ')) {
-        targetUrl = 'https://' + targetUrl;
-      } else {
-        targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(targetUrl) + '&igu=1';
-      }
+  const armLoadTimer = useCallback((tabId) => {
+    clearTimeout(loadTimersRef.current[tabId]);
+    loadTimersRef.current[tabId] = setTimeout(() => {
+      delete loadTimersRef.current[tabId];
+      stopLoading(tabId);
+    }, LOAD_TIMEOUT_MS);
+  }, [stopLoading]);
+
+  useEffect(() => {
+    const timers = loadTimersRef.current;
+    return () => Object.values(timers).forEach(clearTimeout);
+  }, []);
+
+  // Persistence is a state→localStorage sync, so it lives in effects — the one shape where
+  // writing an external system from an effect is the point. Handlers never touch storage.
+  useEffect(() => { saveHistory(history); }, [history]);
+  useEffect(() => { saveBookmarks(bookmarks); }, [bookmarks]);
+
+  /** Record a visit. The timestamp is taken HERE so the functional updater stays pure —
+   *  StrictMode replays updaters twice (tasks/lessons.md), and pushHistoryEntry's
+   *  consecutive-duplicate skip makes the replay converge. */
+  const recordHistory = useCallback((url) => {
+    const ts = Date.now();
+    setHistory((prev) => pushHistoryEntry(prev, url, ts));
+  }, []);
+
+  /**
+   * Commit a navigation on a tab. `user: true` marks a navigation the visitor committed from
+   * chrome (address bar, start-page search, bookmark, history row) — the 'netizen' achievement
+   * fires there and nowhere else. Blocked URLs still commit (the splash renders per-tab from the
+   * committed URL) but are not recorded as visits.
+   */
+  const navigateTo = useCallback((tabId, url, { user = false } = {}) => {
+    if (!url) return;
+    if (user && url !== START_URL) unlockAchievement('netizen');
+    if (url !== START_URL && !isBlockedUrl(url)) recordHistory(url);
+    const next = tabsRef.current.map((t) => (t.id === tabId ? navigateTabState(t, url) : t));
+    setTabs(next);
+    const target = next.find((t) => t.id === tabId);
+    if (target?.loading) armLoadTimer(tabId);
+    else disarmLoadTimer(tabId);
+  }, [unlockAchievement, recordHistory, armLoadTimer, disarmLoadTimer]);
+
+  /** New tab, focused. At the cap the "+" button is disabled, but a Live-Demo launch must not be
+   *  silently dropped — it reuses the active tab instead. */
+  const openNewTab = useCallback((url = START_URL) => {
+    const current = tabsRef.current;
+    if (current.length >= MAX_TABS) {
+      if (url !== START_URL) navigateTo(activeIdRef.current, url);
+      return;
     }
-    
-    setIframeUrl(targetUrl);
-    setUrl(targetUrl);
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1000);
+    const tab = makeTab(url);
+    const next = [...current, tab];
+    if (next.length >= TAB_HOARDER_AT) unlockAchievement('tab_hoarder');
+    if (url !== START_URL && !isBlockedUrl(url)) recordHistory(url);
+    setTabs(next);
+    setActiveId(tab.id);
+    if (tab.loading) armLoadTimer(tab.id);
+  }, [navigateTo, unlockAchievement, recordHistory, armLoadTimer]);
+
+  // Arm the safety timer for the mount-consumed launch tab. Unguarded on purpose: StrictMode's
+  // simulated unmount clears the timer between its two runs, so the second run must re-arm it.
+  // `boot` is never-set state, so these deps keep this a mount effect.
+  useEffect(() => {
+    const { tab } = boot;
+    if (tab.loading) armLoadTimer(tab.id);
+  }, [boot, armLoadTimer]);
+
+  // External navigation delivery — see header comment for the consumed-counter contract.
+  useEffect(() => {
+    if (browserNav === consumedNavRef.current) return;
+    consumedNavRef.current = browserNav;
+    if (browserUrl) openNewTab(browserUrl);
+  }, [browserNav, browserUrl, openNewTab]);
+
+  /* ── plain handlers (compute next → set → effects in body; see header) ── */
+
+  const goBack = () => {
+    if (!canGoBack(activeTab)) return;
+    const next = backTabState(activeTab);
+    setTabs(tabs.map((t) => (t.id === activeTab.id ? next : t)));
+    if (next.loading) armLoadTimer(activeTab.id);
+    else disarmLoadTimer(activeTab.id);
+  };
+
+  const goForward = () => {
+    if (!canGoForward(activeTab)) return;
+    const next = forwardTabState(activeTab);
+    setTabs(tabs.map((t) => (t.id === activeTab.id ? next : t)));
+    if (next.loading) armLoadTimer(activeTab.id);
+    else disarmLoadTimer(activeTab.id);
+  };
+
+  const reload = () => {
+    if (activeTab.url === START_URL || isBlockedUrl(activeTab.url)) return;
+    // The bump changes the iframe's React key — an identical `src` assignment is a DOM no-op,
+    // so a remount is the only reliable reload for a cross-origin frame.
+    setTabs(tabs.map((t) =>
+      t.id === activeTab.id ? { ...t, loading: true, reloadKey: t.reloadKey + 1 } : t
+    ));
+    armLoadTimer(activeTab.id);
+  };
+
+  const closeTab = (tabId) => {
+    const idx = tabs.findIndex((t) => t.id === tabId);
+    if (idx === -1) return;
+    disarmLoadTimer(tabId);
+    // Closing the last tab yields a fresh start tab — closing the WINDOW is the OS chrome's job,
+    // and a browser with zero tabs has nothing to render.
+    let next = tabs.filter((t) => t.id !== tabId);
+    if (next.length === 0) next = [makeTab(START_URL)];
+    setTabs(next);
+    if (activeId === tabId) setActiveId(next[Math.min(idx, next.length - 1)].id);
+  };
+
+  const handleAddressChange = (value) => {
+    setTabs((prev) => prev.map((t) => (t.id === activeId ? { ...t, input: value } : t)));
+  };
+
+  const handleAddressSubmit = (e) => {
+    e.preventDefault();
+    const resolved = resolveInput(activeTab.input);
+    if (resolved) navigateTo(activeTab.id, resolved, { user: true });
+  };
+
+  const handleStartNavigate = (raw) => {
+    const resolved = resolveInput(raw);
+    if (resolved) navigateTo(activeTab.id, resolved, { user: true });
   };
 
   const openExternal = () => {
-    window.open(iframeUrl, '_blank');
+    if (activeTab.url !== START_URL) window.open(activeTab.url, '_blank');
   };
 
+  const activeIsBookmarked = bookmarks.some((b) => b.url === activeTab.url);
+
+  const toggleBookmark = () => {
+    const url = activeTab.url;
+    if (url === START_URL) return;
+    const title = hostOf(url) || url;
+    setBookmarks((prev) => (
+      prev.some((b) => b.url === url)
+        ? prev.filter((b) => b.url !== url)
+        : [...prev, { title, url }]
+    ));
+  };
+
+  const removeBookmark = (url) => {
+    setBookmarks((prev) => prev.filter((b) => b.url !== url));
+  };
+
+  const clearHistory = () => setHistory([]);
+
+  const handleIframeLoad = (tabId) => {
+    disarmLoadTimer(tabId);
+    stopLoading(tabId);
+  };
+
+  const handleRootKeyDown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
+      e.preventDefault();
+      addressRef.current?.focus();
+      addressRef.current?.select();
+    } else if (e.altKey && e.key === 'ArrowLeft') {
+      e.preventDefault();
+      goBack();
+    } else if (e.altKey && e.key === 'ArrowRight') {
+      e.preventDefault();
+      goForward();
+    }
+  };
+
+  const activeBlocked = isBlockedUrl(activeTab.url);
+  const activeIsStart = activeTab.url === START_URL;
+  const atCap = tabs.length >= MAX_TABS;
+
+  const AddressGlyph = activeBlocked
+    ? ShieldAlert
+    : activeIsStart
+      ? Search
+      : activeTab.url.startsWith('https://')
+        ? Lock
+        : Globe;
+
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0a] text-white">
-      {/* Browser Ribbon */}
-      <div className="flex items-center gap-3 px-4 py-3 bg-[#121212] border-b border-white/5 relative z-20">
-        <div className="flex gap-1.5">
-           <button aria-label="Go back" className="p-2 hover:bg-white/5 rounded-xl text-white/40 transition-colors"><ArrowLeft size={16} /></button>
-           <button aria-label="Go forward" className="p-2 hover:bg-white/5 rounded-xl text-white/40 transition-colors"><ArrowRight size={16} /></button>
-           <button 
-             aria-label="Reload page"
-             onClick={() => {
-               const current = iframeUrl;
-               setIframeUrl('');
-               setTimeout(() => setIframeUrl(current), 10);
-               setIsLoading(true);
-               setTimeout(() => setIsLoading(false), 1000);
-             }} 
-             className={`p-2 hover:bg-white/5 rounded-xl transition-all ${isLoading ? 'text-os-primary animate-spin' : 'text-white/60'}`}
-           >
-             <RotateCw size={16} />
-           </button>
+    // tabIndex -1 so a click on empty chrome parks focus here and the shortcuts keep working;
+    // keys pressed while focus is INSIDE a cross-origin iframe never reach us — known limit.
+    <div
+      tabIndex={-1}
+      onKeyDown={handleRootKeyDown}
+      className="flex flex-col h-full w-full bg-sdl-plane text-sdl-ink rounded-2xl overflow-hidden font-sans relative outline-none"
+    >
+      {/* Indeterminate-loader keyframes, co-located because index.css is not this app's file. */}
+      <style>{'@keyframes flownet-progress { from { transform: translateX(-100%); } to { transform: translateX(350%); } }'}</style>
+
+      {/* Tab strip — sunken tone, quiet inactive tabs; the active tab lifts to surface with an
+          accent hairline (chrome speaks quietly, SDL law 2). */}
+      <div className="flex items-center gap-1 px-2 pt-2 pb-1.5 bg-sdl-sunken/60 border-b border-hairline/5">
+        <div role="tablist" aria-label="Browser tabs" className="flex items-center gap-1 overflow-x-auto scrollbar-hide min-w-0">
+          {tabs.map((tab) => {
+            const active = tab.id === activeId;
+            return (
+              <div
+                key={tab.id}
+                className={`group flex items-center shrink-0 rounded-xl border transition-colors ${
+                  active
+                    ? 'bg-sdl-surface border-os-primary/30 shadow-hairline'
+                    : 'border-transparent hover:bg-veil/5'
+                }`}
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setActiveId(tab.id)}
+                  title={tab.url === START_URL ? 'Start page' : tab.url}
+                  className={`flex items-center gap-2 pl-2.5 pr-1 py-1.5 text-[11px] font-bold min-w-0 rounded-l-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-os-primary/50 ${
+                    active ? 'text-sdl-ink' : 'text-sdl-sec hover:text-sdl-ink'
+                  }`}
+                >
+                  {tab.url === START_URL
+                    ? <Compass size={13} className="text-sdl-sec shrink-0" aria-hidden="true" />
+                    : <Favicon url={tab.url} size={13} />}
+                  <span className="truncate max-w-[110px]">{tabLabel(tab)}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeTab(tab.id)}
+                  aria-label={`Close tab ${tabLabel(tab)}`}
+                  className="p-1 mr-1 rounded-lg text-sdl-sec/70 hover:text-sdl-ink hover:bg-veil/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            );
+          })}
         </div>
-
-        <form onSubmit={handleGo} className="flex-grow">
-          <div className="relative flex items-center group">
-            <div className={`absolute left-3 transition-colors ${isBlocked ? 'text-yellow-500' : 'text-os-primary'}`}>
-              {isBlocked ? <Lock size={14} /> : <Globe size={14} />}
-            </div>
-            <input 
-              aria-label="Address bar"
-              type="text" 
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onFocus={(e) => e.target.select()}
-              className={`w-full bg-black/40 border ${isBlocked ? 'border-yellow-500/30' : 'border-white/10'} rounded-xl py-2 pl-10 pr-4 text-xs text-white/80 focus:border-os-primary transition-all outline-none focus:bg-black/60 font-medium`}
-              placeholder="Search or enter URL"
-            />
-            {isLoading && (
-              <div className="absolute right-3 w-1 h-1 bg-os-primary rounded-full animate-ping" />
-            )}
-          </div>
-        </form>
-
-        <button 
-          onClick={openExternal}
-          aria-label="Open in new tab"
-          title="Open in new tab"
-          className="p-2 bg-os-primary/10 text-os-primary rounded-xl hover:bg-os-primary/20 transition-all active:scale-90"
+        <button
+          type="button"
+          onClick={() => openNewTab()}
+          disabled={atCap}
+          aria-label="New tab"
+          title={atCap ? `Tab limit reached (${MAX_TABS}) — close a tab to open another` : 'New tab'}
+          className={`${TOOL_BTN} shrink-0`}
         >
-          <ExternalLink size={16} />
+          <Plus size={14} />
         </button>
       </div>
 
-      {/* Bookmarks Bar */}
-      <div className="flex gap-3 px-4 py-2 bg-[#0c0c0c] border-b border-white/5 overflow-x-auto no-scrollbar scroll-smooth">
-        {bookmarks.map((bm, i) => (
-          <button 
-            key={i}
-            onClick={() => { setUrl(bm.url); setIframeUrl(bm.url); }}
-            className={`flex items-center gap-2 text-[10px] font-bold transition-all whitespace-nowrap px-3 py-1.5 rounded-lg border border-transparent ${iframeUrl === bm.url ? 'bg-os-primary/10 text-os-primary border-os-primary/20' : 'text-white/30 hover:text-white/80 bg-white/5 hover:bg-white/10'}`}
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 bg-sdl-surface border-b border-hairline/10 relative z-20">
+        <div className="flex gap-0.5">
+          <button
+            type="button"
+            onClick={goBack}
+            disabled={!canGoBack(activeTab)}
+            aria-disabled={!canGoBack(activeTab)}
+            aria-label="Go back"
+            title="Back (Alt+←)"
+            className={TOOL_BTN}
           >
-            <Bookmark size={10} className={iframeUrl === bm.url ? 'text-os-primary' : 'text-os-secondary'} />
-            {bm.title}
+            <ArrowLeft size={15} />
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={goForward}
+            disabled={!canGoForward(activeTab)}
+            aria-disabled={!canGoForward(activeTab)}
+            aria-label="Go forward"
+            title="Forward (Alt+→)"
+            className={TOOL_BTN}
+          >
+            <ArrowRight size={15} />
+          </button>
+          <button
+            type="button"
+            onClick={reload}
+            disabled={activeIsStart || activeBlocked}
+            aria-label="Reload page"
+            title="Reload"
+            className={`${TOOL_BTN} ${activeTab.loading ? 'text-os-primary animate-spin' : ''}`}
+          >
+            <RotateCw size={15} />
+          </button>
+        </div>
+
+        <form onSubmit={handleAddressSubmit} className="flex-grow min-w-0">
+          <div className="relative flex items-center">
+            <AddressGlyph
+              size={13}
+              aria-hidden="true"
+              className={`absolute left-3 pointer-events-none ${activeBlocked ? 'text-sdl-warn' : 'text-os-primary'}`}
+            />
+            <input
+              ref={addressRef}
+              type="text"
+              aria-label="Address bar"
+              value={activeTab.input}
+              onChange={(e) => handleAddressChange(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              placeholder="Search or enter URL"
+              className="w-full bg-sdl-sunken border border-hairline/10 rounded-xl py-2 pl-9 pr-3 text-xs text-sdl-ink placeholder:text-sdl-sunkSec font-medium outline-none transition-all focus:border-os-primary/60 focus:ring-2 focus:ring-os-primary/20"
+            />
+          </div>
+        </form>
+
+        <button
+          type="button"
+          onClick={toggleBookmark}
+          disabled={activeIsStart}
+          aria-label={activeIsBookmarked ? 'Remove bookmark' : 'Bookmark this page'}
+          aria-pressed={activeIsBookmarked}
+          title={activeIsBookmarked ? 'Remove bookmark' : 'Bookmark this page'}
+          className={`${TOOL_BTN} ${activeIsBookmarked ? 'text-os-primary hover:text-os-primary' : ''}`}
+        >
+          <Star size={15} fill={activeIsBookmarked ? 'currentColor' : 'none'} />
+        </button>
+        <button
+          type="button"
+          onClick={openExternal}
+          disabled={activeIsStart}
+          aria-label="Open in new tab"
+          title="Open in new tab"
+          className="p-2 bg-os-primary/10 text-os-primary rounded-xl hover:bg-os-primary/20 transition-all active:scale-90 disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+        >
+          <ExternalLink size={15} />
+        </button>
       </div>
 
-      {/* Main Framework */}
-      <div className="flex-grow bg-[#050505] relative overflow-hidden">
-        <AnimatePresence mode="wait">
-          {isBlocked ? (
-            <motion.div 
-              key="blocked"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.02 }}
-              className="absolute inset-0 z-10 flex flex-col items-center justify-center p-8 text-center bg-[#0a0a0a]"
-            >
-              <div className="relative mb-8">
-                <div className="absolute inset-0 bg-yellow-500/20 blur-3xl rounded-full animate-pulse" />
-                <div className="relative w-24 h-24 bg-yellow-500/10 border border-yellow-500/20 rounded-[2rem] flex items-center justify-center shadow-2xl">
-                  <ShieldAlert size={48} className="text-yellow-500" />
-                </div>
-                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-black border border-white/10 rounded-full flex items-center justify-center shadow-lg">
-                  <Lock size={14} className="text-yellow-500" />
-                </div>
-              </div>
+      {/* 2px indeterminate progress slot — always reserved so loading never shifts layout. */}
+      <div className="h-0.5 relative overflow-hidden shrink-0" aria-hidden="true">
+        {activeTab.loading && (
+          <span
+            className="absolute inset-y-0 left-0 w-1/3 rounded-full"
+            style={{ background: 'var(--sdl-accent)', animation: 'flownet-progress 1.1s linear infinite' }}
+          />
+        )}
+      </div>
 
-              <h2 className="text-2xl font-black text-white mb-4 tracking-tight uppercase">Embedding Restricted</h2>
-              <p className="text-white/40 text-sm max-w-md leading-relaxed mb-10 font-medium">
-                For security reasons, <span className="text-white/70 italic">{new URL(iframeUrl).hostname}</span> does not allow itself to be displayed inside other applications.
-              </p>
+      {/* Content. Every real-URL tab keeps its iframe mounted (hidden, not unmounted) so tab
+          switches don't reload; the start page and the blocked splash render only for the active
+          tab, since they are cheap React trees. */}
+      <div className="flex-grow relative overflow-hidden bg-sdl-sunken">
+        {tabs.map((tab) => {
+          if (tab.url === START_URL || isBlockedUrl(tab.url)) return null;
+          return (
+            <iframe
+              key={`${tab.id}:${tab.reloadKey}`}
+              title={`${tabLabel(tab)} — Flow-Net tab`}
+              src={tab.url}
+              onLoad={() => handleIframeLoad(tab.id)}
+              className={tab.id === activeId ? 'absolute inset-0 w-full h-full border-none bg-sdl-surface' : 'hidden'}
+              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+              credentialless="true"
+            />
+          );
+        })}
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button 
-                  onClick={openExternal}
-                  className="flex items-center justify-center gap-3 px-8 py-4 bg-yellow-500 text-black font-black text-xs uppercase tracking-widest rounded-2xl shadow-2xl shadow-yellow-500/20 active:scale-95 transition-all hover:bg-yellow-400"
-                >
-                  <ExternalLink size={16} /> Open externally
-                </button>
-                <button 
-                  onClick={() => { setUrl(HOME_URL); setIframeUrl(HOME_URL); }}
-                  className="flex items-center justify-center gap-3 px-8 py-4 bg-white/5 border border-white/10 text-white/60 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-white/10 active:scale-95 transition-all"
-                >
-                   Go Home
-                </button>
-              </div>
+        {activeIsStart && (
+          <StartPage
+            key={activeTab.id}
+            bookmarks={bookmarks}
+            history={history}
+            onNavigate={handleStartNavigate}
+            onRemoveBookmark={removeBookmark}
+            onClearHistory={clearHistory}
+          />
+        )}
 
-              <div className="mt-12 flex items-center gap-3 px-4 py-2 bg-white/5 rounded-xl border border-white/5">
-                <Info size={14} className="text-os-primary" />
-                <span className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Note: This is a browser security policy (X-Frame-Options)</span>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="iframe"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="w-full h-full"
-            >
-              <iframe 
-                title="Browser View"
-                src={iframeUrl}
-                className="w-full h-full border-none bg-white"
-                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                credentialless="true"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        
-        {/* Loading Overlay */}
-        {isLoading && !isBlocked && (
-          <div className="absolute inset-0 bg-[#0a0a0a]/50 backdrop-blur-sm flex items-center justify-center z-0 pointer-events-none">
-             <div className="w-10 h-10 border-4 border-os-primary/20 border-t-os-primary rounded-full animate-spin" />
-          </div>
+        {activeBlocked && (
+          <BlockedSplash
+            url={activeTab.url}
+            onOpenExternal={() => window.open(activeTab.url, '_blank')}
+            onBackToStart={() => navigateTo(activeTab.id, START_URL)}
+          />
         )}
       </div>
     </div>

@@ -4,6 +4,7 @@ import GameShell from './GameShell';
 import useGameInput from '../../hooks/useGameInput';
 import useGameAudio from '../../hooks/useGameAudio';
 import useHighScore from '../../hooks/useHighScore';
+import useOSStore from '../../store/osStore';
 
 const DIFFICULTIES = {
   beginner: { label: 'Beginner', rows: 9, cols: 9, mines: 10, maxCell: 40 },
@@ -163,6 +164,7 @@ const Minesweeper = ({ onBack }) => {
   const scrollerRef = useRef(null);
 
   const play = useGameAudio();
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
   // One key for all three difficulties: useHighScore snapshots its storage key on first render, so
   // a per-difficulty key would stop refreshing the moment the picker changed. The board size is
   // part of the run, not part of the record — the readout is simply the fastest clear so far.
@@ -293,8 +295,13 @@ const Minesweeper = ({ onBack }) => {
     setPhase('won');
     setElapsed(seconds);
     setIsRecord(submitBest(seconds));
+    // endWin only ever runs from revealAt, i.e. from a click or key handler — invoked once, which
+    // is the whole reason this file mirrors its state into refs instead of computing in updaters
+    // (see the ref block at the top). Any difficulty counts: the achievement is for a clean clear,
+    // and Beginner without a detonation is exactly that.
+    unlockAchievement('mines_master');
     play('win');
-  }, [commit, setPhase, play, stopClock, submitBest]);
+  }, [commit, setPhase, play, stopClock, submitBest, unlockAchievement]);
 
   const revealAt = useCallback((idx) => {
     const phase = statusRef.current;

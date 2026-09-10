@@ -1,279 +1,101 @@
 # Styling and Theming Guide
 
-Lumina OS uses a comprehensive theming system built on CSS custom properties and Tailwind CSS.
+Lumina OS is themed by the **Sarva Design Language (SDL)** — a role-based system where components
+never name a colour, only its *role*. Sixteen colorways (fifteen SDL, plus the preserved pre-SDL
+"Lumina Neon" pack) swap every role at once, and ten of the sixteen are light.
 
-## Color System
+## The role vocabulary
 
-### CSS Custom Properties
-
-The OS uses RGB format for colors to enable opacity support via `rgba()`:
+Colour lives in CSS custom properties on `documentElement`, written by exactly one module,
+`src/theme/applyTheme.js`.
 
 ```css
-:root {
-  /* Primary accent colors (RGB for alpha support) */
-  --os-primary-rgb: 204, 151, 255;    /* Purple - main accent */
-  --os-secondary-rgb: 0, 210, 253;    /* Cyan - secondary accent */
-  --os-tertiary-rgb: 0, 245, 160;     /* Green - tertiary accent */
-  
-  /* Utility colors */
-  --blue-500-rgb: 59, 130, 246;
-  --red-500-rgb: 239, 68, 68;
-  --yellow-500-rgb: 234, 179, 8;
-  
-  /* Surfaces */
-  --os-background: #060e20;
-  --os-surface: #060e20;
-  --os-surface-container-low: #091328;
-  --os-surface-container-high: #141f38;
-  --os-surface-container-highest: #192540;
-  
-  /* Text colors */
-  --os-on-surface: #dee5ff;
-  --os-on-surface-variant: #a3aac4;
-  --os-outline-rgb: 109, 117, 140;
-  
-  /* Dimmed accent variants */
-  --os-primary-dim: #9c48ea;
-  --os-secondary-dim: #00c3eb;
-  
-  /* Background gradient */
-  --desktop-gradient: radial-gradient(circle at 50% -20%, #1a103c 0%, #060e20 60%, #030712 100%);
-}
+/* surfaces, back to front */
+--sdl-plane      /* the page itself — undertoned, never paper-default (law 1) */
+--sdl-surface    /* panels and cards sitting on the plane */
+--sdl-sunken     /* wells and insets */
+--sdl-chart      /* chart wells, which must demarcate (law 4) */
+
+/* ink */
+--sdl-ink        /* primary text */
+--sdl-sec        /* secondary text */
+--sdl-sunk-sec   /* secondary text on a sunken surface */
+
+/* accent — chrome speaks quietly (law 2) */
+--sdl-accent
+--sdl-soft       /* accent-tinted fill */
+--sdl-aink       /* accent-toned ink, lightened + desaturated before bolding (law 3) */
+--sdl-on-accent  /* ink that reads ON an accent fill */
+
+/* data — data speaks sharply (law 2) */
+--sdl-bar-a
+--sdl-bar-b
+
+/* status — completed is neutral grey, never green beside red (law 10) */
+--sdl-alert  --sdl-warn  --sdl-done
 ```
 
-### Accent Color Schemes
+Every colour role emits **two** variables: a hex (`--sdl-accent`) for gradients, shadows, SVG,
+canvas and WebGL, and a space-separated RGB triple (`--sdl-accent-rgb`) for Tailwind's alpha syntax.
 
-The application supports 4 accent color presets:
+### Why the triples are space-separated
 
-| Theme | Primary | Secondary | Tertiary |
-|-------|---------|-----------|----------|
-| `purple` (default) | `204, 151, 255` | `0, 210, 253` | `0, 245, 160` |
-| `cyan` | `0, 210, 253` | `204, 151, 255` | `255, 104, 240` |
-| `magenta` | `255, 104, 240` | `204, 151, 255` | `0, 210, 253` |
-| `green` | `0, 245, 160` | `0, 210, 253` | `204, 151, 255` |
+This is load-bearing, not style. Tailwind emits `rgb(var(--sdl-accent-rgb) / <alpha-value>)`. With a
+**comma** triple that resolves to `rgb(204, 151, 255 / 1)`, which matches neither the legacy nor the
+modern `rgb()` grammar — so the browser drops the declaration and the class renders transparent.
 
-```javascript
-// From App.jsx
-const accentColorsMap = {
-  purple:  { primary: '204, 151, 255', secondary: '0, 210, 253', tertiary: '0, 245, 160' },
-  cyan:    { primary: '0, 210, 253', secondary: '204, 151, 255', tertiary: '255, 104, 240' },
-  magenta: { primary: '255, 104, 240', secondary: '204, 151, 255', tertiary: '0, 210, 253' },
-  green:   { primary: '0, 245, 160', secondary: '0, 210, 253', tertiary: '204, 151, 255' },
-};
-```
+That was a real bug in this codebase: 778 token call sites rendered invisible, including
+`.bg-os-primary` with no opacity modifier at all. It is why the app once carried 925 white/black
+literals and 327 hardcoded hexes — they were *compensation* for a token layer that silently did
+nothing.
 
-## Tailwind Configuration
+Consequence: hand-written CSS must use the **slash** form, `rgb(var(--sdl-accent-rgb) / .3)`. The
+legacy `rgba(var(--x), .3)` form only works with comma triples and is invalid everywhere now. The
+two forms cannot coexist on one variable.
 
-### Custom Colors
-
-The Tailwind config extends the default theme with OS-specific colors:
-
-```javascript
-// tailwind.config.js
-colors: {
-  os: {
-    background: "var(--os-background)",
-    surface: "var(--os-surface)",
-    surfaceContainerLow: "var(--os-surface-container-low)",
-    surfaceContainerHigh: "var(--os-surface-container-high)",
-    surfaceContainerHighest: "var(--os-surface-container-highest)",
-    
-    // RGB colors support opacity via / modifier
-    primary: "rgb(var(--os-primary-rgb) / <alpha-value>)",
-    secondary: "rgb(var(--os-secondary-rgb) / <alpha-value>)",
-    tertiary: "rgb(var(--os-tertiary-rgb) / <alpha-value>)",
-    
-    // Dimmer variants
-    primaryDim: "var(--os-primary-dim)",
-    secondaryDim: "var(--os-secondary-dim)",
-    
-    // Text colors
-    onSurface: "var(--os-on-surface)",
-    onSurfaceVariant: "var(--os-on-surface-variant)",
-    outline: "rgb(var(--os-outline-rgb) / <alpha-value>)",
-  }
-}
-```
-
-### Font Configuration
-
-```javascript
-fontFamily: {
-  sans: ['Inter', 'sans-serif'],
-  display: ['Manrope', 'sans-serif'],
-}
-```
-
-## Usage Examples
-
-### Basic Colors
+## Usage
 
 ```jsx
-// Solid colors
-<div className="text-os-primary">Primary text</div>
-<div className="bg-os-surface">Surface background</div>
+/* Tailwind classes — the normal path */
+<div className="bg-sdl-surface text-sdl-ink" />
+<div className="bg-sdl-accent/20 border border-hairline/10" />
+<span className="text-sdl-alert">Delete</span>
 
-// With opacity (using Tailwind's / modifier)
-<div className="bg-os-primary/20">20% opacity primary</div>
-<div className="text-os-secondary/80">80% opacity secondary text</div>
-<div className="border-os-outline/50">50% opacity border</div>
+/* CSS variables — for gradients, shadows, canvas and inline styles */
+<div style={{ background: 'var(--sdl-soft)', borderRadius: 'var(--sdl-radius)' }} />
 ```
 
-### Dynamic Theming
+### Mode-aware helpers
 
-```jsx
-// App.jsx injects CSS variables based on active accent
-<div style={{
-  '--os-primary-rgb': currentAccent.primary,
-  '--os-secondary-rgb': currentAccent.secondary,
-  '--os-tertiary-rgb': currentAccent.tertiary,
-  '--os-accent-intensity': accentIntensity / 100,
-  filter: `brightness(${brightness}%)`,
-}}>
-```
+`--sdl-veil` and `--sdl-hairline` invert with the mode: white over a dark plane, the colorway's own
+**ink** over a light one. So `bg-veil/5` lifts in dark mode and deepens in light with no branching.
+`bg-scrim` is the modal backdrop — black at 55% in dark, ink at 28% in light.
 
-## Utility Classes
+## Modes, density and motion
 
-### Glassmorphism Panel
+Mode is **derived**, never stored: SDL law 7 says temperature decides it, so a warm or earthy
+colorway lives light and a cool or deep one lives dark. `applyTheme` stamps the result as
+`data-mode` on the root, alongside `data-theme`, `data-colorway`, `data-grammar`, `data-density`,
+`data-glass` and `data-motion`. `src/theme/grammar.css` keys off those attributes.
 
-```css
-.glass-panel {
-  @apply bg-os-surfaceContainerHighest/50 backdrop-blur-2xl 
-         border border-os-outline/10 shadow-2xl;
-}
-```
+## Brightness and atmosphere
 
-### Custom Scrollbar
+Brightness is a fixed `body::after` scrim driven by `--os-dim`, **not** a CSS `filter`. A filter on
+the app root makes that element a containing block for every `position: fixed` descendant — the
+taskbar, control centre, spotlight and toasts all broke. A scrim has no such side effect, composites
+more cheaply, and also covers the boot and login screens.
 
-```css
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  @apply bg-os-outline/20 rounded-full border border-white/5;
-  backdrop-filter: blur(4px);
-}
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-os-primary/40;
-}
-```
+The "Atmosphere" slider drives `--sdl-atmo`, which multiplies wash alpha, motif opacity and glow
+alpha together — law 8's "atmosphere is whisper-quiet" on one control.
 
-### Card Glow Effect
+## Best practices
 
-```css
-.os-card-glow {
-  @apply relative overflow-hidden transition-all duration-300;
-}
-.os-card-glow::after {
-  content: '';
-  @apply absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none;
-  background: radial-gradient(circle at center, rgb(var(--os-primary-rgb) / 0.15), transparent);
-}
-.os-card-glow:hover::after {
-  @apply opacity-100;
-}
-```
+1. **Reach for a role, never a hex.** If no role fits, the missing thing is a role, not a literal.
+2. **Use the slash form** for alpha in hand-written CSS: `rgb(var(--sdl-x-rgb) / .3)`.
+3. **Status colour carries meaning** — `sdl-alert` / `sdl-warn` / `sdl-done`, not stock red/green.
+4. **Content is exempt.** Brand logos, third-party palettes and gamification badges keep their own
+   colour; see `scripts/denylist.mjs`, which records the reason for each exemption.
+5. **Only `applyTheme.js` writes theme state to the DOM.** Everything else reads.
 
-### Hide Scrollbar
-
-```css
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-```
-
-## Light Mode Support
-
-A light mode class is defined but not currently implemented:
-
-```css
-.light-mode {
-  --os-background: #f8fafc;
-  --os-surface: #ffffff;
-  --os-surface-container-low: #f1f5f9;
-  --os-surface-container-high: #e2e8f0;
-  --os-surface-container-highest: #cbd5e1;
-  
-  --os-primary-rgb: 124, 58, 237;
-  --os-secondary-rgb: 14, 165, 233;
-  --os-tertiary-rgb: 5, 150, 105;
-  
-  --os-on-surface: #0f172a;
-  --os-on-surface-variant: #475569;
-  --os-outline-rgb: 148, 163, 184;
-  
-  --desktop-gradient: radial-gradient(circle at 50% -20%, #e0e7ff 0%, #f8fafc 60%, #f1f5f9 100%);
-}
-```
-
-To enable: Toggle `document.body.classList.add('light-mode')`
-
-## Mobile Optimizations
-
-```css
-@media (max-width: 768px) {
-  .touch-hit-area {
-    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
-  }
-  
-  button, .cursor-pointer {
-    @apply active:scale-95 transition-transform;
-  }
-}
-```
-
-## Context Menu Styling
-
-React-contexify is styled for OS theme:
-
-```css
-.os-context-menu.contexify {
-  background: rgba(14, 14, 22, 0.75) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 1rem !important;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.06) !important;
-}
-```
-
-## Best Practices
-
-1. **Always use RGB format** for colors that need opacity support
-2. **Use Tailwind's `/` modifier** for opacity: `bg-os-primary/20`
-3. **Prefer utility classes** over inline styles for consistency
-4. **Use CSS variables** for values that change dynamically (themes)
-5. **Use `backdrop-blur`** sparingly - it impacts performance
-
-## Changing Themes Programmatically
-
-```javascript
-import useOSStore from './store/osStore';
-
-function ThemeSwitcher() {
-  const { activeAccent, setActiveAccent } = useOSStore();
-  
-  const themes = ['purple', 'cyan', 'magenta', 'green'];
-  
-  return (
-    <div>
-      {themes.map(theme => (
-        <button
-          key={theme}
-          onClick={() => setActiveAccent(theme)}
-          className={activeAccent === theme ? 'ring-2' : ''}
-        >
-          {theme}
-        </button>
-      ))}
-    </div>
-  );
-}
-```
+SDL is authored by **Aditya Sarva**. Settings > Design Language documents it live, with measurements
+computed from the running theme rather than transcribed.

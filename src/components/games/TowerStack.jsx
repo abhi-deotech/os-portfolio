@@ -41,6 +41,9 @@ const GRAVITY = 900;         // px/s² on the sliced-off pieces
 const HUE_STEP = 0.055;      // fraction of the accent ramp travelled per storey
 const POINTS = 10;
 const COMBO_CAP = 5;
+// Storeys stacked (base excluded) that earn `tower_pro`. Must agree with the achievement copy in
+// src/config/achievements.js ("15 blocks tall") — the number lives there in prose and here in code.
+const TOWER_PRO_HEIGHT = 15;
 
 /** Only `rgb(r g b …)` is parsed. canvasPalette's hex fallbacks are used verbatim instead of
  *  interpolated, so a themeless document degrades to a flat accent rather than to garbage. */
@@ -118,6 +121,7 @@ const TowerStack = ({ onBack }) => {
   const [best, submitBest] = useHighScore('towerstack', 'max');
   const colorway = useOSStore((s) => s.colorway);
   const accentIntensity = useOSStore((s) => s.accentIntensity);
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
 
   const [score, setScore] = useState(0);
   const [height, setHeight] = useState(0);
@@ -330,6 +334,12 @@ const TowerStack = ({ onBack }) => {
     g.blocks.push({ x: nx, w: nw });
     const storey = g.blocks.length - 1;
 
+    // `blocks[0]` is the base, so after the Nth successful placement `storey === N` — this line
+    // IS the moment the 15th block lands. `drop` is a pointer/key handler, invoked once (see the
+    // header comment: nothing in this file computes inside a setState updater), and the strict
+    // equality means later storeys of the same run do not even pay the no-op store call.
+    if (storey === TOWER_PRO_HEIGHT) unlockAchievement('tower_pro');
+
     let gained = POINTS;
     if (perfect) {
       comboRef.current += 1;
@@ -356,7 +366,7 @@ const TowerStack = ({ onBack }) => {
       speed: Math.min(MAX_SPEED, BASE_SPEED + SPEED_GROWTH * next),
       i: next,
     };
-  }, [play, endRun]);
+  }, [play, endRun, unlockAchievement]);
 
   const step = useCallback(() => {
     const g = worldRef.current;

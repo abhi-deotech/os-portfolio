@@ -1,6 +1,7 @@
 import {
   Trophy, Star, Terminal as TermIcon, Edit3, Search, Activity, Zap, Gamepad2,
   Music, Palette, Gauge, Book, Share2, Brain, Grid3x3, Hash, Layers, Timer,
+  Globe, ListMusic, Blocks, Bomb, Grid2x2, Joystick,
 } from 'lucide-react';
 
 /**
@@ -41,16 +42,28 @@ export const ACHIEVEMENTS = [
 
   // — Media & social —
   { id: 'audiophile', title: 'Music Lover', desc: 'Played a track in the Music app.', icon: Music, hue: 340 },
+  { id: 'curator', title: 'Curator', desc: 'Created your first playlist in Music.', icon: ListMusic, hue: 300 },
   { id: 'deep_thinker', title: 'Deep Thinker', desc: 'Engaged in a detailed conversation with Lumina AI.', icon: Brain, hue: 256 },
   { id: 'socialite', title: 'Well Connected', desc: 'Visited my LinkedIn or GitHub profile.', icon: Share2, hue: 206 },
 
-  // — Games — the five below were fired by the games but registered nowhere.
+  // — Browser —
+  { id: 'netizen', title: 'Netizen', desc: 'Surfed to a page in Flow-Net.', icon: Globe, hue: 216 },
+  { id: 'tab_hoarder', title: 'Tab Hoarder', desc: 'Kept three tabs open at once in Flow-Net.', icon: Layers, hue: 216 },
+
+  // — Games — the five after `gamer` were fired by the games but registered nowhere; the last
+  // four exist so every built-in game has something to earn (Breakout, Minesweeper, Tower Stack
+  // and the arcade shipped with `achievements: []`). Icons and hues match each game's own
+  // registry entry, so a trophy is recognizably its game at a glance.
   { id: 'gamer', title: 'NexusX Explorer', desc: 'Launched your first game in the Game Center.', icon: Gamepad2, hue: 34 },
   { id: 'snake_pro', title: 'Snake Charmer', desc: 'Scored 100 or more in Snake.', icon: Gamepad2, hue: 145 },
   { id: '2048_master', title: 'Merge King', desc: 'Reached the 2048 tile.', icon: Layers, hue: 56 },
   { id: 'sudoku_pro', title: 'Grandmaster', desc: 'Completed a Sudoku board.', icon: Hash, hue: 176 },
   { id: 'memory_master', title: 'Total Recall', desc: 'Cleared a Memory Match board.', icon: Grid3x3, hue: 122 },
   { id: 'trivia_expert', title: 'Quick Wit', desc: 'Answered 10 trivia questions correctly.', icon: Timer, hue: 300 },
+  { id: 'breakout_pro', title: 'Demolition Crew', desc: 'Cleared every brick in Breakout.', icon: Blocks, hue: 24 },
+  { id: 'mines_master', title: 'Bomb Squad', desc: 'Cleared a Minesweeper board without a detonation.', icon: Bomb, hue: 264 },
+  { id: 'tower_pro', title: 'High Riser', desc: 'Stacked a tower 15 blocks tall in Tower Stack.', icon: Grid2x2, hue: 86 },
+  { id: 'retro_gamer', title: 'Time Traveler', desc: 'Booted DOOM in the Retro Arcade.', icon: Joystick, hue: 34 },
 ];
 
 export const ACHIEVEMENT_BY_ID = Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, a]));

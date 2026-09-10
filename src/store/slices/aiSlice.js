@@ -2,6 +2,10 @@ export const createAiSlice = (set, get) => ({
   aiWorker: null,
   isAiReady: false,
   isAiLoading: false,
+  // Which backend the worker actually resolved to — `{ device, threads, cores }`. Recorded rather
+  // than assumed: WebGPU is requested when an adapter answers, so the answer varies by machine,
+  // and "did it use the GPU" is not a question a console warning can settle after the fact.
+  aiBackend: null,
 
   initAi: () => {
     if (get().aiWorker) return;
@@ -12,9 +16,9 @@ export const createAiSlice = (set, get) => ({
     });
 
     worker.onmessage = (e) => {
-      const { type, error } = e.data;
+      const { type, error, device, threads, cores } = e.data;
       if (type === 'ready') {
-        set({ isAiReady: true, isAiLoading: false });
+        set({ isAiReady: true, isAiLoading: false, aiBackend: { device, threads, cores } });
       } else if (type === 'error') {
         console.error('AI Worker Error:', error);
         set({ isAiLoading: false });

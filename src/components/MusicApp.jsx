@@ -1,31 +1,39 @@
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, List, Heart, Repeat, Shuffle, Music, ChevronLeft, Search, TrendingUp, Radio, Library, Home, Maximize2, Minimize2, Check } from 'lucide-react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { List, Music, ChevronLeft, Search, Radio, Library, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import Visualizer from './Visualizer';
-import { MUSIC_DATA, CATEGORIES } from '../data/musicData';
+import { MUSIC_DATA } from '../data/musicData';
 import { useColorway } from '../theme/useColorway';
-import { getArtistBio, getSimilarTracks, getTopTracks } from '../utils/musicApi';
+import { getArtistBio, getSimilarTracks } from '../utils/musicApi';
+import useYouTubePlayer from './music/useYouTubePlayer';
+import { resolveNextTrack, resolvePrevTrack, trackById, upcomingFromContext } from './music/playback';
+import HomeView from './music/HomeView';
+import ExploreView from './music/ExploreView';
+import LibraryView from './music/LibraryView';
+import HistoryView from './music/HistoryView';
+import PlayerBar from './music/PlayerBar';
+import FullscreenPlayer from './music/FullscreenPlayer';
+import UpNextPanel from './music/UpNextPanel';
 
+/**
+ * Composing entry for the Music app. The moving parts live in src/components/music/:
+ * the YouTube engine in useYouTubePlayer, playback-order rules in playback.js (pure,
+ * harness-tested), and one file per view. This component owns what genuinely spans
+ * them — the playback context, the shuffle bag, and the next/prev handlers.
+ */
 const MusicApp = () => {
-  const { 
-    music, 
-    setMusicIsPlaying, 
-    setMusicTrack, 
-    setMusicCurrentTime, 
-    toggleLikeSong,
-    setMusicView,
-    toggleShuffle,
-    setRepeatMode,
-    unlockAchievement,
-    setLastFmArtistBio,
-    setLastFmSimilarTracks,
-    setLastFmTopTracks
-  } = useOSStore();
-
-  const playerRef = useRef(null);
-  const containerRef = useRef(null);
+  // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
+  // every state change anywhere in the OS, not just the fields it reads.
+  const music = useOSStore((s) => s.music);
+  const setMusicIsPlaying = useOSStore((s) => s.setMusicIsPlaying);
+  const setMusicTrack = useOSStore((s) => s.setMusicTrack);
+  const setMusicCurrentTime = useOSStore((s) => s.setMusicCurrentTime);
+  const setMusicView = useOSStore((s) => s.setMusicView);
+  const dequeue = useOSStore((s) => s.dequeue);
+  const setLastFmArtistBio = useOSStore((s) => s.setLastFmArtistBio);
+  const setLastFmSimilarTracks = useOSStore((s) => s.setLastFmSimilarTracks);
 
   // Canvas, so it cannot read a CSS variable — a sanctioned useColorway consumer. The old ternary
   // chain tested `activeAccent === 'blue'`, a value the accent preset never took, so the visualizer
@@ -39,25 +47,27 @@ const MusicApp = () => {
 
   const isMobile = useIsMobile();
   const [showSidebar, setShowSidebar] = useState(!isMobile);
-  const [volume, setVolume] = useState(music.volume * 100);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [upNextOpen, setUpNextOpen] = useState(false);
+  // The shuffle bag ({ sig, ids }) — the not-yet-played remainder of a shuffled
+  // permutation of the context. Session state, deliberately not persisted: a reload
+  // starting a fresh cycle costs nothing, and the resolver rebuilds on demand.
+  const [shuffleBag, setShuffleBag] = useState({ sig: '', ids: [] });
 
-  // Import music APIs dynamically to avoid top-level await issues if any, or just import at top
-  // Actually I will import at top.
-
+  // What the active view is showing. Doubles as the default playback context below —
+  // clicking a track in a view means "play from what I'm looking at".
   const displayPlaylist = useMemo(() => {
     let list = MUSIC_DATA;
     if (music.activeView === 'Library') {
-      list = MUSIC_DATA.filter(t => music.likedSongs?.includes(t.id));
+      list = MUSIC_DATA.filter((t) => music.likedSongs?.includes(t.id));
     } else if (music.activeView === 'Explore') {
       list = MUSIC_DATA;
     }
-    
-    return list.filter(track => 
-      track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      track.artist.toLowerCase().includes(searchQuery.toLowerCase())
+    return list.filter(
+      (track) =>
+        track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        track.artist.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [music.activeView, music.likedSongs, searchQuery]);
 
@@ -68,202 +78,103 @@ const MusicApp = () => {
     setShowSidebar(!isMobile);
   }
 
-  const handleNext = useCallback(() => {
-    if (music.repeatMode === 'one') {
-      playerRef.current?.seekTo(0);
-      playerRef.current?.playVideo();
+  // The context Next/Prev resolve inside: pinned by an explicit Play All
+  // (music.playContext), else whatever list the active view shows.
+  const contextIds = useMemo(() => {
+    if (music.playContext?.ids?.length) return music.playContext.ids;
+    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
+    return list.map((t) => t.id);
+  }, [music.playContext, displayPlaylist]);
+
+  // handleNext is defined before the engine hook (it is the hook's onEnded), so the
+  // one engine call it needs — repeat-one's restart — goes through a ref filled in
+  // after the hook runs.
+  const restartRef = useRef(() => {});
+
+  const handleNext = () => {
+    const res = resolveNextTrack({
+      repeatMode: music.repeatMode,
+      shuffle: music.shuffle,
+      queue: music.queue,
+      bag: shuffleBag,
+      contextIds,
+      currentId: music.currentTrack.id,
+    });
+    if (res.restart) {
+      restartRef.current();
       return;
     }
-
-    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
-    let nextTrack;
-
-    if (music.shuffle) {
-      const otherTracks = list.filter(t => t.id !== music.currentTrack.id);
-      nextTrack = otherTracks[Math.floor(Math.random() * otherTracks.length)];
+    if (res.queue !== music.queue) dequeue(0);
+    if (res.bag !== shuffleBag) setShuffleBag(res.bag);
+    const next = res.trackId ? trackById(res.trackId) : null;
+    if (next) {
+      setMusicTrack(next, music.playContext);
     } else {
-      const idx = list.findIndex(t => t.id === music.currentTrack.id);
-      if (idx === list.length - 1) {
-        if (music.repeatMode === 'all') nextTrack = list[0];
-        else return; // End of playlist
-      } else {
-        nextTrack = list[idx + 1];
-      }
+      // Finite context ran out with repeat off. The old code just returned, leaving
+      // isPlaying true — a pause button lying about an engine that had ENDED.
+      setMusicIsPlaying(false);
     }
+  };
 
-    if (nextTrack) setMusicTrack(nextTrack);
-  }, [displayPlaylist, music.currentTrack.id, music.repeatMode, music.shuffle, setMusicTrack]);
+  const { containerRef, seekTo, restart } = useYouTubePlayer({ onEnded: handleNext });
+  useEffect(() => {
+    restartRef.current = restart;
+  });
 
-  const handlePrev = useCallback(() => {
+  const handlePrev = () => {
+    // More than 5s in, Prev restarts the track instead of leaving it.
     if (music.currentTime > 5) {
-      playerRef.current?.seekTo(0);
+      seekTo(0);
       return;
     }
-
-    const list = displayPlaylist.length > 0 ? displayPlaylist : MUSIC_DATA;
-    const idx = list.findIndex(t => t.id === music.currentTrack.id);
-    const prevTrack = idx > 0 ? list[idx - 1] : list[list.length - 1];
-    setMusicTrack(prevTrack);
-  }, [displayPlaylist, music.currentTrack.id, music.currentTime, setMusicTrack]);
-
-  useEffect(() => {
-    // Load YouTube IFrame API
-    if (!window.YT) {
-      if (!document.getElementById('youtube-iframe-api')) {
-        const tag = document.createElement('script');
-        tag.id = 'youtube-iframe-api';
-        tag.src = "https://www.youtube.com/iframe_api";
-        document.head.appendChild(tag);
-      }
-    }
-
-    const createPlayer = () => {
-      if (playerRef.current || !window.YT || !window.YT.Player || !containerRef.current) return;
-      
-      try {
-        // Clear container to avoid duplicate iframes
-        containerRef.current.innerHTML = '';
-
-        // Create an iframe and set credentialless so that it can load YouTube in COEP context
-        const iframe = document.createElement('iframe');
-        iframe.id = 'yt-player-iframe';
-        iframe.credentialless = true;
-        iframe.setAttribute('credentialless', 'true');
-        iframe.style.width = '1px';
-        iframe.style.height = '1px';
-        
-        // Construct the YouTube embed URL with options
-        const origin = window.location.origin;
-        iframe.src = `https://www.youtube-nocookie.com/embed/${music.currentTrack.youtubeId}?enablejsapi=1&origin=${encodeURIComponent(origin)}&autoplay=0&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&playsinline=1`;
-        
-        containerRef.current.appendChild(iframe);
-
-        playerRef.current = new window.YT.Player(iframe, {
-          events: {
-            onReady: (event) => {
-              event.target.setVolume(volume);
-              if (music.isPlaying) event.target.playVideo();
-            },
-            onStateChange: (event) => {
-              if (event.data === window.YT.PlayerState.ENDED) {
-                handleNext();
-              }
-              if (event.data === window.YT.PlayerState.PLAYING) {
-                setMusicIsPlaying(true);
-                unlockAchievement('audiophile');
-              }
-              if (event.data === window.YT.PlayerState.PAUSED) {
-                setMusicIsPlaying(false);
-              }
-            },
-            onError: (e) => {
-              console.error('YouTube Player Error:', e.data);
-              if ([2, 5, 100, 101, 150].includes(e.data)) {
-                handleNext();
-              }
-            }
-          }
-        });
-      } catch (err) {
-        console.warn('Failed to initialize YouTube player:', err);
-      }
-    };
-
-    // Move handleNext into a ref-like variable if we need it in the initial effect
-    // OR just use a stable handleNext (which it is now with useCallback)
-    // But we need to handle the circular dependency or just use the stable callback.
-    
-    if (window.YT && window.YT.Player) {
-      createPlayer();
-    } else {
-      const previousCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (previousCallback) previousCallback();
-        createPlayer();
-      };
-    }
-  }, [handleNext, music.currentTrack.youtubeId, music.isPlaying, setMusicIsPlaying, unlockAchievement, volume]);
-
-  useEffect(() => {
-    if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
-      const state = playerRef.current.getPlayerState?.();
-      if (music.isPlaying) {
-        if (state !== window.YT?.PlayerState?.PLAYING) {
-          playerRef.current.playVideo();
-        }
-      } else {
-        if (state !== window.YT?.PlayerState?.PAUSED) {
-          playerRef.current.pauseVideo();
-        }
-      }
-    }
-  }, [music.isPlaying]);
-
-  useEffect(() => {
-    if (playerRef.current && playerRef.current.loadVideoById) {
-      playerRef.current.loadVideoById(music.currentTrack.youtubeId);
-    }
-    
-    // Fetch Last.fm Data for current track
-    const fetchTrackData = async () => {
-      const bio = await getArtistBio(music.currentTrack.artist.split(',')[0]);
-      if (bio) setLastFmArtistBio(bio);
-      
-      const similar = await getSimilarTracks(music.currentTrack.artist.split(',')[0], music.currentTrack.title);
-      if (similar) setLastFmSimilarTracks(similar);
-    };
-    fetchTrackData();
-  }, [music.currentTrack.id, music.currentTrack.youtubeId, setLastFmArtistBio, setLastFmSimilarTracks]);
-
-  useEffect(() => {
-    if (music.activeView === 'History' && (!music.lastFmData?.topTracks || music.lastFmData.topTracks.length === 0)) {
-      const fetchHistory = async () => {
-        setIsLoadingHistory(true);
-        const tracks = await getTopTracks(20);
-        setLastFmTopTracks(tracks);
-        setIsLoadingHistory(false);
-      };
-      fetchHistory();
-    }
-  }, [music.activeView, music.lastFmData?.topTracks, setLastFmTopTracks]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (playerRef.current && playerRef.current.getCurrentTime) {
-        setMusicCurrentTime(playerRef.current.getCurrentTime());
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [setMusicCurrentTime]);
-
-
-  const handleVolumeChange = (e) => {
-    const newVol = parseInt(e.target.value);
-    setVolume(newVol);
-    if (playerRef.current && playerRef.current.setVolume) {
-      playerRef.current.setVolume(newVol);
-    }
+    const prevId = resolvePrevTrack({ contextIds, currentId: music.currentTrack.id });
+    const prev = prevId ? trackById(prevId) : null;
+    if (prev) setMusicTrack(prev, music.playContext);
   };
 
   const handleSeek = (e) => {
-    const seekTo = (parseFloat(e.target.value) / 100) * music.currentTrack.duration;
-    if (playerRef.current && playerRef.current.seekTo) {
-      playerRef.current.seekTo(seekTo, true);
-      setMusicCurrentTime(seekTo);
-    }
+    const target = (parseFloat(e.target.value) / 100) * music.currentTrack.duration;
+    seekTo(target);
+    setMusicCurrentTime(target);
   };
 
-  const formatTime = (time) => {
-    const min = Math.floor(time / 60);
-    const sec = Math.floor(time % 60);
-    return `${min}:${sec.toString().padStart(2, '0')}`;
-  };
+  // Last.fm enrichment for the fullscreen view. Keyed on the identity fields it
+  // actually uses — depending on the track OBJECT would refetch on every duration
+  // reconciliation, since syncMusicTrack builds a new object.
+  const { artist: currentArtist, title: currentTitle } = music.currentTrack;
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const primaryArtist = currentArtist.split(',')[0];
+      const bio = await getArtistBio(primaryArtist);
+      if (!cancelled && bio) setLastFmArtistBio(bio);
+      const similar = await getSimilarTracks(primaryArtist, currentTitle);
+      if (!cancelled && similar) setLastFmSimilarTracks(similar);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentArtist, currentTitle, setLastFmArtistBio, setLastFmSimilarTracks]);
 
-  const cycleRepeatMode = () => {
-    const modes = ['none', 'all', 'one'];
-    const currentIdx = modes.indexOf(music.repeatMode);
-    setRepeatMode(modes[(currentIdx + 1) % modes.length]);
-  };
+  const upcoming = useMemo(
+    () =>
+      upcomingFromContext({
+        contextIds,
+        currentId: music.currentTrack.id,
+        repeatMode: music.repeatMode,
+      })
+        .map(trackById)
+        .filter(Boolean),
+    [contextIds, music.currentTrack.id, music.repeatMode]
+  );
+
+  const contextLabel =
+    music.playContext?.name ||
+    (music.activeView === 'Library'
+      ? 'Liked Songs'
+      : searchQuery
+        ? `results for "${searchQuery}"`
+        : 'All Tracks');
 
   return (
     <div className="flex h-full bg-sdl-plane text-sdl-ink overflow-hidden rounded-b-2xl relative">
@@ -271,7 +182,7 @@ const MusicApp = () => {
       <div className="absolute inset-0 bg-gradient-to-br from-os-primary/5 to-transparent pointer-events-none" />
       {/* Sidebar */}
       {(showSidebar || !isMobile) && (
-        <motion.div 
+        <motion.div
           initial={isMobile ? { x: -300 } : false}
           animate={{ x: 0 }}
           className={`${isMobile ? 'absolute inset-y-0 left-0 z-50 w-64' : 'w-64'} bg-veil/[0.06] md:bg-veil/[0.03] border-r border-hairline/5 p-6 flex flex-col gap-8 h-full`}
@@ -287,16 +198,16 @@ const MusicApp = () => {
               </button>
             )}
           </div>
-          
+
           <nav className="flex flex-col gap-2">
             {[
               { id: 'Home', icon: Home },
               { id: 'Explore', icon: Search },
               { id: 'Library', icon: Library },
-              { id: 'History', icon: Radio }
-            ].map(item => (
-              <button 
-                key={item.id} 
+              { id: 'History', icon: Radio },
+            ].map((item) => (
+              <button
+                key={item.id}
                 onClick={() => setMusicView(item.id)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left font-bold text-sm ${music.activeView === item.id ? 'bg-os-primary/10 text-os-primary shadow-sm' : 'hover:bg-veil/5 text-os-onSurfaceVariant hover:text-sdl-ink'}`}
               >
@@ -321,509 +232,65 @@ const MusicApp = () => {
           <Visualizer isPlaying={music.isPlaying} accentColor={vizAccent} />
         </div>
         <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-os-primary/10 to-transparent pointer-events-none" />
-        
+
         <div className="flex-grow overflow-y-auto p-4 md:p-8 z-10 custom-scrollbar relative">
           {isMobile && (
-            <button onClick={() => setShowSidebar(true)} className="absolute top-4 left-4 p-2 bg-veil/[0.06] rounded-xl border border-hairline/10 z-20">
+            <button
+              onClick={() => setShowSidebar(true)}
+              className="absolute top-4 left-4 p-2 bg-veil/[0.06] rounded-xl border border-hairline/10 z-20"
+            >
               <List size={20} />
             </button>
           )}
 
           <AnimatePresence mode="wait">
-            {music.activeView === 'Home' && (
-              <motion.div 
-                key="home"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="space-y-10"
-              >
-                <div className="relative group">
-                   <div className="absolute inset-0 bg-gradient-to-r from-os-primary/20 to-os-secondary/20 rounded-3xl blur-xl group-hover:blur-2xl transition-all opacity-50" />
-                   <div className="relative p-8 md:p-12 rounded-3xl border border-hairline/5 bg-veil/[0.04] backdrop-blur-xl overflow-hidden">
-                      <div className="absolute right-0 top-0 w-64 h-64 bg-os-primary/10 blur-[100px]" />
-                      <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center">
-                         <motion.img 
-                            whileHover={{ scale: 1.05 }}
-                            src={MUSIC_DATA[0].cover} 
-                            className="w-48 h-48 md:w-64 md:h-64 rounded-2xl shadow-2xl border border-hairline/10"
-                         />
-                         <div className="text-center md:text-left">
-                            <span className="text-xs font-black uppercase tracking-[0.3em] text-os-primary mb-4 block">Recommended for you</span>
-                            <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-4">{MUSIC_DATA[0].title}</h2>
-                            <p className="text-os-onSurfaceVariant font-bold text-lg mb-8">{MUSIC_DATA[0].artist}</p>
-                            <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                               <button onClick={() => setMusicTrack(MUSIC_DATA[0])} className="px-8 py-3 rounded-full bg-os-primary text-sdl-onAccent font-black hover:scale-105 active:scale-95 transition-all">Play Now</button>
-                               <button onClick={() => toggleLikeSong(MUSIC_DATA[0].id)} className="px-8 py-3 rounded-full bg-veil/5 border border-hairline/10 font-bold hover:bg-veil/10 transition-all flex items-center gap-2">
-                                  <Heart size={18} fill={music.likedSongs?.includes(MUSIC_DATA[0].id) ? 'currentColor' : 'none'} className={music.likedSongs?.includes(MUSIC_DATA[0].id) ? 'text-os-primary' : ''} />
-                                  {music.likedSongs?.includes(MUSIC_DATA[0].id) ? 'Saved' : 'Save to Library'}
-                               </button>
-                            </div>
-                         </div>
-                      </div>
-                   </div>
-                </div>
-
-                <div>
-                   <h3 className="text-2xl font-black tracking-tight mb-6 flex items-center gap-3">
-                      <TrendingUp className="text-os-primary" /> Trending Now
-                   </h3>
-                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {MUSIC_DATA.slice(1, 11).map(track => (
-                        <motion.div 
-                          key={track.id}
-                          whileHover={{ y: -5 }}
-                          className="group relative bg-veil/5 border border-hairline/5 rounded-2xl p-4 cursor-pointer hover:bg-veil/10 transition-all"
-                          onMouseDown={() => setMusicTrack(track)}
-                        >
-                           <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-hairline/10 shadow-lg">
-                              <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                              <div className="absolute inset-0 bg-scrim opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                 <div className="w-12 h-12 rounded-full bg-os-primary flex items-center justify-center text-sdl-onAccent">
-                                    <Play size={24} fill="currentColor" />
-                                 </div>
-                              </div>
-                           </div>
-                           <h4 className="font-bold text-sm truncate">{track.title}</h4>
-                           <p className="text-xs text-os-onSurfaceVariant truncate">{track.artist}</p>
-                        </motion.div>
-                      ))}
-                   </div>
-                </div>
-
-                <div>
-                   <h3 className="text-2xl font-black tracking-tight mb-6 flex items-center gap-3">
-                      <Radio className="text-os-secondary" /> New Releases
-                   </h3>
-                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      {MUSIC_DATA.slice(11, 21).map(track => (
-                        <motion.div 
-                          key={track.id}
-                          whileHover={{ y: -5 }}
-                          className="group relative bg-veil/5 border border-hairline/5 rounded-2xl p-4 cursor-pointer hover:bg-veil/10 transition-all"
-                          onMouseDown={() => setMusicTrack(track)}
-                        >
-                           <div className="relative aspect-square mb-4 rounded-xl overflow-hidden border border-hairline/10 shadow-lg">
-                              <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                              <div className="absolute inset-0 bg-scrim opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                 <div className="w-12 h-12 rounded-full bg-os-secondary flex items-center justify-center text-sdl-onAccent">
-                                    <Play size={24} fill="currentColor" />
-                                 </div>
-                              </div>
-                           </div>
-                           <h4 className="font-bold text-sm truncate">{track.title}</h4>
-                           <p className="text-xs text-os-onSurfaceVariant truncate">{track.artist}</p>
-                        </motion.div>
-                      ))}
-                   </div>
-                </div>
-              </motion.div>
-            )}
-
+            {music.activeView === 'Home' && <HomeView key="home" />}
             {music.activeView === 'Explore' && (
-              <motion.div 
-                key="explore"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.05 }}
-                className="space-y-10"
-              >
-                <div className="relative h-48 md:h-64 rounded-3xl overflow-hidden border border-hairline/10 group">
-                   <div className="absolute inset-0 bg-gradient-to-br from-purple-600/40 via-blue-500/40 to-cyan-400/40 group-hover:scale-110 transition-transform duration-700" />
-                   <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-scrim backdrop-blur-sm">
-                      <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4">Discover Infinite Beats</h2>
-                      <div className="relative w-full max-w-xl">
-                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-sdl-sec" size={20} />
-                         <input 
-                           type="text"
-                           placeholder="Search for tracks, artists, or genres..."
-                           value={searchQuery}
-                           onChange={(e) => setSearchQuery(e.target.value)}
-                           className="w-full bg-veil/10 border border-hairline/20 rounded-2xl pl-12 pr-4 py-4 text-lg font-bold focus:outline-none focus:bg-veil/20 focus:border-os-primary/50 transition-all"
-                         />
-                      </div>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                   {[
-                     { id: 'trap', name: 'Trap Essentials', color: 'from-purple-500 to-indigo-600', icon: TrendingUp },
-                     { id: 'rb', name: 'R&B Vibez', color: 'from-pink-500 to-rose-600', icon: Heart },
-                     { id: 'indie', name: 'Indie/Chill', color: 'from-emerald-400 to-cyan-500', icon: Radio },
-                     { id: 'electronic', name: 'Electronic Night', color: 'from-blue-500 to-blue-700', icon: Music },
-                   ].map(cat => (
-                     <motion.button 
-                       key={cat.id}
-                       whileHover={{ y: -8 }}
-                       className={`relative h-40 rounded-2xl overflow-hidden group shadow-xl`}
-                       onClick={() => setSearchQuery(cat.name.split(' ')[0])}
-                     >
-                        <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-80 group-hover:scale-110 transition-transform duration-500`} />
-                        <div className="absolute inset-0 flex flex-col p-6 justify-between">
-                           <cat.icon size={32} className="text-sdl-ink/80" />
-                           <h4 className="text-xl font-black text-left">{cat.name}</h4>
-                        </div>
-                     </motion.button>
-                   ))}
-                </div>
-
-                {searchQuery && (
-                  <div>
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
-                      <Search className="text-os-primary" /> Search results for &quot;{searchQuery}&quot;
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {displayPlaylist.map(track => (
-                        <motion.div 
-                          key={track.id} 
-                          whileHover={{ scale: 1.05 }}
-                          onMouseDown={() => setMusicTrack(track)} 
-                          className="cursor-pointer group bg-veil/5 p-3 rounded-xl hover:bg-veil/10 transition-all border border-hairline/5"
-                        >
-                           <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-hairline/10">
-                              <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                              <div className="absolute inset-0 bg-scrim opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                 <Play size={20} fill="currentColor" />
-                              </div>
-                           </div>
-                           <p className="text-xs font-bold truncate">{track.title}</p>
-                           <p className="text-[10px] text-os-onSurfaceVariant truncate">{track.artist}</p>
-                        </motion.div>
-                      ))}
-                      {displayPlaylist.length === 0 && (
-                        <div className="col-span-full py-20 text-center">
-                          <Music size={48} className="mx-auto mb-4 opacity-20" />
-                          <p className="text-os-onSurfaceVariant font-bold">No results found for your search.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {!searchQuery && (
-                  <div>
-                    <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
-                      <Music className="text-os-primary" /> Browse All Tracks
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                      {MUSIC_DATA.map(track => (
-                        <motion.div 
-                          key={track.id} 
-                          whileHover={{ scale: 1.05 }}
-                          onMouseDown={() => setMusicTrack(track)} 
-                          className="cursor-pointer group bg-veil/5 p-3 rounded-xl hover:bg-veil/10 transition-all border border-hairline/5"
-                        >
-                           <div className="relative aspect-square mb-2 rounded-lg overflow-hidden border border-hairline/10">
-                              <img src={track.cover} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                              <div className="absolute inset-0 bg-scrim opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                                 <Play size={20} fill="currentColor" />
-                              </div>
-                           </div>
-                           <p className="text-xs font-bold truncate">{track.title}</p>
-                           <p className="text-[10px] text-os-onSurfaceVariant truncate">{track.artist}</p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
+              <ExploreView key="explore" searchQuery={searchQuery} onSearchChange={setSearchQuery} />
             )}
-
             {music.activeView === 'Library' && (
-              <motion.div 
-                key="library"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                <div className="flex items-end gap-8 mb-12">
-                   <div className="w-48 h-48 md:w-64 md:h-64 rounded-3xl bg-gradient-to-br from-os-primary to-os-secondary flex items-center justify-center shadow-2xl border border-hairline/10">
-                      <Heart size={80} fill="currentColor" strokeWidth={0} className="text-sdl-sec" />
-                   </div>
-                   <div className="flex flex-col gap-2">
-                      <span className="text-xs font-black uppercase tracking-[0.3em] text-os-primary">Collection</span>
-                      <h2 className="text-4xl md:text-7xl font-black tracking-tighter">Liked Songs</h2>
-                      <p className="text-os-onSurfaceVariant font-bold">{music.likedSongs?.length || 0} tracks in your library</p>
-                      <button 
-                        onClick={() => {
-                          const firstLiked = MUSIC_DATA.find(t => music.likedSongs?.includes(t.id));
-                          if (firstLiked) setMusicTrack(firstLiked);
-                        }}
-                        className="mt-4 px-10 py-4 rounded-full bg-os-primary text-sdl-onAccent font-black hover:scale-105 active:scale-95 transition-all w-fit"
-                      >
-                        Play All
-                      </button>
-                   </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className={`grid ${isMobile ? 'grid-cols-[30px_1fr_60px]' : 'grid-cols-[30px_1fr_1fr_80px]'} px-4 py-2 text-[10px] font-black uppercase tracking-widest text-os-onSurfaceVariant border-b border-hairline/5 mb-2`}>
-                    <span>#</span>
-                    <span>Title</span>
-                    {!isMobile && <span>Album</span>}
-                    <span className="text-right">Time</span>
-                  </div>
-                  {displayPlaylist.map((track, i) => (
-                    <div 
-                      key={track.id}
-                      onMouseDown={() => setMusicTrack(track)}
-                      className={`grid ${isMobile ? 'grid-cols-[30px_1fr_60px]' : 'grid-cols-[30px_1fr_1fr_80px]'} px-4 py-3 rounded-xl cursor-pointer transition-all group ${music.currentTrack.id === track.id ? 'bg-os-primary/10' : 'hover:bg-veil/5'}`}
-                    >
-                      <span className="text-xs flex items-center text-os-onSurfaceVariant">{i+1}</span>
-                      <div className="flex flex-col">
-                        <span className={`text-sm font-bold truncate ${music.currentTrack.id === track.id ? 'text-os-primary' : 'text-sdl-ink'}`}>{track.title}</span>
-                        <span className="text-[10px] text-os-onSurfaceVariant font-bold truncate">{track.artist}</span>
-                      </div>
-                      {!isMobile && <span className="text-xs text-os-onSurfaceVariant font-medium flex items-center truncate">{track.album}</span>}
-                      <span className="text-xs text-os-onSurfaceVariant font-mono flex items-center justify-end">{formatTime(track.duration)}</span>
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
+              <LibraryView key="library" tracks={displayPlaylist} isMobile={isMobile} />
             )}
-
-            {music.activeView === 'History' && (
-              <motion.div 
-                key="history"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-              >
-                <div className="flex items-end gap-8 mb-12">
-                   <div className="w-48 h-48 md:w-64 md:h-64 rounded-3xl bg-gradient-to-br from-purple-600 to-red-500 flex items-center justify-center shadow-2xl border border-white/10">
-                      <Radio size={80} fill="black" strokeWidth={0} className="opacity-50" />
-                   </div>
-                   <div className="flex flex-col gap-2">
-                      <span className="text-xs font-black uppercase tracking-[0.3em] text-os-primary">Last.fm Connected</span>
-                      <h2 className="text-4xl md:text-7xl font-black tracking-tighter">Your Top Tracks</h2>
-                      <p className="text-os-onSurfaceVariant font-bold">Your most played tracks this week.</p>
-                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {isLoadingHistory ? (
-                    <div className="col-span-full py-10 text-center text-os-onSurfaceVariant">Loading from Last.fm...</div>
-                  ) : music.lastFmData?.topTracks?.length > 0 ? (
-                    music.lastFmData.topTracks.map(track => (
-                      <div key={track.id} className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                        <div className="relative aspect-square mb-4 rounded-xl overflow-hidden shadow-lg">
-                           {track.cover ? (
-                             <img src={track.cover} className="w-full h-full object-cover" />
-                           ) : (
-                             <div className="w-full h-full bg-white/10 flex items-center justify-center"><Music size={32} className="opacity-20" /></div>
-                           )}
-                        </div>
-                        <h4 className="font-bold text-sm truncate">{track.title}</h4>
-                        <p className="text-xs text-os-onSurfaceVariant truncate">{track.artist}</p>
-                        <p className="text-[10px] text-os-primary mt-2">{track.playcount} plays</p>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="col-span-full py-10 text-center text-os-onSurfaceVariant">No Last.fm data available. Make sure your API key is set in .env.</div>
-                  )}
-                </div>
-              </motion.div>
-            )}
+            {music.activeView === 'History' && <HistoryView key="history" />}
           </AnimatePresence>
         </div>
 
-        {/* Player Bar */}
-        <div className={`h-24 bg-sdl-surface/80 backdrop-blur-3xl border-t border-hairline/5 px-4 md:px-8 flex items-center justify-between z-20`}>
-          <div className={`flex items-center gap-4 ${isMobile ? 'w-1/2' : 'w-1/3'}`}>
-             <motion.div 
-               whileHover={{ scale: 1.05 }}
-               className="w-12 h-12 md:w-14 md:h-14 rounded-lg overflow-hidden border border-hairline/10 shrink-0 cursor-pointer"
-               onClick={() => setIsFullScreen(true)}
-             >
-                <img src={music.currentTrack.cover} alt="Cover" className="w-full h-full object-cover" />
-             </motion.div>
-             <div className="overflow-hidden">
-                <h4 className="text-xs md:text-sm font-bold truncate cursor-pointer hover:underline" onClick={() => setIsFullScreen(true)}>{music.currentTrack.title}</h4>
-                <p className="text-[10px] text-os-onSurfaceVariant font-bold uppercase tracking-wider truncate">{music.currentTrack.artist}</p>
-             </div>
-          </div>
-
-          <div className={`flex flex-col items-center gap-2 ${isMobile ? 'w-1/2' : 'w-1/3'}`}>
-             <div className="flex items-center gap-4 md:gap-6">
-                <button 
-                  onClick={toggleShuffle}
-                  className={`transition-colors ${music.shuffle ? 'text-os-primary' : 'text-os-onSurfaceVariant hover:text-sdl-ink'}`}
-                >
-                  <Shuffle size={18} />
-                </button>
-                <button className="text-os-onSurfaceVariant hover:text-sdl-ink transition-colors" onClick={handlePrev}><SkipBack size={22} fill="currentColor" /></button>
-                <button 
-                  onClick={() => {
-                    const nextState = !music.isPlaying;
-                    setMusicIsPlaying(nextState);
-                    if (nextState) unlockAchievement('audiophile');
-                  }}
-                  className="w-10 h-10 rounded-full bg-sdl-accent text-sdl-onAccent flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
-                >
-                  {music.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" className="translate-x-0.5" />}
-                </button>
-                <button className="text-os-onSurfaceVariant hover:text-sdl-ink transition-colors" onClick={handleNext}><SkipForward size={22} fill="currentColor" /></button>
-                <button 
-                  onClick={cycleRepeatMode}
-                  className={`relative transition-colors ${music.repeatMode !== 'none' ? 'text-os-primary' : 'text-os-onSurfaceVariant hover:text-sdl-ink'}`}
-                >
-                  <Repeat size={18} />
-                  {music.repeatMode === 'one' && <span className="absolute -top-1 -right-1 text-[8px] font-black bg-os-primary text-sdl-onAccent rounded-full w-3 h-3 flex items-center justify-center">1</span>}
-                </button>
-             </div>
-             <div className="flex items-center gap-3 w-full max-w-[200px] md:max-w-md group">
-                 <span className="text-[10px] font-mono text-os-onSurfaceVariant w-8">{formatTime(music.currentTime)}</span>
-                 <div className="flex-grow h-1.5 bg-veil/10 rounded-full relative group/seek overflow-hidden">
-                    <input 
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={music.currentTrack.duration > 0 ? (music.currentTime / music.currentTrack.duration) * 100 : 0}
-                      onChange={handleSeek}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <div 
-                      style={{ width: `${music.currentTrack.duration > 0 ? (music.currentTime / music.currentTrack.duration) * 100 : 0}%` }}
-                      className="absolute top-0 left-0 h-full bg-os-primary group-hover/seek:bg-os-secondary transition-colors" 
-                    />
-                 </div>
-                 <span className="text-[10px] font-mono text-os-onSurfaceVariant w-8 text-right">{formatTime(music.currentTrack.duration)}</span>
-             </div>
-          </div>
-
-          {!isMobile && (
-            <div className="flex items-center justify-end gap-6 w-1/3">
-               <button onClick={() => setIsFullScreen(true)} className="text-os-onSurfaceVariant hover:text-os-primary transition-colors"><Maximize2 size={18} /></button>
-               <div className="flex items-center gap-3">
-                  <Volume2 size={18} className="text-os-onSurfaceVariant" />
-                  <div className="w-24 h-1 bg-veil/10 rounded-full relative overflow-hidden group/vol">
-                     <input 
-                        type="range" 
-                        min="0" max="100" 
-                        value={volume} 
-                        onChange={handleVolumeChange}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                     />
-                     <div className="absolute top-0 left-0 h-full bg-veil/60 group-hover/vol:bg-os-primary transition-colors" style={{ width: `${volume}%` }} />
-                  </div>
-               </div>
-            </div>
+        <AnimatePresence>
+          {upNextOpen && (
+            <UpNextPanel
+              onClose={() => setUpNextOpen(false)}
+              upcoming={upcoming}
+              shuffle={music.shuffle}
+              contextLabel={contextLabel}
+            />
           )}
-        </div>
+        </AnimatePresence>
+
+        <PlayerBar
+          isMobile={isMobile}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onSeek={handleSeek}
+          onOpenFullscreen={() => setIsFullScreen(true)}
+          onToggleUpNext={() => setUpNextOpen((o) => !o)}
+          upNextOpen={upNextOpen}
+        />
       </div>
 
       {/* Full Screen Mode */}
       <AnimatePresence>
         {isFullScreen && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 1.1, y: 100 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 100 }}
-            className="fixed inset-0 z-[100] bg-sdl-plane/95 backdrop-blur-3xl p-8 md:p-16 flex flex-col items-center justify-center overflow-hidden"
-          >
-            {/* Immersive Background */}
-            <div className="absolute inset-0 z-0">
-               <Visualizer isPlaying={music.isPlaying} accentColor={vizAccent} scale={1.5} />
-               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-            </div>
-
-            <button 
-              onClick={() => setIsFullScreen(false)}
-              className="absolute top-8 right-8 p-4 rounded-full bg-veil/5 border border-hairline/10 hover:bg-veil/10 transition-all z-20"
-            >
-              <Minimize2 size={24} />
-            </button>
-
-            <div className="relative z-10 w-full max-w-6xl flex flex-col md:flex-row items-center gap-12 md:gap-20">
-               <motion.div 
-                 layoutId="track-cover"
-                 className="w-64 h-64 md:w-[500px] md:h-[500px] rounded-3xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] border border-hairline/10 overflow-hidden relative group"
-               >
-                  <img src={music.currentTrack.cover} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[10s] linear" />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-os-primary/20 to-transparent pointer-events-none" />
-               </motion.div>
-
-               <div className="flex flex-col gap-8 flex-grow">
-                  <div className="space-y-2">
-                     <motion.h2 
-                       initial={{ x: -20, opacity: 0 }}
-                       animate={{ x: 0, opacity: 1 }}
-                       className="text-4xl md:text-8xl font-black tracking-tighter"
-                     >
-                       {music.currentTrack.title}
-                     </motion.h2>
-                     <motion.p 
-                       initial={{ x: -20, opacity: 0 }}
-                       animate={{ x: 0, opacity: 1 }}
-                       transition={{ delay: 0.1 }}
-                       className="text-xl md:text-3xl text-os-primary font-bold"
-                     >
-                       {music.currentTrack.artist}
-                     </motion.p>
-                  </div>
-
-                  {/* Artist Bio & Similar */}
-                  <div className="h-48 md:h-64 overflow-y-auto custom-scrollbar relative pr-4">
-                     {music.lastFmData?.artistBio && (
-                       <div className="mb-6">
-                         <h5 className="text-xs font-black uppercase text-os-primary mb-2">About {music.currentTrack.artist}</h5>
-                         <p className="text-sm md:text-base text-sdl-ink/70 leading-relaxed font-medium">
-                           {music.lastFmData.artistBio.substring(0, 500)}...
-                         </p>
-                       </div>
-                     )}
-
-                     {music.lastFmData?.similarTracks?.length > 0 && (
-                       <div>
-                         <h5 className="text-xs font-black uppercase text-os-secondary mb-3">Similar Tracks (Last.fm)</h5>
-                         <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
-                           {music.lastFmData.similarTracks.map(t => (
-                             <div key={t.id} className="shrink-0 w-32">
-                               <img src={t.cover || 'https://via.placeholder.com/150'} className="w-32 h-32 rounded-xl mb-2 object-cover" />
-                               <p className="text-xs font-bold truncate">{t.title}</p>
-                               <p className="text-[10px] text-sdl-ink/50 truncate">{t.artist}</p>
-                             </div>
-                           ))}
-                         </div>
-                       </div>
-                     )}
-                  </div>
-
-                  <div className="space-y-6">
-                     <div className="flex items-center gap-4 w-full">
-                        <span className="text-xs font-mono opacity-60">{formatTime(music.currentTime)}</span>
-                        <div className="flex-grow h-2 bg-veil/10 rounded-full relative overflow-hidden">
-                           <input 
-                              type="range"
-                              min="0" max="100"
-                              value={(music.currentTime / music.currentTrack.duration) * 100}
-                              onChange={handleSeek}
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                           />
-                           <div className="absolute top-0 left-0 h-full bg-os-primary" style={{ width: `${(music.currentTime / music.currentTrack.duration) * 100}%` }} />
-                        </div>
-                        <span className="text-xs font-mono opacity-60">{formatTime(music.currentTrack.duration)}</span>
-                     </div>
-
-                     <div className="flex items-center justify-center md:justify-start gap-10">
-                        <button onClick={toggleShuffle} className={music.shuffle ? 'text-os-primary' : 'opacity-40'}><Shuffle size={28} /></button>
-                        <button onClick={handlePrev} className="hover:scale-110 transition-transform"><SkipBack size={48} fill="currentColor" /></button>
-                        <button 
-                          onClick={() => setMusicIsPlaying(!music.isPlaying)}
-                          className="w-20 h-20 rounded-full bg-sdl-accent text-sdl-onAccent flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl shadow-os-primary/20"
-                        >
-                          {music.isPlaying ? <Pause size={40} fill="currentColor" /> : <Play size={40} fill="currentColor" className="translate-x-1" />}
-                        </button>
-                        <button onClick={handleNext} className="hover:scale-110 transition-transform"><SkipForward size={48} fill="currentColor" /></button>
-                        <button onClick={cycleRepeatMode} className={music.repeatMode !== 'none' ? 'text-os-primary' : 'opacity-40'}><Repeat size={28} /></button>
-                     </div>
-                  </div>
-               </div>
-            </div>
-          </motion.div>
+          <FullscreenPlayer
+            onClose={() => setIsFullScreen(false)}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onSeek={handleSeek}
+            vizAccent={vizAccent}
+          />
         )}
       </AnimatePresence>
 
+      {/* The engine's hidden iframe mounts here. */}
       <div ref={containerRef} className="absolute -z-50 pointer-events-none opacity-0"></div>
     </div>
   );

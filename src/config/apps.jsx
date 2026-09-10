@@ -25,6 +25,9 @@ import {
  *   legacyHex  the exact colour this app rendered before SDL — used ONLY by the "Lumina Neon"
  *              icon theme, so choosing it reproduces the old dock byte for byte
  *   badge      a small pulsing dot overlay (Resume advertises itself)
+ *   window     { width, height } opening geometry, same contract as a game registry entry.
+ *              Absent means Window's 900×650 default. Only apps whose content is genuinely
+ *              cramped at the default carry one — this is not a per-app aesthetic knob.
  *
  * ── Hue spacing ───────────────────────────────────────────────────────────────────────────────
  *
@@ -119,6 +122,9 @@ export const APPS = [
     hue: 332,           // magenta — was os-tertiary green
     legacyHex: '#00f5a0',
     pinned: true,
+    // The launcher is a browsing surface (hero + rows + grid); at 900×650 the grid shows a
+    // single truncated row. DOOM already opens at 1040×780, so this stays inside precedent.
+    window: { width: 1080, height: 760 },
   },
   {
     id: 'media',
@@ -135,6 +141,7 @@ export const APPS = [
     hue: 300,           // purple — was os-primary, and the one that keeps it
     legacyHex: '#cc97ff',
     pinned: true,
+    window: { width: 1120, height: 760 },
   },
   {
     id: 'photos',
@@ -157,6 +164,8 @@ export const APPS = [
     glyph: Globe,
     hue: 216,           // cyan — was #00d2fd
     legacyHex: '#00d2fd',
+    // A browser with a tab strip needs real width; web pages need real height.
+    window: { width: 1160, height: 780 },
   },
   {
     id: 'chat',

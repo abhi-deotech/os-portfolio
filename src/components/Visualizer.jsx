@@ -1,5 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 
+/**
+ * Draws a *simulated* spectrum, not a measured one — deliberately, and not as a shortcut.
+ *
+ * Playback runs through a cross-origin `youtube-nocookie.com` iframe (credentialless, for COEP).
+ * The Web Audio API can only analyse a media element it is permitted to touch: `AnalyserNode`
+ * requires `createMediaElementSource()` on a *same-origin* `HTMLMediaElement`, and a cross-origin
+ * iframe's internal audio sits behind a hard browser security boundary. No API reaches it. This
+ * is not a TODO, and an `AnalyserNode` cannot be retrofitted here.
+ *
+ * The trade was a real spectrum over a handful of self-hosted MP3s, or a streaming library of
+ * effectively any track with a plausible stand-in. This app took the library. If playback ever
+ * moves to same-origin audio, replace the model below with `getByteFrequencyData` and delete
+ * this note.
+ */
 const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
   const canvasRef = useRef(null);
 
@@ -40,11 +54,9 @@ const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
       const width = canvas.width / barCount;
       const time = performance.now() * 0.001;
 
-      // Complex Spectral Simulation Logic
-      // We simulate 3 main frequency components:
-      // 1. Bass: Low frequency, high amplitude pulses
-      // 2. Mid: Constant rhythmic movement
-      // 3. High: Fast jittery spikes
+      // Three bands stand in for an FFT that cannot be taken (see the note above the component):
+      // bass pulses on a slow beat, mids hold a steady rhythm, treble jitters. The damping and
+      // gravity constants below are what keep it reading as physical rather than as noise.
       
       const bass = Math.max(0, Math.sin(time * 2) * 0.5 + Math.sin(time * 5) * 0.5);
       const mid = Math.sin(time * 8) * 0.3 + 0.3;

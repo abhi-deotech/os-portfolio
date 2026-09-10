@@ -251,50 +251,102 @@
 
    react-contexify portals its menus to document.body, OUTSIDE the app tree, which is one of the
    four reasons applyTheme.js writes to documentElement — so the roles below do resolve here.
-   `!important` is required throughout: the library ships its own stylesheet at equal specificity.
+
+   ── The double border ──────────────────────────────────────────────────────────────────────────
+
+   This block used to paint the hover highlight on `.contexify_item`. The library paints its OWN
+   highlight one level in, on `.contexify_itemContent`:
+
+     .contexify_item:not(.contexify_item-disabled):hover > .contexify_itemContent {
+       background-color: var(--contexify-activeItem-bgColor);   // #3498db
+       border-radius: var(--contexify-activeItem-radius);       // 4px
+     }
+
+   Both fired. Two filled rounded rectangles, at two different radii, with the inner one inset by
+   `--contexify-itemContent-padding` — which is what read as a double border. The old override
+   here reset that inner rule's `color` but never its `background-color`, so the library's stock
+   blue survived on every colorway, which is why the highlight was the one part of the menu that
+   never followed the theme.
+
+   The library is entirely custom-property driven, so the fix is to feed it SDL roles through its
+   own variables rather than to out-specify it. `!important` remains only where a declaration is
+   not reachable through a variable.
    =========================== */
 .os-context-menu.contexify {
+  /* Retheme the library through its own API. Anything not listed keeps the library's default,
+     which is correct — these are the only tokens it exposes that carry colour or metrics. */
+  --contexify-menu-padding: 6px;
+  --contexify-menu-minWidth: 216px;
+  --contexify-separator-color: rgb(var(--sdl-hairline-rgb) / 0.14);
+  --contexify-separator-margin: 5px;
+  --contexify-itemContent-padding: 7px 10px;
+  --contexify-activeItem-radius: var(--sdl-radius-sm);
+  --contexify-item-color: var(--sdl-sec);
+  --contexify-activeItem-color: var(--sdl-aink);
+  --contexify-activeItem-bgColor: var(--sdl-soft);
+  --contexify-rightSlot-color: var(--sdl-sec);
+  --contexify-activeRightSlot-color: var(--sdl-aink);
+  --contexify-arrow-color: var(--sdl-sec);
+  --contexify-activeArrow-color: var(--sdl-aink);
+
   background: var(--sdl-glass-bg) !important;
   backdrop-filter: var(--sdl-glass-blur) !important;
   border: 1px solid var(--sdl-glass-border) !important;
   border-radius: var(--sdl-radius) !important;
-  padding: 6px !important;
   box-shadow: var(--sdl-lift), var(--sdl-hairline) !important;
-  min-width: 200px !important;
   font-family: 'Inter', sans-serif !important;
   font-size: 13px !important;
 }
 
+/* A bare wrapper. It carries no padding and no background, so the highlight below is the only
+   filled shape in the row and there is nothing left to double up against. */
 .os-context-menu .contexify_item {
+  background: transparent !important;
+  padding: 0 !important;
   border-radius: var(--sdl-radius-sm) !important;
-  transition: background 0.1s ease, color 0.1s ease !important;
-  display: flex !important;
-  align-items: center !important;
-  padding: 8px 12px !important;
 }
 
 /* Rest state is `sec`, hover/active promotes to full `ink` — the same two-step the rest of the
-   shell uses, rather than the old grey-to-pure-white jump that only worked on a dark plane. */
+   shell uses, rather than the old grey-to-pure-white jump that only worked on a dark plane.
+   Timing rides the colorway's own tempo instead of a hardcoded 0.1s, so the menu moves at the
+   same speed as every other surface in the theme. */
 .os-context-menu .contexify_itemContent {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
-  color: var(--sdl-sec) !important;
-  transition: color 0.1s ease !important;
+  gap: 10px !important;
+  border-radius: var(--sdl-radius-sm) !important;
+  transition: background var(--sdl-t-hover, 120ms) var(--sdl-ease, ease),
+              color var(--sdl-t-hover, 120ms) var(--sdl-ease, ease) !important;
 }
 
-.os-context-menu .contexify_item:hover > .contexify_itemContent,
+/* Keyboard focus must look like hover — the library's own `:focus` rule is what drives arrow-key
+   navigation, and without this the highlight simply vanished when you stopped using the mouse. */
+.os-context-menu .contexify_item:focus > .contexify_itemContent,
 .os-context-menu .contexify_item.contexify_item-active > .contexify_itemContent {
+  background-color: var(--sdl-soft) !important;
   color: var(--sdl-aink) !important;
 }
 
-.os-context-menu .contexify_item:hover,
-.os-context-menu .contexify_item.contexify_item-active {
-  background: var(--sdl-soft) !important;
+.os-context-menu .contexify_item:focus {
+  outline: none !important;
 }
 
-.os-context-menu .contexify_separator {
-  background: rgb(var(--sdl-hairline-rgb) / 0.12) !important;
-  margin: 4px 8px !important;
+/* A fixed icon column. The rows previously each sized their own glyph, so an 13px lucide icon and
+   the terminal's `>_` text glyph set two different label origins and the column read as ragged. */
+.os-context-menu .contexify_itemContent > :first-child {
+  flex: 0 0 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Destructive rows carry the alert role, the same way the Reset button in Appearance does. */
+.os-context-menu .contexify_item.os-menu-danger > .contexify_itemContent {
+  color: var(--sdl-alert) !important;
+}
+.os-context-menu .contexify_item.os-menu-danger:hover > .contexify_itemContent,
+.os-context-menu .contexify_item.os-menu-danger:focus > .contexify_itemContent {
+  background-color: rgb(var(--sdl-alert-rgb) / 0.12) !important;
+  color: var(--sdl-alert) !important;
 }
 

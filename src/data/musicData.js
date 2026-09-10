@@ -339,9 +339,20 @@ export const MUSIC_DATA = [
   }
 ];
 
+/**
+ * Explore's category rail — the single source for both the cards and their filters.
+ * (MusicApp used to re-declare these inline, with decorative from-X-to-Y gradients,
+ * while importing this export and never using it.)
+ *
+ * `genres` joins a category to the tracks' `genre` field; together the four cover every
+ * genre in the catalog. Identity is an OKLCH `hue` on the same contract as apps.jsx and
+ * achievements.js — iconStyle() renders it at the active colorway's own chroma, so the
+ * cards tint with the theme instead of a fixed gradient fighting it (SDL law 9 keeps
+ * gradients off decorative surfaces). Hues sit near each category's historical palette.
+ */
 export const CATEGORIES = [
-  { id: 'trap', name: 'Trap Essentials', color: 'from-purple-500 to-indigo-600' },
-  { id: 'rb', name: 'R&B Vibez', color: 'from-pink-500 to-rose-600' },
-  { id: 'indie', name: 'Indie/Chill', color: 'from-emerald-400 to-cyan-500' },
-  { id: 'electronic', name: 'Electronic Night', color: 'from-blue-500 to-blue-700' },
+  { id: 'trap', name: 'Trap Essentials', hue: 300, genres: ['Trap', 'Hip Hop'] },
+  { id: 'rb', name: 'R&B Vibez', hue: 345, genres: ['R&B'] },
+  { id: 'indie', name: 'Indie/Chill', hue: 165, genres: ['Indie'] },
+  { id: 'electronic', name: 'Electronic Night', hue: 230, genres: ['Electronic', 'Pop'] },
 ];

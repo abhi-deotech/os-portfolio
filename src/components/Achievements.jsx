@@ -7,7 +7,9 @@ import { useColorway } from '../theme/useColorway';
 import { iconStyle } from '../theme/icons';
 
 const Achievements = () => {
-  const { achievements } = useOSStore();
+  // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
+  // every state change anywhere in the OS, not just the fields it reads.
+  const achievements = useOSStore((s) => s.achievements);
   // Each badge used to carry a private `from-blue-400 to-blue-600` gradient — a second palette
   // that ignored the colorway. Identity is the hue; the colorway sets chroma and lightness.
   const cw = useColorway();

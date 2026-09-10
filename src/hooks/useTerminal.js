@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import useOSStore from '../store/osStore';
+import { identity } from '../config/profile';
 
 /**
  * Custom hook to manage Terminal logic, including command processing,
@@ -8,14 +9,27 @@ import useOSStore from '../store/osStore';
  * @returns {Object} Terminal state and handlers
  */
 const useTerminal = () => {
-  const { 
-    terminalHistory, addTerminalEntry, clearTerminalHistory, 
-    fileSystem, terminalTheme, setTerminalTheme, installApp,
-    openWindow, installedApps, unlockAchievement,
-    terminalCommandCount, incrementCommandCount,
-    bootContainer, containerStatus,
-    initAi, isAiReady, isAiLoading
-  } = useOSStore();
+  // Field-by-field rather than `useOSStore()`. A whole-store subscription re-ran this hook — and
+  // re-rendered the terminal — on every state change anywhere in the OS, including the metrics
+  // widget's 3-second tick, which has nothing to do with any of these fifteen fields.
+  const terminalHistory = useOSStore((s) => s.terminalHistory);
+  const addTerminalEntry = useOSStore((s) => s.addTerminalEntry);
+  const clearTerminalHistory = useOSStore((s) => s.clearTerminalHistory);
+  const fileSystem = useOSStore((s) => s.fileSystem);
+  const terminalTheme = useOSStore((s) => s.terminalTheme);
+  const setTerminalTheme = useOSStore((s) => s.setTerminalTheme);
+  const installApp = useOSStore((s) => s.installApp);
+  const openWindow = useOSStore((s) => s.openWindow);
+  const installedApps = useOSStore((s) => s.installedApps);
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
+  const terminalCommandCount = useOSStore((s) => s.terminalCommandCount);
+  const incrementCommandCount = useOSStore((s) => s.incrementCommandCount);
+  const bootContainer = useOSStore((s) => s.bootContainer);
+  const containerStatus = useOSStore((s) => s.containerStatus);
+  const initAi = useOSStore((s) => s.initAi);
+  const isAiReady = useOSStore((s) => s.isAiReady);
+  const isAiLoading = useOSStore((s) => s.isAiLoading);
+  const aiBackend = useOSStore((s) => s.aiBackend);
 
   const [input, setInput] = useState('');
   const [currentPath, setCurrentPath] = useState(['~']);
@@ -49,7 +63,10 @@ const useTerminal = () => {
   }, [terminalHistory]);
 
   const commands = {
-    help: () => 'Available commands:\n  help, clear, ls, cd, cat, mkdir, touch, rm, ps, top, vim\n  neofetch, whoami, date, matrix, ssh, lumina-get, theme, man, lumina-ai',
+    // Lists every implemented command except `magic`, which is a discoverable easter egg —
+    // printing it here would hand over the find. `node`/`npm` were missing from this string for
+    // as long as they have existed, so the shell under-reported its own WebContainer support.
+    help: () => 'Available commands:\n  help, clear, ls, cd, cat, mkdir, touch, rm, ps, top, vim\n  neofetch, whoami, date, matrix, ssh, lumina-get, theme, man, lumina-ai\n  node, npm',
     clear: () => {
       clearTerminalHistory();
       return null;
@@ -320,9 +337,19 @@ const useTerminal = () => {
       }
       if (isAiLoading) return 'Neural Engine is booting...';
       
-      if (!args.length) return "Lumina AI v2.0 (Local). Ask me anything!\nUsage: lumina-ai <your question>";
+      if (!args.length) {
+        // Print the backend the worker actually resolved to. Whether inference landed on the GPU
+        // or on N WASM threads is a per-machine outcome, so it is reported, never claimed.
+        const b = aiBackend;
+        const runtime = !b
+          ? ''
+          : b.device === 'webgpu'
+            ? `\nRuntime: WebGPU (hardware accelerated)`
+            : `\nRuntime: WASM · ${b.threads} thread${b.threads === 1 ? '' : 's'}${b.cores ? ` of ${b.cores} cores` : ''}`;
+        return `Lumina AI v2.0 (Local). Ask me anything!${runtime}\nUsage: lumina-ai <your question>`;
+      }
       const q = args.join(' ').toLowerCase();
-      if (q.includes('who') || q.includes('author') || q.includes('built')) return "I was built by Abhimanyu Saxena, a senior full-stack developer who loves building OS-style web experiences.";
+      if (q.includes('who') || q.includes('author') || q.includes('built')) return `I was built by ${identity.name}, a ${identity.headline.toLowerCase()} who loves building OS-style web experiences.`;
       if (q.includes('stack') || q.includes('tech') || q.includes('built with')) return "Lumina OS is built with React, Tailwind CSS, Framer Motion, and Zustand for state management.";
       if (q.includes('hire') || q.includes('contact')) return "You can reach out via the 'Mail' icon on the desktop or find me on LinkedIn.";
       if (q.includes('hello') || q.includes('hi')) return "Greetings, user. How can I assist your terminal session today?";
@@ -391,8 +418,14 @@ const useTerminal = () => {
         unlockAchievement('devops_escape');
         addTerminalEntry({ type: 'output', text: 'Exited Vim.' });
       } else if (trimmedInput === ':wq') {
+        // Write back the buffer, NOT `input`. `input` is the text sitting in the `:` line — which
+        // at this point is the literal string ":wq" — so this used to overwrite the file with its
+        // own save command. `vim README.md` followed by `:wq` silently replaced the whole file
+        // with four characters. The buffer is read-only, so a save can only ever be a no-op write;
+        // that is exactly what this now is.
+        const buffer = vimFile.content ?? '';
         if (vimFile.id) {
-          useOSStore.getState().updateFileContent(vimFile.id, input);
+          useOSStore.getState().updateFileContent(vimFile.id, buffer);
         } else {
           const getDirId = (nodes, path) => {
             if (path.length <= 1) return null;
@@ -408,7 +441,7 @@ const useTerminal = () => {
             return lastId;
           };
           const parentId = getDirId(fileSystem, currentPath);
-          useOSStore.getState().createFile(vimFile.name, input, parentId);
+          useOSStore.getState().createFile(vimFile.name, buffer, parentId);
         }
         setIsVimMode(false);
         setVimFile(null);

@@ -27,7 +27,12 @@ const BOOT_BUTTON_STYLE = "mt-8 px-12 py-4 rounded-full bg-gradient-to-r from-os
  * @component
  */
 const LoginScreen = () => {
-  const { login, unlockAchievement, checkPuterAuth, signInWithPuter, isPuterConnecting, puterSyncError } = useOSStore();
+  const login = useOSStore((s) => s.login);
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
+  const checkPuterAuth = useOSStore((s) => s.checkPuterAuth);
+  const signInWithPuter = useOSStore((s) => s.signInWithPuter);
+  const isPuterConnecting = useOSStore((s) => s.isPuterConnecting);
+  const puterSyncError = useOSStore((s) => s.puterSyncError);
   const [isBooting, setIsBooting] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [time, setTime] = useState(new Date());

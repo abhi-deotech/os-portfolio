@@ -38,7 +38,6 @@ const WindowContentRenderer = ({ id }) => {
   const findNodeById = useOSStore(state => state.findNodeById);
   const activeMediaFile = useOSStore(state => state.activeMediaFile);
   const activePhotoFile = useOSStore(state => state.activePhotoFile);
-  const browserNav = useOSStore(state => state.browserNav);
   const closeWindow = useOSStore(state => state.closeWindow);
 
   const content = useMemo(() => {
@@ -78,10 +77,12 @@ const WindowContentRenderer = ({ id }) => {
       case 'achievements':
         return <Achievements />;
       case 'browser':
-        // Keyed on the navigation counter so that `openBrowser(url)` — a project's "Live Demo"
-        // button — remounts Flow-Net at the new address even when the window is already open.
-        // The counter is what makes re-launching the URL already on screen work too.
-        return <Browser key={browserNav} />;
+        // Flow-Net delivers `openBrowser(url)` launches itself: it subscribes to the store's
+        // `browserNav` counter and opens each tick as a new tab (see Browser.jsx's header for the
+        // consumed-counter ref that keeps StrictMode's double effect run from duplicating tabs).
+        // The old contract keyed this element on the counter to REMOUNT the app per launch —
+        // fine for a single address bar, but a remount now would wipe every open tab.
+        return <Browser />;
       default: {
         // Games resolve from the registry rather than from a `case` each. This arm is what makes
         // the registry real: previously the switch ended in `default: return null`, so a window id
@@ -113,7 +114,7 @@ const WindowContentRenderer = ({ id }) => {
         );
       }
     }
-  }, [id, findNodeById, activeMediaFile, activePhotoFile, browserNav, closeWindow]);
+  }, [id, findNodeById, activeMediaFile, activePhotoFile, closeWindow]);
 
   if (!content) return null;
 

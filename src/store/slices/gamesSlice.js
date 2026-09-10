@@ -32,13 +32,26 @@ export const createGamesSlice = (set, get) => ({
    */
   userGames: [],
 
-  /** Per-game stats surfaced in the launcher. Play counts only; bests live in useHighScore. */
+  /**
+   * Per-game stats surfaced in the launcher: { plays, lastPlayed }. Bests live in useHighScore.
+   *
+   * `lastPlayed` (epoch ms) was added after records shaped `{ plays }` had already been persisted,
+   * so the shape is migrated lazily rather than all at once: spreading the previous record and
+   * defaulting `plays` keeps an old record valid, and `lastPlayed` appears the next time that game
+   * is launched. Consumers must treat a missing `lastPlayed` as "played, but before we tracked
+   * when" — the launcher sorts those to the end of "Jump back in" instead of dropping them.
+   */
   gameStats: {},
 
   recordGamePlayed: (gameId) =>
     set((state) => {
       const prev = state.gameStats[gameId] || { plays: 0 };
-      return { gameStats: { ...state.gameStats, [gameId]: { ...prev, plays: prev.plays + 1 } } };
+      return {
+        gameStats: {
+          ...state.gameStats,
+          [gameId]: { ...prev, plays: (prev.plays || 0) + 1, lastPlayed: Date.now() },
+        },
+      };
     }),
 
   /**

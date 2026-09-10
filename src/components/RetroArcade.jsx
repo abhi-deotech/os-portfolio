@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Joystick, Loader2, AlertCircle, RotateCw, Keyboard } from 'lucide-react';
+import useOSStore from '../store/osStore';
 
 /**
  * DOOM, and only DOOM.
@@ -48,6 +49,17 @@ const RetroArcade = () => {
   const [status, setStatus] = useState('loading'); // loading | ready | error
   const iframeRef = useRef(null);
   const [nonce, setNonce] = useState(0);
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
+
+  // `retro_gamer` reads "Booted DOOM", so it is tied to the moment the emulator reports started —
+  // not to the window opening, which would award a boot that then 404'd its WAD. An effect is safe
+  // here because unlockAchievement is idempotent (systemSlice returns the state unchanged for an
+  // already-held id), so StrictMode's double effect pass and every later reload-to-ready are
+  // absorbed; only the first ready ever queues the toast. What must NOT happen is firing this from
+  // inside a setState updater — that is the double-invocation path tasks/lessons.md documents.
+  useEffect(() => {
+    if (status === 'ready') unlockAchievement('retro_gamer');
+  }, [status, unlockAchievement]);
 
   const src = `/arcade/index.html?game=${encodeURIComponent(DOOM.romUrl)}&system=${DOOM.system}&game_id=${DOOM.id}`;
 

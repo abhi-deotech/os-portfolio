@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import SocialWidget from './SocialWidget';
 import SystemMetricsWidget from './SystemMetricsWidget';
 import ClockWidget from './ClockWidget';
 import SystemDashboard from './SystemDashboard';
-import QuantumWidget from './widgets/QuantumWidget';
 import NowPlayingWidget from './widgets/NowPlayingWidget';
 import { useIsMobile } from '../hooks/useMediaQuery';
+
+/**
+ * The Quantum core is the single heaviest thing the shell can render: `@react-three/fiber` and
+ * `drei` pull in three.js, 2,680 KB of source between them. It was a static import, so every
+ * visitor downloaded and parsed all of it before first paint for one decorative widget — including
+ * visitors on Performance mode, whose switch is described as dropping exactly this.
+ *
+ * A lazy boundary is the only thing that moves it; chunk configuration cannot, because the import
+ * is real. `fallback={null}` because the widget is ambient — there is nothing to say while it
+ * loads, and a spinner would draw more attention to it than the widget itself does.
+ */
+const QuantumWidget = React.lazy(() => import('./widgets/QuantumWidget'));
 
 const DraggableWidget = ({ children, initialPos, setPos, width, className = "" }) => (
   <motion.div 
@@ -74,7 +85,7 @@ const Widgets = () => {
           <SystemDashboard />
         </div>
         <div className="w-full max-w-[320px]">
-          <QuantumWidget />
+          <Suspense fallback={null}><QuantumWidget /></Suspense>
         </div>
         <div className="w-full max-w-[340px]">
           <NowPlayingWidget />
@@ -108,7 +119,7 @@ const Widgets = () => {
           setPos={setQuantumPos} 
           width={320}
         >
-          <QuantumWidget />
+          <Suspense fallback={null}><QuantumWidget /></Suspense>
         </DraggableWidget>
 
         <DraggableWidget 

@@ -24,18 +24,18 @@ const Settings = () => {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('appearance');
   const [showSidebar, setShowSidebar] = useState(true);
-  const {
-    isPuterSignedIn,
-    puterUser,
-    isPuterConnecting,
-    signInWithPuter,
-    signOutPuter,
-    syncFilesToPuter,
-    loadFilesFromPuter,
-    syncPrefsToPuter,
-    loadPrefsFromPuter,
-    lastSyncTime
-  } = useOSStore();
+  // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
+  // every state change anywhere in the OS, not just the fields it reads.
+  const isPuterSignedIn = useOSStore((s) => s.isPuterSignedIn);
+  const puterUser = useOSStore((s) => s.puterUser);
+  const isPuterConnecting = useOSStore((s) => s.isPuterConnecting);
+  const signInWithPuter = useOSStore((s) => s.signInWithPuter);
+  const signOutPuter = useOSStore((s) => s.signOutPuter);
+  const syncFilesToPuter = useOSStore((s) => s.syncFilesToPuter);
+  const loadFilesFromPuter = useOSStore((s) => s.loadFilesFromPuter);
+  const syncPrefsToPuter = useOSStore((s) => s.syncPrefsToPuter);
+  const loadPrefsFromPuter = useOSStore((s) => s.loadPrefsFromPuter);
+  const lastSyncTime = useOSStore((s) => s.lastSyncTime);
   const metrics = useSystemMetrics();
 
   // Two labelled groups rather than four flat tabs. The Design Language group is the showcase;

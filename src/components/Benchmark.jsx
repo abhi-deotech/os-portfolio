@@ -1,149 +1,270 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Play, Square, Activity, Cpu, AlertTriangle, Zap, CheckCircle2, 
-  ShieldAlert, BarChart3, Database, HardDrive, Timer, Gauge
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Play, Activity, Cpu, AlertTriangle, Zap, CheckCircle2,
+  ShieldAlert, Database, HardDrive, Timer, Gauge, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../store/osStore';
+import { createGpuBench } from '../workers/gpuBench';
 
 const STAGES = [
-  { id: 'int', name: 'Integer Math', desc: 'Stress testing ALU with prime calculations', color: 'text-blue-400', icon: Cpu },
-  { id: 'float', name: 'Floating Point', desc: 'Complex trigonometric and matrix simulations', color: 'text-purple-400', icon: Zap },
-  { id: 'memory', name: 'Memory Bandwidth', desc: 'Simulated high-frequency buffer allocations', color: 'text-os-tertiary', icon: Database },
-  { id: 'io', name: 'IO Throughput', desc: 'Virtual disk read/write throughput analysis', color: 'text-os-secondary', icon: HardDrive }
+  { id: 'int', kind: 'cpu', name: 'Integer Math', desc: 'Stress testing ALU with prime calculations', color: 'text-blue-400', icon: Cpu },
+  { id: 'float', kind: 'cpu', name: 'Floating Point', desc: 'Complex trigonometric and matrix simulations', color: 'text-purple-400', icon: Zap },
+  { id: 'memory', kind: 'cpu', name: 'Memory Bandwidth', desc: 'Simulated high-frequency buffer allocations', color: 'text-os-tertiary', icon: Database },
+  { id: 'io', kind: 'cpu', name: 'IO Throughput', desc: 'Virtual disk read/write throughput analysis', color: 'text-os-secondary', icon: HardDrive },
+  { id: 'gpu', kind: 'gpu', name: 'GPU Compute', desc: 'WebGPU 512x512 single-precision matrix multiply', color: 'text-os-primary', icon: Layers },
 ];
 
+const CPU_STAGES = STAGES.filter((s) => s.kind === 'cpu');
+
+/**
+ * Wall-clock budget per stage. Progress is `elapsed / STAGE_MS` — a real fraction of real work.
+ *
+ * The previous bar advanced by 0.4 per worker reply, so it measured *messages*, not work. That is
+ * also why a pool could not simply be dropped in underneath it: N workers reply N times faster, so
+ * the bar would have filled N times sooner and every stage would have ended early.
+ */
+const STAGE_MS = 2500;
+
+/** One worker slice. Short slices keep the pool responsive to an abort. */
+const SLICE_MS = 16;
+
+/**
+ * One worker per core, leaving one for the main thread so the shell keeps painting during a run.
+ * Capped at 16: `hardwareConcurrency` can report implausible values, and past that point the pool
+ * costs more to coordinate than it returns.
+ */
+const POOL_SIZE = Math.max(1, Math.min((navigator.hardwareConcurrency || 4) - 1, 16));
+
 const Benchmark = () => {
-  const { updateMetrics, unlockAchievement } = useOSStore();
+  const updateMetrics = useOSStore((s) => s.updateMetrics);
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
   const [status, setStatus] = useState('idle'); // idle, running, completed
   const [currentStage, setCurrentStage] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [iterations, setIterations] = useState(0);
   const [results, setResults] = useState({});
   const [history, setHistory] = useState(Array(30).fill(0));
-  const [ips, setIps] = useState(0); // Iterations Per Second
+  const [totalOps, setTotalOps] = useState(0);
+  // Work per second in the current stage's own unit: iterations for CPU stages, FLOPs for the GPU.
+  const [rate, setRate] = useState(0);
+  const [gpuInfo, setGpuInfo] = useState(null);
 
-  const workerRef = useRef(null);
-  const lastUpdateRef = useRef(0);
-  const iterationsSinceLastUpdate = useRef(0);
+  const poolRef = useRef(null);
+  const runIdRef = useRef(0);
+  const liveRef = useRef(0);      // work since the last rate tick
+  const totalRef = useRef(0);     // CPU iterations across the whole run
+  const lastTickRef = useRef(0);
 
+  // Build the pool once. A run cannot create workers on demand: spawning sixteen threads is slow
+  // enough to eat a measurable slice of the first stage and skew it.
   useEffect(() => {
-    // Shared worker for performance
-    if (!workerRef.current) {
-      workerRef.current = new Worker(new URL('../workers/benchmark.worker.js', import.meta.url));
+    poolRef.current = Array.from({ length: POOL_SIZE }, () =>
+      new Worker(new URL('../workers/benchmark.worker.js', import.meta.url))
+    );
+    const pool = poolRef.current;
+    // Hold the ref object, not `.current`. Cleanup must bump the *live* run id — that is what
+    // stops the GPU loop calling setState on an unmounted component — and reading `.current` here
+    // instead would capture the mount-time value, which is exactly what the lint rule warns about.
+    const runId = runIdRef;
+    return () => {
+      runId.current++;
+      pool.forEach((w) => w.terminate());
+      poolRef.current = null;
+    };
+  }, []);
+
+  /**
+   * Saturate the pool for STAGE_MS, then wait for in-flight slices to land.
+   *
+   * Each worker is re-fed the moment its own reply arrives, so a slow core never holds back a fast
+   * one — the pool self-clocks instead of running in lockstep rounds.
+   */
+  const runCpuStage = useCallback((stageId, runId) => new Promise((resolve) => {
+    const pool = poolRef.current;
+    if (!pool) {
+      resolve({ ops: 0, ms: 0 });
+      return;
     }
 
-    const handleWorkerMessage = (e) => {
-      const { iterations: count } = e.data;
-      const stage = STAGES[currentStage];
-      
-      iterationsSinceLastUpdate.current += count;
-      setIterations(prev => prev + count);
-      
-      setProgress(prev => {
-        const next = Math.min(prev + (status === 'running' ? 0.4 : 0), 100);
-        if (next >= 100 && status === 'running') {
-          setResults(prevResults => ({
-            ...prevResults,
-            [stage.id]: iterations + count
-          }));
-          
-          if (currentStage < STAGES.length - 1) {
-            setCurrentStage(prevS => prevS + 1);
-            setIterations(0);
-            return 0;
-          } else {
-            setStatus('completed');
-            updateMetrics({ isOverridden: false });
-            return 100;
-          }
-        }
-        return next;
-      });
+    const started = performance.now();
+    let ops = 0;
+    let inFlight = 0;
+    let settled = false;
 
-      // Update global metrics to show "Stress"
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      pool.forEach((w) => { w.onmessage = null; });
+      resolve({ ops, ms: performance.now() - started });
+    };
+
+    const feed = (worker) => {
+      if (runIdRef.current !== runId) return;
+      if (performance.now() - started >= STAGE_MS) return;
+      inFlight++;
+      worker.postMessage({ stage: stageId, duration: SLICE_MS });
+    };
+
+    pool.forEach((worker) => {
+      worker.onmessage = (e) => {
+        inFlight--;
+        ops += e.data.iterations;
+        liveRef.current += e.data.iterations;
+        totalRef.current += e.data.iterations;
+
+        setProgress(Math.min(100, ((performance.now() - started) / STAGE_MS) * 100));
+
+        feed(worker);
+        // The budget is spent and the last outstanding slice has reported.
+        if (inFlight === 0) settle();
+      };
+      feed(worker);
+    });
+
+    if (inFlight === 0) settle();
+  }), []);
+
+  /**
+   * The GPU stage. Resolves with `{ unavailable: true }` rather than throwing or hanging when
+   * there is no WebGPU — a missing adapter is an ordinary outcome on plenty of machines.
+   */
+  const runGpuStage = useCallback(async (runId) => {
+    const bench = await createGpuBench();
+    if (!bench) return { unavailable: true };
+    if (runIdRef.current !== runId) {
+      bench.destroy();
+      return { unavailable: false, flops: 0, ms: 0, gflops: 0 };
+    }
+
+    setGpuInfo(bench.info);
+    const started = performance.now();
+    let flops = 0;
+
+    try {
+      while (performance.now() - started < STAGE_MS && runIdRef.current === runId) {
+        const slice = await bench.runSlice();
+        if (slice.ms === 0) break; // device lost mid-run
+        flops += slice.flops;
+        liveRef.current += slice.flops;
+        setProgress(Math.min(100, ((performance.now() - started) / STAGE_MS) * 100));
+      }
+    } finally {
+      bench.destroy();
+    }
+
+    const ms = performance.now() - started;
+    return { flops, ms, gflops: ms > 0 ? flops / ms / 1e6 : 0 };
+  }, []);
+
+  const startBenchmark = async () => {
+    const runId = ++runIdRef.current;
+    setStatus('running');
+    setCurrentStage(0);
+    setProgress(0);
+    setResults({});
+    setRate(0);
+    setTotalOps(0);
+    setHistory(Array(30).fill(0));
+    liveRef.current = 0;
+    totalRef.current = 0;
+    lastTickRef.current = performance.now();
+    unlockAchievement('speed_demon');
+
+    for (let i = 0; i < STAGES.length; i++) {
+      if (runIdRef.current !== runId) return;
+      const stage = STAGES[i];
+      setCurrentStage(i);
+      setProgress(0);
+      // Reset the sparkline at each boundary: iterations/sec and FLOPs/sec differ by six orders of
+      // magnitude, so a shared scale would flatten one of them to nothing.
+      setHistory(Array(30).fill(0));
+
+      const result = stage.kind === 'gpu'
+        ? await runGpuStage(runId)
+        : await runCpuStage(stage.id, runId);
+
+      if (runIdRef.current !== runId) return;
+      setResults((prev) => ({ ...prev, [stage.id]: result }));
+      setProgress(100);
+    }
+
+    if (runIdRef.current !== runId) return;
+    setStatus('completed');
+    setRate(0);
+    updateMetrics({ isOverridden: false });
+  };
+
+  const stopBenchmark = () => {
+    runIdRef.current++;
+    setStatus('idle');
+    setRate(0);
+    setProgress(0);
+    updateMetrics({ isOverridden: false });
+  };
+
+  // Rate + sparkline ticker.
+  useEffect(() => {
+    if (status !== 'running') return;
+
+    const interval = setInterval(() => {
+      const now = performance.now();
+      const seconds = (now - lastTickRef.current) / 1000;
+      if (seconds <= 0) return;
+
+      const perSecond = liveRef.current / seconds;
+      setRate(perSecond);
+      setHistory((prev) => [...prev.slice(1), perSecond]);
+      setTotalOps(totalRef.current);
+
+      liveRef.current = 0;
+      lastTickRef.current = now;
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [status]);
+
+  // Flag the shell as stressed for the duration of the run. This used to fire on every worker
+  // reply; with a pool that would be POOL_SIZE * 60 store writes a second.
+  useEffect(() => {
+    if (status !== 'running') return;
+
+    const interval = setInterval(() => {
       updateMetrics({
         cpu: Math.floor(Math.random() * 5) + 95,
         ram: Number((Math.random() * 0.2 + 7.8).toFixed(1)),
         temp: Math.floor(Math.random() * 3) + 72,
         isOverridden: true
       });
-    };
-
-    workerRef.current.onmessage = handleWorkerMessage;
-
-    return () => {
-      if (workerRef.current) {
-        workerRef.current.onmessage = null;
-      }
-    };
-  }, [status, currentStage, iterations, updateMetrics]);
-
-  // IPS Calculation logic
-  useEffect(() => {
-    if (status !== 'running') {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const now = performance.now();
-      const delta = (now - lastUpdateRef.current) / 1000;
-      const currentIps = Math.floor(iterationsSinceLastUpdate.current / delta);
-      
-      setIps(currentIps);
-      setHistory(prev => [...prev.slice(1), currentIps / 1000]);
-      
-      iterationsSinceLastUpdate.current = 0;
-      lastUpdateRef.current = now;
-    }, 200);
+    }, 500);
 
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, updateMetrics]);
 
-  useEffect(() => {
-    let frameId;
-    if (status === 'running' && workerRef.current) {
-      const loop = () => {
-        const stage = STAGES[currentStage];
-        if (stage) {
-          workerRef.current.postMessage({ stage: stage.id, duration: 16 });
-        }
-        frameId = requestAnimationFrame(loop);
-      };
-      frameId = requestAnimationFrame(loop);
-    }
-    return () => cancelAnimationFrame(frameId);
-  }, [status, currentStage]);
-
-  const startBenchmark = () => {
-    setStatus('running');
-    setCurrentStage(0);
-    setProgress(0);
-    setIterations(0);
-    setResults({});
-    iterationsSinceLastUpdate.current = 0;
-    lastUpdateRef.current = performance.now();
-    unlockAchievement('speed_demon');
-  };
-
-  const stopBenchmark = () => {
-    setStatus('idle');
-    setIps(0);
-    updateMetrics({ isOverridden: false });
-  };
+  const gpuResult = results.gpu;
+  const gflops = gpuResult && !gpuResult.unavailable ? gpuResult.gflops : null;
 
   const calculateFinalScore = () => {
-    const total = Object.values(results).reduce((a, b) => a + b, 0);
+    const total = CPU_STAGES.reduce((sum, s) => sum + (results[s.id]?.ops || 0), 0);
     return Math.floor(total / 1000);
   };
+
+  const activeStage = STAGES[currentStage];
+  const isGpuActive = activeStage?.kind === 'gpu';
+  // One number, two units — iterations for the CPU stages, GFLOPS for the GPU one.
+  const rateValue = isGpuActive ? (rate / 1e9).toFixed(1) : `${Math.floor(rate / 1000)}k`;
+  const rateLabel = isGpuActive ? 'GFLOPS' : 'Iterations / Sec';
+
+  const adapterName = gpuInfo
+    ? [gpuInfo.vendor, gpuInfo.architecture].filter(Boolean).join(' ') || gpuInfo.description
+    : '';
 
   return (
     <div className="flex flex-col h-full bg-[#030305] text-os-onSurface p-4 md:p-8 font-sans overflow-hidden relative">
       <div className="scanline" />
-      
+
       {/* Header Section */}
       <div className="flex justify-between items-start mb-8 z-20">
-        <motion.div 
+        <motion.div
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           className="space-y-1"
@@ -163,10 +284,10 @@ const Benchmark = () => {
             </div>
           </div>
         </motion.div>
-        
+
         <div className="flex gap-3">
           {status !== 'running' ? (
-            <button 
+            <button
               onClick={startBenchmark}
               className="group relative px-6 py-2.5 rounded-xl bg-os-primary text-sdl-onAccent font-black uppercase tracking-widest text-[10px] overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.4)]"
             >
@@ -176,7 +297,7 @@ const Benchmark = () => {
               </span>
             </button>
           ) : (
-            <button 
+            <button
               onClick={stopBenchmark}
               className="px-6 py-2.5 rounded-xl bg-red-500/10 border border-red-500/50 text-red-500 font-black uppercase tracking-widest text-[10px] hover:bg-red-500 hover:text-sdl-onAccent transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)]"
             >
@@ -191,8 +312,14 @@ const Benchmark = () => {
         <div className="lg:col-span-4 space-y-4 overflow-y-auto scrollbar-hide pr-2">
           {STAGES.map((stage, idx) => {
             const isActive = idx === currentStage && status === 'running';
-            const isCompleted = idx < currentStage || status === 'completed';
+            const result = results[stage.id];
+            const isCompleted = !!result;
             const Icon = stage.icon;
+
+            let resultText = null;
+            if (result?.unavailable) resultText = 'No WebGPU adapter';
+            else if (result && stage.kind === 'gpu') resultText = `${result.gflops.toFixed(1)} GFLOPS`;
+            else if (result) resultText = `${result.ops.toLocaleString()} ops`;
 
             return (
               <motion.div
@@ -201,8 +328,8 @@ const Benchmark = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.1 }}
                 className={`p-4 rounded-2xl border transition-all duration-300 ${
-                  isActive 
-                    ? 'bg-os-primary/10 border-os-primary/40 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.1)]' 
+                  isActive
+                    ? 'bg-os-primary/10 border-os-primary/40 shadow-[0_0_20px_rgb(var(--os-primary-rgb)_/_0.1)]'
                     : 'bg-veil/[0.02] border-hairline/5'
                 }`}
               >
@@ -215,13 +342,13 @@ const Benchmark = () => {
                       {stage.name}
                     </span>
                   </div>
-                  {isCompleted && <CheckCircle2 size={14} className="text-os-tertiary" />}
+                  {isCompleted && !result.unavailable && <CheckCircle2 size={14} className="text-os-tertiary" />}
                 </div>
-                
+
                 {isActive && (
                   <div className="space-y-2 mt-3 overflow-hidden">
                     <div className="h-1 w-full bg-veil/5 rounded-full overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         className="h-full bg-os-primary"
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
@@ -231,6 +358,12 @@ const Benchmark = () => {
                       <span>Analyzing...</span>
                       <span>{Math.floor(progress)}%</span>
                     </div>
+                  </div>
+                )}
+
+                {!isActive && resultText && (
+                  <div className="mt-2 text-[9px] font-mono font-bold uppercase tracking-wider text-os-onSurfaceVariant/50">
+                    {resultText}
                   </div>
                 )}
               </motion.div>
@@ -250,10 +383,10 @@ const Benchmark = () => {
               </div>
               <div className="h-12 flex items-end gap-1">
                 {history.map((v, i) => (
-                  <motion.div 
-                    key={i} 
+                  <motion.div
+                    key={i}
                     animate={{ height: `${Math.max(10, Math.min(100, (v / Math.max(...history, 1)) * 100))}%` }}
-                    className={`flex-1 rounded-t-sm ${status === 'running' ? 'bg-os-primary' : 'bg-veil/10'}`} 
+                    className={`flex-1 rounded-t-sm ${status === 'running' ? 'bg-os-primary' : 'bg-veil/10'}`}
                   />
                 ))}
               </div>
@@ -265,15 +398,15 @@ const Benchmark = () => {
         <div className="lg:col-span-8 flex flex-col gap-6">
           <div className="flex-grow rounded-[2.5rem] bg-veil/[0.01] border border-hairline/5 p-8 relative overflow-hidden group">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgb(var(--os-primary-rgb)_/_0.05),transparent)] pointer-events-none" />
-            
+
             {/* Quantum Core Animation */}
             <div className="absolute inset-0 flex items-center justify-center">
               <motion.div
-                animate={{ 
+                animate={{
                   rotate: status === 'running' ? 360 : 0,
                   scale: status === 'running' ? [1, 1.1, 1] : 1,
                 }}
-                transition={{ 
+                transition={{
                   rotate: { repeat: Infinity, duration: status === 'running' ? 4 : 20, ease: "linear" },
                   scale: { repeat: Infinity, duration: 2, ease: "easeInOut" }
                 }}
@@ -282,10 +415,10 @@ const Benchmark = () => {
                 {/* Visualizer Rings */}
                 <div className={`w-48 h-48 rounded-full border border-dashed transition-colors duration-500 ${status === 'running' ? 'border-os-primary/40' : 'border-hairline/10'}`} />
                 <div className={`absolute inset-4 rounded-full border border-double animate-spin-slow transition-colors duration-500 ${status === 'running' ? 'border-os-secondary/40' : 'border-hairline/5'}`} />
-                <motion.div 
+                <motion.div
                   animate={{ opacity: status === 'running' ? [0.2, 0.5, 0.2] : 0.1 }}
                   transition={{ repeat: Infinity, duration: 1.5 }}
-                  className="absolute inset-12 rounded-full bg-os-primary blur-3xl" 
+                  className="absolute inset-12 rounded-full bg-os-primary blur-3xl"
                 />
               </motion.div>
 
@@ -312,9 +445,9 @@ const Benchmark = () => {
                       className="space-y-0"
                     >
                       <span className="text-6xl font-black font-mono italic text-glow tracking-tighter">
-                        {Math.floor(ips / 1000)}k
+                        {rateValue}
                       </span>
-                      <p className="text-[10px] font-black text-os-primary uppercase tracking-[0.3em] block">Iterations / Sec</p>
+                      <p className="text-[10px] font-black text-os-primary uppercase tracking-[0.3em] block">{rateLabel}</p>
                     </motion.div>
                   ) : (
                     <motion.div
@@ -341,28 +474,43 @@ const Benchmark = () => {
           </div>
 
           {/* Bottom Actions/Stats */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-6 rounded-3xl bg-veil/[0.02] border border-hairline/5 flex flex-col justify-center gap-1">
               <span className="text-[9px] font-black text-os-onSurfaceVariant uppercase tracking-widest">Total Computed</span>
               <span className="text-2xl font-black font-mono tracking-tight whitespace-nowrap">
-                {iterations.toLocaleString()} <span className="text-[10px] opacity-40">OPS</span>
+                {totalOps.toLocaleString()} <span className="text-[10px] opacity-40">OPS</span>
               </span>
             </div>
             <div className="p-6 rounded-3xl bg-veil/[0.02] border border-hairline/5 flex flex-col justify-center gap-1">
-              <span className="text-[9px] font-black text-os-onSurfaceVariant uppercase tracking-widest">Environment</span>
-              <span className="text-2xl font-black italic tracking-wide text-os-tertiary">Lumina-V8</span>
+              <span className="text-[9px] font-black text-os-onSurfaceVariant uppercase tracking-widest">Parallelism</span>
+              <span className="text-2xl font-black font-mono tracking-tight whitespace-nowrap">
+                {POOL_SIZE}x <span className="text-[10px] opacity-40">THREADS</span>
+              </span>
+              <span className="text-[9px] font-bold text-os-onSurfaceVariant/40 uppercase tracking-wider">
+                {navigator.hardwareConcurrency || '?'} logical cores
+              </span>
+            </div>
+            <div className="p-6 rounded-3xl bg-veil/[0.02] border border-hairline/5 flex flex-col justify-center gap-1">
+              <span className="text-[9px] font-black text-os-onSurfaceVariant uppercase tracking-widest">GPU Compute</span>
+              <span className="text-2xl font-black font-mono tracking-tight whitespace-nowrap text-os-tertiary">
+                {gflops === null ? '—' : gflops.toFixed(1)} <span className="text-[10px] opacity-40">GFLOPS</span>
+              </span>
+              <span className="text-[9px] font-bold text-os-onSurfaceVariant/40 uppercase tracking-wider truncate">
+                {adapterName || (gpuResult?.unavailable ? 'WebGPU unavailable' : 'Not measured')}
+              </span>
             </div>
           </div>
         </div>
       </div>
 {/* Alert Footer */}
-      <motion.div 
+      <motion.div
         animate={{ opacity: status === 'running' ? 1 : 0.4 }}
         className="mt-6 flex items-center gap-4 p-4 rounded-2xl bg-os-primary/5 border border-os-primary/10"
       >
         <AlertTriangle size={18} className="text-os-primary shrink-0" />
         <p className="text-[9px] font-bold uppercase tracking-wider leading-relaxed text-os-onSurfaceVariant">
-          System integrity verified. Quantum Bench bypasses standard browser throttling to access peak virtual cycles. 
+          Quantum Bench saturates {POOL_SIZE} worker thread{POOL_SIZE === 1 ? '' : 's'} and dispatches a
+          single-precision matrix multiply to your GPU via WebGPU. This is real work on real silicon.
           Expect elevated fan curves and system temperature during execution.
         </p>
       </motion.div>

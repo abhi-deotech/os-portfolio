@@ -1,0 +1,46 @@
+# Refreshes src/data/githubSnapshot.json on a schedule.
+#
+# The snapshot is regenerated during every `npm run build`, so a deploy always ships current data.
+# The problem is the quiet stretch: with no pushes for three weeks, the contribution heatmap on the
+# deployed site is three weeks stale — and a heatmap missing its most recent activity is the one
+# part of the widget where being out of date actually looks bad.
+#
+# This job re-runs the sync every Monday, commits the result if anything moved, and lets the normal
+# push-to-deploy pipeline pick it up. The built-in GITHUB_TOKEN is enough: everything the script
+# queries is public, and GraphQL only requires that the caller be authenticated at all.
+name: Refresh GitHub snapshot
+
+on:
+  schedule:
+    - cron: '17 6 * * 1' # Mondays, 06:17 UTC. Off the hour to dodge the scheduler's rush.
+  workflow_dispatch: # so it can be run by hand after changing the sync script
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch contribution data
+        env:
+          GH_SYNC_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/github-sync.mjs
+
+      - name: Commit if the numbers moved
+        run: |
+          if git diff --quiet -- src/data/githubSnapshot.json; then
+            echo "Snapshot unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/githubSnapshot.json
+          git commit -m "chore: refresh GitHub contribution snapshot"
+          git push

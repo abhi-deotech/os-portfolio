@@ -55,6 +55,15 @@ export const ICON_THEMES = [
     name: 'Lumina Neon',
     description:
       'The original hardcoded neon palette. Off-theme by design — it belongs to the legacy colorway and will fight the others.',
+    // The description above has always said this set fights the other fifteen colorways. Only the
+    // description said it, though, so nothing could ACT on it: on the five dark colorways the neon
+    // palette measures clean (0 of 19 glyphs below 3:1, worst 8.3:1), so a filter built on
+    // `iconAudit` alone — which is what "Surprise me" used to be — happily served it on Rose Dusk.
+    // Passing a contrast floor and belonging to a colorway are different claims; this is the second
+    // one, as data rather than prose.
+    offTheme: true,
+    // The colorway it does belong to. There, it is not off-theme at all — it is the point.
+    homeColorway: 'lumina-neon',
   },
 ];
 

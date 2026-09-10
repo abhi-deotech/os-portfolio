@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import {
   MousePointer2, FolderPlus, RefreshCw, Cpu, X, RotateCcw, Hash,
-  User, Image as Wallpaper, Shuffle
+  User, Image as Wallpaper, Shuffle, SquareTerminal as TerminalSquare, FolderOpen
 } from 'lucide-react';
 import CustomIcon from './components/common/CustomIcon';
 import {
@@ -25,10 +25,12 @@ import BootSequence from './components/BootSequence';
 import BSOD from './components/BSOD';
 import WindowContentRenderer from './components/WindowContentRenderer';
 import Desktop from './components/Desktop';
+import MenuBar from './components/MenuBar';
 import Taskbar from './components/Taskbar';
 
 import useOSStore from './store/osStore';
 import { GAME_BY_ID } from './config/games';
+import { APP_BY_ID } from './config/apps';
 import { applyTheme } from './theme/applyTheme';
 import './theme/grammar.css';
 import { useIsMobile } from './hooks/useMediaQuery';
@@ -37,6 +39,24 @@ import './index.css';
 // Context menu IDs for desktop and icon menus
 const DESKTOP_MENU_ID = 'desktop-context-menu';
 const ICON_MENU_ID = 'icon-context-menu';
+
+/**
+ * One row of a right-click menu.
+ *
+ * Every row used to inline its own `<CustomIcon size={13} className="mr-2" />`, and Open Terminal
+ * used a `>_` text glyph instead — so the icons set two different label origins and the column read
+ * as ragged. Routing them through one component means the icon slot is defined once; the fixed
+ * 16px column that aligns it lives in the `.os-context-menu` block in index.css.
+ *
+ * `danger` tags the destructive rows so they can carry the alert role, the same way the Reset
+ * button in the Appearance pane does.
+ */
+const MenuRow = ({ icon, label, onClick, danger = false }) => (
+  <Item onClick={onClick} className={danger ? 'os-menu-danger' : undefined}>
+    <CustomIcon icon={icon} size={14} color="currentColor" animate={false} />
+    <span>{label}</span>
+  </Item>
+);
 
 // The accent map now lives in src/theme/applyTheme.js — it was previously duplicated in five places
 // with three different encodings (here, Settings.jsx, Window.jsx, QuantumWidget.jsx, puterSlice.js).
@@ -171,37 +191,26 @@ function App() {
       {!isMobile && (
         <>
           <Menu id={DESKTOP_MENU_ID} animation="fade" className="os-context-menu">
-            <Item onClick={() => openWindow('terminal')}>
-              <div className="font-mono font-bold text-xs mr-2">{'>_'}</div> Open Terminal
-            </Item>
-            <Item onClick={() => openWindow('about')}>
-              <CustomIcon icon={User} size={13} color="currentColor" className="mr-2" animate={false} /> About Me
-            </Item>
+            <MenuRow icon={TerminalSquare} label="Open Terminal" onClick={() => openWindow('terminal')} />
+            <MenuRow icon={User} label="About Me" onClick={() => openWindow('about')} />
             <Separator />
-            <Item onClick={() => openWindow('settings')}>
-              <CustomIcon icon={Wallpaper} size={13} color="currentColor" className="mr-2" animate={false} /> Personalize…
-            </Item>
-            <Item onClick={() => createFolder(`New Folder`)}>
-              <CustomIcon icon={FolderPlus} size={13} color="currentColor" className="mr-2" animate={false} /> New Folder
-            </Item>
+            <MenuRow icon={Wallpaper} label="Personalize…" onClick={() => openWindow('settings')} />
+            <MenuRow icon={FolderPlus} label="New Folder" onClick={() => createFolder(`New Folder`)} />
             <Separator />
             {/* Above the Resets, not beside them: this rolls a look, it does not discard one. */}
-            <Item onClick={randomizeAppearance}>
-              <CustomIcon icon={Shuffle} size={13} color="currentColor" className="mr-2" animate={false} /> Surprise Me
-            </Item>
+            <MenuRow icon={Shuffle} label="Surprise Me" onClick={randomizeAppearance} />
             <Separator />
-            <Item onClick={() => { resetSettingsToDefault(); closeWindow('settings'); }}>
-              <CustomIcon icon={RotateCcw} size={13} color="currentColor" className="mr-2" animate={false} /> Reset Settings
-            </Item>
-            <Item onClick={resetIconPositions}>
-              <CustomIcon icon={RefreshCw} size={13} color="currentColor" className="mr-2" animate={false} /> Reset Icon Layout
-            </Item>
+            <MenuRow
+              icon={RotateCcw}
+              label="Reset Settings"
+              danger
+              onClick={() => { resetSettingsToDefault(); closeWindow('settings'); }}
+            />
+            <MenuRow icon={RefreshCw} label="Reset Icon Layout" danger onClick={resetIconPositions} />
           </Menu>
 
           <Menu id={ICON_MENU_ID} animation="fade" className="os-context-menu">
-            <Item onClick={() => openWindow(contextMenuIconRef.current)}>
-              Open
-            </Item>
+            <MenuRow icon={FolderOpen} label="Open" onClick={() => openWindow(contextMenuIconRef.current)} />
           </Menu>
         </>
       )}
@@ -209,6 +218,10 @@ function App() {
       {/* Ambient Neo-Glows */}
       <div className="absolute top-1/4 left-1/4 w-[40vw] h-[40vw] bg-os-primaryDim/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] bg-os-secondaryDim/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
+
+      {/* First flex child: Desktop is flex-grow, so the icon coordinate space starts below the bar
+          rather than underneath it. See the note in MenuBar.jsx. */}
+      <MenuBar />
 
       <Desktop onIconContextMenu={handleIconContextMenu} />
 
@@ -222,11 +235,15 @@ function App() {
                   key={id}
                   id={id}
                   // Titles were derived as `id[0].toUpperCase() + id.slice(1)`, which produced
-                  // "Retroarcade" and "Taskmanager". A registered game supplies its real title,
-                  // and its own window size — Window defaults to 900x650 and App never passed
-                  // anything else, so a 420px Snake board sat in the same frame as Memory Match.
-                  title={GAME_BY_ID[id]?.title ?? id.charAt(0).toUpperCase() + id.slice(1)}
-                  {...(GAME_BY_ID[id]?.window ?? {})}
+                  // "Retroarcade" and "Taskmanager" — and "Aichat" and "Browser" for apps, whose
+                  // registry titles are "Lumina AI" and "Flow-Net". Both registries are consulted:
+                  // games first (retroarcade lives in both; the game entry is the specific one),
+                  // then apps, then the derived fallback for ids in neither (none today).
+                  // Window geometry follows the same lookup — Window defaults to 900x650 and App
+                  // used to pass nothing for apps, so a 420px Snake board and the whole Game
+                  // Center launcher sat in the same generic frame.
+                  title={GAME_BY_ID[id]?.title ?? APP_BY_ID[id]?.title ?? id.charAt(0).toUpperCase() + id.slice(1)}
+                  {...(GAME_BY_ID[id]?.window ?? APP_BY_ID[id]?.window ?? {})}
                   isActive={activeWindow === id}
                   isMinimized={minimizedWindows.includes(id)}
                   onClose={() => closeWindow(id)}

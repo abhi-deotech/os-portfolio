@@ -1,6 +1,22 @@
-import * as Lucide from 'lucide-react';
-import { Gamepad2, Layers, Grid3x3, Brain, Hash, Joystick, Blocks, Bomb, Grid2x2 } from 'lucide-react';
+import {
+  Gamepad2, Layers, Grid3x3, Brain, Hash, Joystick, Blocks, Bomb, Grid2x2, Circle,
+} from 'lucide-react';
 import FOLDER_GAMES from './folderGames.json';
+
+/**
+ * The icons a folder game is allowed to name, keyed by their lucide export name.
+ *
+ * This was `import * as Lucide from 'lucide-react'`. A namespace import cannot be tree-shaken —
+ * the bundler has to assume any export might be read — so the entire icon set, 1,498 KB of source,
+ * was pulled in to resolve the three names that folderGames.json actually uses. App.jsx imports
+ * `GAME_BY_ID` from this file, so all of it landed on first paint.
+ *
+ * Naming them explicitly costs a line per icon and takes the eager lucide payload to 91 KB. A game
+ * that names something absent still falls back to the generic pad below, exactly as before, so the
+ * failure mode is unchanged — it is just reached by a wider set of inputs now. Add an entry here
+ * when a new folder game wants an icon this map does not carry.
+ */
+const FOLDER_GAME_ICONS = { Circle, Grid3x3, Layers };
 
 /**
  * The game registry — the single source of truth for the Games section.
@@ -96,7 +112,11 @@ const BUILTIN_GAMES = [
     source: 'builtin',
     window: { width: 720, height: 780 },
     controls: { keys: ['←', '→'], touch: 'drag', desc: 'Arrow keys, or drag anywhere to move the paddle.' },
-    achievements: [],
+    // Every id listed here must exist in src/config/achievements.js — unlockAchievement dev-warns
+    // on unknown ids, and the launcher's Trophy Room groups its rows by THIS field, so a game with
+    // an empty array simply has no section there. These four games shipped with `achievements: []`
+    // until their ids were registered; the arrays and the registry are now updated together.
+    achievements: ['breakout_pro'],
   },
   {
     id: 'minesweeper',
@@ -108,7 +128,7 @@ const BUILTIN_GAMES = [
     source: 'builtin',
     window: { width: 780, height: 800 },
     controls: { keys: ['↑', '↓', '←', '→', 'Enter', 'F'], touch: 'tap', desc: 'Tap to reveal, long-press to flag. First click is always safe.' },
-    achievements: [],
+    achievements: ['mines_master'],
   },
   {
     id: 'towerstack',
@@ -120,7 +140,7 @@ const BUILTIN_GAMES = [
     source: 'builtin',
     window: { width: 560, height: 800 },
     controls: { keys: ['Space'], touch: 'tap', desc: 'Space or tap to drop the block.' },
-    achievements: [],
+    achievements: ['tower_pro'],
   },
   {
     // Kept as `retroarcade` rather than renamed to `doom`: the id is also the window id, the dock
@@ -136,7 +156,7 @@ const BUILTIN_GAMES = [
     novelty: true,
     window: { width: 1040, height: 780 },
     controls: { keys: ['↑', '↓', '←', '→', 'Z', 'X', 'Enter'], touch: 'none', desc: 'Arrow keys to move, Z and X to act, Enter for the menu. Keyboard only.' },
-    achievements: [],
+    achievements: ['retro_gamer'],
     credit: { author: 'id Software', url: 'https://github.com/nneonneo/universal-doom', license: 'Shareware WAD (freely redistributable)' },
   },
 ];
@@ -166,7 +186,7 @@ export const GAME_MODULES = {
  */
 const folderGames = FOLDER_GAMES.map((g) => ({
   ...g,
-  icon: Lucide[g.icon] ?? Gamepad2,
+  icon: FOLDER_GAME_ICONS[g.icon] ?? Gamepad2,
   achievements: [],
 }));
 

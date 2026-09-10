@@ -11,7 +11,7 @@ import { ACHIEVEMENT_BY_ID } from '../config/achievements';
  * fake achievement.
  */
 const AchievementToast = ({ achievementId, onComplete }) => {
-  const { transparencyEffects } = useOSStore();
+  const transparencyEffects = useOSStore((s) => s.transparencyEffects);
 
   // Was a private 13-entry object. It omitted deep_thinker, devops_escape and system_pro — which
   // the panel DID list, so those three unlocked in total silence — and all five game ids, which

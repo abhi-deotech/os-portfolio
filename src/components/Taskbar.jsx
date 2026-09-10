@@ -12,10 +12,27 @@ import { useIsMobile } from '../hooks/useMediaQuery';
 import useSoundEffects from '../hooks/useSoundEffects';
 import { APPS } from '../config/apps';
 
+/**
+ * Dock magnification, indexed by distance from the icon under the cursor.
+ *
+ * Real macOS tracks cursor-X and runs a continuous falloff against every icon's centre. This steps
+ * neighbours down a fixed ladder instead, keyed off the hovered icon's INDEX — it reads as smooth
+ * because the transform is CSS-eased, not because the curve is continuous.
+ *
+ * Applied to the button, so it multiplies with the icon's own resting scale (active 1.1, minimized
+ * 0.9, pressed 0.95) through nested transforms rather than overriding them.
+ *
+ * No reduced-motion branch is needed: grammar.css already forces transition-duration to 1ms under
+ * [data-motion='reduced'], so the scale snaps rather than animating — the affordance survives, the
+ * motion does not.
+ */
+const DOCK_MAGNIFICATION = [1.18, 1.09, 1.03];
+
 const Taskbar = () => {
   const isMobile = useIsMobile();
   const { playSound } = useSoundEffects();
   const [time, setTime] = useState(new Date());
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   // One hook for the whole dock; the running-app dot is resolved per app from it.
   const resolveIcon = useIconResolver();
 
@@ -104,10 +121,18 @@ const Taskbar = () => {
 
         <div className="h-8 w-px bg-os-outline/20 mx-2 md:mr-4" />
 
-        <div className={`flex items-center ${isMobile ? 'space-x-1 overflow-x-auto scrollbar-hide flex-grow' : 'space-x-1 flex-grow justify-center px-2'}`}>
-          {dockApps.map((app) => {
+        <div
+          className={`flex items-center ${isMobile ? 'space-x-1 overflow-x-auto scrollbar-hide flex-grow' : 'space-x-1 flex-grow justify-center px-2'}`}
+          onMouseLeave={() => setHoveredIndex(null)}
+        >
+          {dockApps.map((app, index) => {
             const isOpen = openWindows.includes(app.id);
             const isActive = activeWindow === app.id;
+            // Touch has no hover, and a magnified icon under a fingertip is just a bigger tap
+            // target that moved — so the dock rests flat on mobile.
+            const magnification = isMobile || hoveredIndex === null
+              ? 1
+              : (DOCK_MAGNIFICATION[Math.abs(index - hoveredIndex)] ?? 1);
 
             return (
               <button
@@ -115,6 +140,9 @@ const Taskbar = () => {
                 type="button"
                 aria-label={app.title}
                 title={app.title}
+                onMouseEnter={() => setHoveredIndex(index)}
+                onFocus={() => setHoveredIndex(index)}
+                style={magnification === 1 ? undefined : { transform: `scale(${magnification})` }}
                 onClick={() => {
                   playSound('click');
                   if (isOpen) {

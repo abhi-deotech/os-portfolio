@@ -90,18 +90,18 @@ const FileTreeNode = ({ node, level = 0, selectedFile, setSelectedFile }) => {
 };
 
 const DocumentationApp = () => {
-  const { 
-    fileSystem, 
-    syncDocumentation, 
-    setIsSyncing, 
-    setSyncError, 
-    isSyncing, 
-    lastSyncTime, 
-    activeDocFile,
-    openWindow,
-    findNodeById,
-    unlockAchievement
-  } = useOSStore();
+  // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
+  // every state change anywhere in the OS, not just the fields it reads.
+  const fileSystem = useOSStore((s) => s.fileSystem);
+  const syncDocumentation = useOSStore((s) => s.syncDocumentation);
+  const setIsSyncing = useOSStore((s) => s.setIsSyncing);
+  const setSyncError = useOSStore((s) => s.setSyncError);
+  const isSyncing = useOSStore((s) => s.isSyncing);
+  const lastSyncTime = useOSStore((s) => s.lastSyncTime);
+  const activeDocFile = useOSStore((s) => s.activeDocFile);
+  const openWindow = useOSStore((s) => s.openWindow);
+  const findNodeById = useOSStore((s) => s.findNodeById);
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
 
   useEffect(() => {
     unlockAchievement('architect');

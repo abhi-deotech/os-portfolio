@@ -1,4 +1,9 @@
- 
+/**
+ * One CPU benchmark slice. Several instances of this worker run at once — one per core, sized by
+ * `navigator.hardwareConcurrency` in Benchmark.jsx — so each reply echoes the `stage` it belongs
+ * to and the wall time it actually took. The caller cannot attribute a slice to a stage otherwise:
+ * replies from a pool interleave, and a stage boundary can pass while slices are still in flight.
+ */
 
 self.onmessage = (e) => {
   const { stage, duration = 16 } = e.data;
@@ -8,7 +13,7 @@ self.onmessage = (e) => {
   while (performance.now() - startTime < duration) {
     if (stage === 'int') {
       // Stressful prime check
-      let n = Math.floor(Math.random() * 1000000); 
+      let n = Math.floor(Math.random() * 1000000);
       for (let i = 2; i <= Math.sqrt(n); i++) {
         if (n % i === 0) {
           break;
@@ -32,5 +37,5 @@ self.onmessage = (e) => {
     count++;
   }
 
-  self.postMessage({ iterations: count });
+  self.postMessage({ stage, iterations: count, elapsed: performance.now() - startTime });
 };

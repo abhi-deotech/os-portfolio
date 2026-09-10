@@ -17,9 +17,10 @@ import useOSStore from '../../store/osStore';
  * cannot change the physics. It also means the fixed timestep is honest — `dt` is a constant, and
  * a 144Hz display advances the ball exactly as far per second as a 60Hz one.
  *
- * There is no achievement for this game. src/config/achievements.js registers ids for the original
- * five only, and unlockAchievement dev-warns on anything it does not know, so inventing
- * `breakout_pro` here would be a console warning on every clear rather than a badge.
+ * Clearing the wall awards `breakout_pro`. The id is registered in src/config/achievements.js and
+ * declared on this game's registry entry, so the launcher's Trophy Room and the toast both know
+ * it — an id that exists in only half the system is exactly the write-only-achievement bug that
+ * registry was created to end.
  */
 
 // ── World geometry. All units are world units, never pixels. ────────────────────────────────────
@@ -185,6 +186,7 @@ const Breakout = ({ onBack }) => {
   // the loop rather than forcing `status` to 'paused' means nothing has to be un-paused on restore,
   // and a build where this id is never minimized simply never sees the flag go true.
   const isMinimized = useOSStore((s) => (s.minimizedWindows || []).includes('breakout'));
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
 
   const [status, setStatus] = useState('playing');
   const [score, setScore] = useState(0);
@@ -480,6 +482,12 @@ const Breakout = ({ onBack }) => {
     }
 
     if (w.remaining === 0) {
+      // The clear itself is the achievement event. This branch is the only place `remaining`
+      // reaches zero, and `step` is the loop callback — invoked exactly once per tick, like
+      // submitBest below — so the unlock never sits inside a setState updater, where StrictMode's
+      // double invocation would schedule it twice (tasks/lessons.md). unlockAchievement is also
+      // idempotent, so clearing a wall on every subsequent level costs a no-op store call.
+      unlockAchievement('breakout_pro');
       // Clearing the wall is a promotion, not an ending: more rows, a narrower paddle, a faster
       // ball, and a bonus that scales so a deep run is worth more than grinding level one.
       w.score += 50 * w.level;
@@ -518,7 +526,7 @@ const Breakout = ({ onBack }) => {
     if (ui.score !== w.score) { ui.score = w.score; setScore(w.score); }
     if (ui.lives !== w.lives) { ui.lives = w.lives; setLives(w.lives); }
     if (ui.level !== w.level) { ui.level = w.level; setLevel(w.level); }
-  }, [play, submitBest, go]);
+  }, [play, submitBest, go, unlockAchievement]);
 
   useGameLoop(step, STEP_MS, status === 'playing' && !isMinimized);
 

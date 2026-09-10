@@ -11,13 +11,18 @@ import useSystemMetrics from '../hooks/useSystemMetrics';
 import SocialWidget from './SocialWidget';
 
 const SystemDashboard = () => {
-  const { transparencyEffects } = useOSStore();
+  const transparencyEffects = useOSStore((s) => s.transparencyEffects);
   const metrics = useSystemMetrics();
   const [activeTab, setActiveTab] = useState('social'); // 'social', 'system', 'network'
 
 
   return (
-    <div className={`w-[420px] bg-sdl-surface/90 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} rounded-[2.5rem] border border-hairline/10 shadow-lift-window overflow-hidden flex flex-col select-none`}>
+    /* max-h caps the panel against the viewport. Without it this widget measured 1097px tall in a
+       900px viewport from its default y=40 — 237px of it, ending in the middle of Recent Pulses,
+       rendered below the fold with no way to reach it (the Widgets layer is `overflow-hidden`, so
+       it was clipped rather than scrolled). The 11rem subtracts the widget's own top inset plus the
+       dock's footprint. The tab body below scrolls instead. */
+    <div className={`w-[420px] max-h-[calc(100vh-11rem)] bg-sdl-surface/90 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} rounded-[2.5rem] border border-hairline/10 shadow-lift-window overflow-hidden flex flex-col select-none`}>
       {/* 1. Mini Metrics Bar (Now the header).
           The header/tab/footer strips stay TRANSLUCENT veils rather than an opaque `sunken` fill —
           the panel is backdrop-blurred glass, and a solid band would punch a flat hole through it.
@@ -78,7 +83,9 @@ const SystemDashboard = () => {
       </div>
 
       {/* 4. Tab Content Area */}
-      <div className="flex-grow min-h-[340px] relative overflow-hidden flex flex-col">
+      {/* Scrolls rather than clips. `min-h-[340px]` is a floor, not a fixed height, so the flex
+          item shrinks to whatever the capped panel leaves and the overflow becomes reachable. */}
+      <div className="flex-grow min-h-[340px] relative overflow-y-auto overflow-x-hidden flex flex-col">
          <AnimatePresence mode="wait">
             {activeTab === 'social' && (
               <motion.div 
@@ -86,10 +93,11 @@ const SystemDashboard = () => {
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -10 }}
-                className="h-full flex flex-col p-4"
+                className="min-h-full flex flex-col p-4"
               >
-                {/* We can directly wrap SocialWidget or a condensed version */}
-                <div className="flex-grow scale-[0.95] origin-top">
+                {/* `min-h-full`, not `h-full`: it still fills a short panel, but is allowed to grow
+                    past it so the scroll container above has something to scroll. */}
+                <div className="flex-grow">
                    <SocialWidget />
                 </div>
               </motion.div>

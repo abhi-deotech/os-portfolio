@@ -1,381 +1,501 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Star, GitFork, Users, ExternalLink, RefreshCw, 
-  Calendar, BookOpen, User as UserIcon, Info,
-  Briefcase, MessageSquare, Award, MapPin, Building2, 
-  GraduationCap, BadgeCheck, ThumbsUp, MessageCircle,
-  Share2, Clock, MoreHorizontal
+import React, { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import {
+  ExternalLink, Users, GitPullRequest, GitCommit, Flame, CalendarDays,
+  Quote, Award, MapPin, Briefcase, GraduationCap, Activity,
 } from 'lucide-react';
-const GithubIcon = ({ size = 20, className = "" }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
-  </svg>
-);
-
-const LinkedinIcon = ({ size = 20, className = "" }) => (
-  <svg 
-    width={size} 
-    height={size} 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
-    className={className}
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-  </svg>
-);
 
 import useOSStore from '../store/osStore';
-import { motion } from 'framer-motion';
+import snapshot from '../data/githubSnapshot.json';
+import { buildGrid } from '../utils/contributionGrid';
+import {
+  identity, positions, education, certifications, skills, awards,
+  recommendations, endorsements, record, profileUrls,
+  tenure, formatMonth, totalExperienceMonths, humanizeMonths,
+} from '../config/profile';
 
-const SocialWidget = () => {
-  const { unlockAchievement } = useOSStore();
-  const [activeTab, setActiveTab] = useState('github');
-  const [githubData, setGithubData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  const githubUsername = 'abhi-deotech';
-  const linkedinUsername = 'abhimanyu-saxena-b656a4183';
+const GithubIcon = ({ size = 20, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+  </svg>
+);
 
-  // LinkedIn data (static)
-  const linkedinData = useMemo(() => ({
-    name: 'Abhimanyu Saxena',
-    headline: 'Software Engineer | Team Lead',
-    location: 'Noida, India',
-    connections: '500+',
-    avatar: `https://github.com/${githubUsername}.png`,
-    company: 'Deotechsolutions',
-    title: 'Team Lead',
-    skills: ['React', 'Node.js', 'TypeScript', 'AWS', 'Docker', 'MongoDB']
-  }), [githubUsername]);
+const LinkedinIcon = ({ size = 20, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className} xmlns="http://www.w3.org/2000/svg">
+    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+  </svg>
+);
 
-  useEffect(() => {
-    const fetchGithubData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Check cache first
-        const cacheKey = `github_data_${githubUsername}`;
-        const errorKey = `github_error_${githubUsername}`;
-        const cached = sessionStorage.getItem(cacheKey);
-        const cachedError = sessionStorage.getItem(errorKey);
+/* ---------------------------------------------------------------------------------------------
+ * Contribution heatmap.
+ *
+ * Replaces an <img> from ghchart.rshah.org that had to sit on a hardcoded WHITE panel, because a
+ * third party's PNG cannot be retinted to the active colorway — the old comment in this file
+ * admitted as much and kept the slab. Drawing the grid ourselves removes the third-party
+ * dependency, the light-on-dark slab, and the `width:200%; marginLeft:-100%` crop hack that was
+ * showing only half a year while the label claimed six months.
+ *
+ * SDL: heatmaps use SEQUENTIAL only (dataviz/SKILL.md), and sequential is the accent family. The
+ * five steps are the live accent at rising alpha, so the map re-tints with every colorway instead
+ * of being locked to one green. Level 0 is `veil`, not a faint accent — an empty day must read as
+ * absence, not as a little activity.
+ * ------------------------------------------------------------------------------------------- */
+const CELL = 10;
+const GAP = 2;
+const PITCH = CELL + GAP;
+const LABEL_H = 14;
 
-        if (cachedError) {
-          const { message, timestamp } = JSON.parse(cachedError);
-          const isExpired = Date.now() - timestamp > 60000; // 1 min lock for errors
-          if (!isExpired) {
-             setError(message);
-             setLoading(false);
-             return;
-          }
-        }
+const LEVEL_FILL = [
+  'rgb(var(--sdl-veil-rgb) / 0.06)',
+  'rgb(var(--os-primary-rgb) / 0.22)',
+  'rgb(var(--os-primary-rgb) / 0.45)',
+  'rgb(var(--os-primary-rgb) / 0.70)',
+  'rgb(var(--os-primary-rgb) / 1)',
+];
 
-        if (cached) {
-          const { data, timestamp } = JSON.parse(cached);
-          const isExpired = Date.now() - timestamp > 10 * 60 * 1000; // 10 min cache
-          if (!isExpired) {
-            setGithubData(data);
-            setLoading(false);
-            return;
-          }
-        }
-        
-        // Clear previous error if we're retrying
-        sessionStorage.removeItem(errorKey);
-        
-        // Fetch User Data
-        const userRes = await fetch(`https://api.github.com/users/${githubUsername}`);
-        if (!userRes.ok) {
-          if (userRes.status === 403) throw new Error('GitHub API rate limit exceeded. Please try again later.');
-          throw new Error('Failed to fetch GitHub profile');
-        }
-        const userData = await userRes.json();
+const ContributionHeatmap = ({ calendar }) => {
+  const { weeks, months } = useMemo(() => buildGrid(calendar), [calendar]);
+  if (!weeks.length) return null;
 
-        // Fetch Repos (Top by stars or just recent)
-        const reposRes = await fetch(`https://api.github.com/users/${githubUsername}/repos?sort=updated&per_page=10`);
-        const reposData = await reposRes.json();
-        
-        const totalStars = reposData.reduce((acc, repo) => acc + (repo.stargazers_count || 0), 0);
+  const w = weeks.length * PITCH - GAP;
+  const h = LABEL_H + 7 * PITCH - GAP;
 
-        // Fetch Events separately with proper error handling
-        let recentEvents = [];
-        try {
-          const eventsRes = await fetch(`https://api.github.com/users/${githubUsername}/events/public?per_page=5`);
-          if (eventsRes.ok) {
-            const eventsData = await eventsRes.json();
-            recentEvents = eventsData.filter(e => e.type === 'PushEvent' || e.type === 'WatchEvent').slice(0, 3);
-          }
-        } catch (e) {
-          console.warn('Failed to fetch GitHub events', e);
-        }
-
-        const finalData = {
-          username: userData.login,
-          avatar: userData.avatar_url,
-          repos: userData.public_repos,
-          followers: userData.followers,
-          stars: totalStars,
-          lastPush: userData.updated_at ? new Date(userData.updated_at).toLocaleDateString() : 'N/A',
-          bio: userData.bio,
-          topRepo: reposData[0]?.name || 'No repositories found',
-          recentEvents
-        };
-
-        // Save to cache
-        sessionStorage.setItem(cacheKey, JSON.stringify({
-          data: finalData,
-          timestamp: Date.now()
-        }));
-
-        setGithubData(finalData);
-      } catch (err) {
-        console.error(err);
-        const errorKey = `github_error_${githubUsername}`;
-        
-        // Cache the error for 1 minute to avoid loops
-        sessionStorage.setItem(errorKey, JSON.stringify({
-          message: err.message,
-          timestamp: Date.now()
-        }));
-        
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGithubData();
-  }, [githubUsername]);
-
-
-  const renderGithub = () => {
-    if (loading) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full py-12 opacity-50">
-          <RefreshCw className="text-os-primary animate-spin mb-4" size={40} />
-          <p className="text-sm font-bold text-sdl-sec uppercase tracking-[0.2em]">Syncing GitHub Pulse...</p>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full py-12 text-center px-4">
-          <p className="text-sdl-alert text-sm font-bold mb-3">Sync Failed</p>
-          <p className="text-sdl-sec text-xs leading-relaxed">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-6 px-5 py-2.5 bg-veil/5 hover:bg-veil/10 rounded-xl text-sdl-sec text-xs font-bold transition-all"
-          >
-            Retry Sync
-          </button>
-        </div>
-      );
-    }
-
-    if (!githubData) return null;
-
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col h-full gap-4"
-      >
-        <div className="flex items-center gap-5 py-2">
-          <div className="relative">
-            <img src={githubData.avatar} alt="Avatar" className="w-16 h-16 rounded-2xl border-2 border-os-primary/20 pointer-events-none p-0.5" />
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-sdl-plane border border-hairline/10 rounded-lg flex items-center justify-center">
-               <GithubIcon size={12} className="text-os-primary" />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-base font-black text-sdl-ink tracking-tight">@{githubData.username}</span>
-            <span className="text-xs font-bold text-sdl-sec uppercase tracking-widest mt-1 truncate max-w-[180px]">{githubData.bio || 'Developer'}</span>
-          </div>
-          <a 
-            href={`https://github.com/${githubUsername}`} 
-            target="_blank" 
-            rel="noreferrer" 
-            onClick={() => unlockAchievement('socialite')}
-            className="ml-auto p-2.5 rounded-xl bg-veil/5 text-sdl-sec hover:text-os-primary hover:bg-os-primary/10 transition-all"
-          >
-            <ExternalLink size={18} />
-          </a>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { icon: Star, val: githubData.stars, label: 'Stars', color: 'text-sdl-warn' },
-            { icon: GitFork, val: githubData.repos, label: 'Repos', color: 'text-os-primary' },
-            { icon: Users, val: githubData.followers, label: 'Fans', color: 'text-sdl-barA' }
-          ].map((item, i) => (
-            <div key={i} className="p-4 bg-veil/[0.03] rounded-2xl border border-hairline/5 flex flex-col items-center justify-center gap-1.5 hover:bg-veil/[0.05] transition-colors">
-              <item.icon size={18} className={item.color} />
-              <span className="text-sm font-black text-sdl-ink">{item.val}</span>
-              <span className="text-[10px] font-bold text-sdl-sec uppercase tracking-widest">{item.label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="space-y-3">
-           <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-black text-sdl-sec uppercase tracking-[0.15em]">Contribution Matrix</span>
-              <span className="text-[10px] font-bold text-os-primary/60 uppercase tracking-widest font-mono">6 Months</span>
-           </div>
-           {/* Deliberately white: this mounts a third-party contribution raster from
-               ghchart.rshah.org, drawn for a light backing. Theming the mount would not retint the
-               image, it would just put its green cells on a surface they were not drawn for. */}
-           <div className="p-4 sm:p-5 bg-white rounded-2xl border border-hairline/10 overflow-hidden shadow-lg">
-              <div className="relative w-full overflow-hidden" style={{ aspectRatio: '3/1' }}>
-                  <img
-                    src={`https://ghchart.rshah.org/22c55e/${githubUsername}`}
-                    alt="GitHub Contributions"
-                    className="absolute inset-0 h-full w-auto max-w-none object-cover object-right"
-                    style={{ width: '200%', marginLeft: '-100%' }}
-                  />              </div>
-           </div>
-        </div>
-
-        {/* Recent Activity List */}
-        <div className="space-y-3 overflow-hidden">
-           <span className="text-xs font-black text-sdl-sec uppercase tracking-[0.15em] px-1">Recent Pulses</span>
-           <div className="flex flex-col gap-2">
-              {githubData.recentEvents?.map((event, i) => (
-                 <div key={i} className="flex items-center gap-3 p-3 bg-veil/[0.03] rounded-xl border border-hairline/5 text-sm">
-                    <div className={`w-2 h-2 rounded-full ${event.type === 'PushEvent' ? 'bg-os-primary shadow-[0_0_8px_rgb(var(--os-primary-rgb))]' : 'bg-sdl-warn shadow-[0_0_8px_rgb(var(--sdl-warn-rgb)/0.5)]'}`} />
-                    <span className="text-sdl-sec font-bold">{event.type === 'PushEvent' ? 'Pushed to' : 'Starred'}</span>
-                    <span className="text-sdl-ink font-black truncate max-w-[180px]">{event.repo.name.split('/')[1]}</span>
-                 </div>
-              ))}
-              {(!githubData.recentEvents || githubData.recentEvents.length === 0) && (
-                 <p className="text-sm text-sdl-sec italic px-2">No recent pulses detected...</p>
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      width="100%"
+      role="img"
+      aria-label={`${calendar.active.length} days with contributions between ${calendar.from} and ${calendar.to}`}
+      className="block overflow-visible"
+    >
+      {months.map((m) => (
+        <text
+          key={`${m.label}-${m.column}`}
+          x={m.column * PITCH}
+          y={LABEL_H - 5}
+          className="font-bold"
+          style={{ fontSize: 9, fill: 'rgb(var(--sdl-sec-rgb) / 0.75)', letterSpacing: '0.08em' }}
+        >
+          {m.label}
+        </text>
+      ))}
+      {weeks.map((week, wi) =>
+        week.map((day, di) => {
+          if (!day) return null;
+          return (
+            <rect
+              key={day.date}
+              x={wi * PITCH}
+              y={LABEL_H + di * PITCH}
+              width={CELL}
+              height={CELL}
+              rx={2}
+              fill={LEVEL_FILL[day.level]}
+            >
+              {/* Native tooltip, no JS. Only on days that happened — 269 titles instead of 365. */}
+              {day.count > 0 && (
+                <title>{`${day.count} contribution${day.count === 1 ? '' : 's'} on ${day.date}`}</title>
               )}
-           </div>
-        </div>
-      </motion.div>
-    );
-  };
+            </rect>
+          );
+        }),
+      )}
+    </svg>
+  );
+};
 
-  const renderLinkedin = () => {
-    if (!linkedinData) return null;
-
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col h-full"
-      >
-        {/* Compact Header */}
-        <div className="flex items-start gap-4 pb-4 border-b border-hairline/5">
-          <div className="relative flex-shrink-0">
-            <img 
-              src={linkedinData.avatar} 
-              alt="Avatar" 
-              className="w-16 h-16 rounded-2xl border-2 border-[#0077b5]/30 pointer-events-none"
+/** Stacked share bar. Language share is a magnitude, so SDL says sequential, not categorical. */
+const LanguageBar = ({ languages }) => {
+  if (!languages?.length) return null;
+  const total = languages.reduce((a, l) => a + l.pct, 0) || 1;
+  return (
+    <div className="space-y-2.5">
+      <div className="flex h-2 w-full overflow-hidden rounded-full bg-veil/[0.06]">
+        {languages.map((l, i) => (
+          <div
+            key={l.name}
+            style={{
+              width: `${(l.pct / total) * 100}%`,
+              background: `rgb(var(--os-primary-rgb) / ${(1 - i * 0.17).toFixed(2)})`,
+            }}
+            title={`${l.name} ${l.pct}%`}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+        {languages.map((l, i) => (
+          <span key={l.name} className="flex items-center gap-1.5 text-[10px] font-bold text-sdl-sec">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: `rgb(var(--os-primary-rgb) / ${(1 - i * 0.17).toFixed(2)})` }}
             />
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0077b5] rounded-full flex items-center justify-center">
-              <BadgeCheck size={12} className="text-sdl-ink" />
-            </div>
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <h2 className="text-base font-black text-sdl-ink tracking-tight">{linkedinData.name}</h2>
-            <p className="text-sm text-sdl-sec mt-0.5">{linkedinData.headline}</p>
-            <div className="flex items-center gap-2 mt-1.5 text-xs text-sdl-sec">
-              <MapPin size={12} />
-              <span>{linkedinData.location}</span>
-              <span>·</span>
-              <span>{linkedinData.connections} connections</span>
-            </div>
-          </div>
-          
-          <a 
-            href={`https://linkedin.com/in/${linkedinUsername}`} 
-            target="_blank" 
-            rel="noreferrer"
-            onClick={() => unlockAchievement('socialite')}
-            className="flex-shrink-0 p-2 rounded-lg bg-[#0077b5] text-sdl-ink hover:bg-[#008de4] transition-all"
-          >
-            <LinkedinIcon size={18} />
-          </a>
-        </div>
+            {l.name}
+            <span className="text-sdl-sec/60">{l.pct}%</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
 
-        {/* Skills */}
-        <div className="py-4 border-b border-hairline/5">
-          <h3 className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-2">Top Skills</h3>
-          <div className="flex flex-wrap gap-1.5">
-            {linkedinData.skills?.map((skill, i) => (
-              <span key={i} className="px-2 py-1 bg-veil/5 rounded-md text-xs text-sdl-ink/70">
-                {skill}
-              </span>
+const StatTile = ({ icon: Icon, value, label }) => (
+  <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-hairline/5 bg-veil/[0.03] p-4 transition-colors hover:bg-veil/[0.05]">
+    <Icon size={18} className="text-os-primary" />
+    <span className="text-sm font-black tabular-nums text-sdl-ink">{value}</span>
+    <span className="text-[10px] font-bold uppercase tracking-widest text-sdl-sec">{label}</span>
+  </div>
+);
+
+const SectionLabel = ({ children, aside }) => (
+  <div className="flex items-center justify-between px-1">
+    <span className="text-xs font-black uppercase tracking-[0.15em] text-sdl-sec">{children}</span>
+    {aside && (
+      <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-os-primary/60">{aside}</span>
+    )}
+  </div>
+);
+
+/** "3d ago" / "2mo ago". Coarse on purpose — a build-time snapshot cannot be minute-accurate. */
+const ago = (iso) => {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 864e5);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+};
+
+const EVENT_VERB = {
+  PushEvent: 'Pushed to',
+  PullRequestEvent: 'Pull request on',
+  WatchEvent: 'Starred',
+  CreateEvent: 'Created',
+};
+
+/* ---------------------------------------------------------------------------------------- *
+ * GITHUB — machine proof. Baked at build time by scripts/github-sync.mjs, so there is no
+ * fetch, no spinner, no rate-limit branch and no error state to render here any more.
+ * ---------------------------------------------------------------------------------------- */
+export const GithubPanel = () => {
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
+  const c = snapshot.contributions;
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex h-full flex-col gap-4">
+      <div className="flex items-center gap-5 py-2">
+        <div className="relative">
+          <img
+            src={snapshot.avatar}
+            alt=""
+            className="pointer-events-none h-16 w-16 rounded-2xl border-2 border-os-primary/20 p-0.5"
+          />
+          <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-lg border border-hairline/10 bg-sdl-plane">
+            <GithubIcon size={12} className="text-os-primary" />
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-col">
+          <span className="text-base font-black tracking-tight text-sdl-ink">@{snapshot.username}</span>
+          <span className="mt-1 truncate text-xs font-bold uppercase tracking-widest text-sdl-sec">
+            {snapshot.bio || `${snapshot.repos} public repos`}
+          </span>
+        </div>
+        <a
+          href={profileUrls.github}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => unlockAchievement('socialite')}
+          aria-label="Open GitHub profile"
+          className="ml-auto rounded-xl bg-veil/5 p-2.5 text-sdl-sec transition-all hover:bg-os-primary/10 hover:text-os-primary"
+        >
+          <ExternalLink size={18} />
+        </a>
+      </div>
+
+      {/* Stars and followers used to be two of the three headline numbers, and both were 0 —
+          they measure popularity, which is not what this profile is optimised for. Effort
+          metrics tell the true story and none of them can read zero for someone who codes. */}
+      {c ? (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            <StatTile icon={Activity} value={c.total.toLocaleString()} label="Contribs" />
+            <StatTile icon={CalendarDays} value={c.activeDays} label="Active Days" />
+            <StatTile icon={Flame} value={c.longest} label="Best Streak" />
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-bold text-sdl-sec">
+            <span className="flex items-center gap-1.5"><GitCommit size={12} className="text-os-primary/70" />{c.commits.toLocaleString()} commits</span>
+            <span className="flex items-center gap-1.5"><GitPullRequest size={12} className="text-os-primary/70" />{c.pullRequests} PRs</span>
+            <span className="flex items-center gap-1.5"><Users size={12} className="text-os-primary/70" />{c.reposContributedTo} repos</span>
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-3 gap-3">
+          <StatTile icon={Activity} value={snapshot.repos} label="Repos" />
+          <StatTile icon={Users} value={snapshot.followers} label="Followers" />
+          <StatTile icon={GitCommit} value={snapshot.stars} label="Stars" />
+        </div>
+      )}
+
+      {snapshot.calendar && (
+        <div className="space-y-3">
+          <SectionLabel aside="52 Weeks">Contribution Matrix</SectionLabel>
+          <div className="rounded-2xl border border-hairline/10 bg-sdl-chart p-4">
+            <ContributionHeatmap calendar={snapshot.calendar} />
+            <div className="mt-3 flex items-center justify-end gap-1.5">
+              <span className="mr-1 text-[9px] font-bold uppercase tracking-widest text-sdl-sec">Less</span>
+              {LEVEL_FILL.map((fill, i) => (
+                <span key={i} className="h-2.5 w-2.5 rounded-[2px]" style={{ background: fill }} />
+              ))}
+              <span className="ml-1 text-[9px] font-bold uppercase tracking-widest text-sdl-sec">More</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {snapshot.languages?.length > 0 && (
+        <div className="space-y-3">
+          <SectionLabel aside="By Bytes">Language Mix</SectionLabel>
+          <LanguageBar languages={snapshot.languages} />
+        </div>
+      )}
+
+      {snapshot.recentEvents?.length > 0 && (
+        <div className="space-y-3 overflow-hidden">
+          <SectionLabel>Recent Pulses</SectionLabel>
+          <div className="flex flex-col gap-2">
+            {snapshot.recentEvents.map((e) => (
+              <div
+                key={`${e.type}-${e.repo}-${e.at}`}
+                className="flex items-center gap-3 rounded-xl border border-hairline/5 bg-veil/[0.03] p-3 text-sm"
+              >
+                <div className="h-2 w-2 shrink-0 rounded-full bg-os-primary shadow-[0_0_8px_rgb(var(--os-primary-rgb))]" />
+                <span className="shrink-0 font-bold text-sdl-sec">{EVENT_VERB[e.type] ?? e.type}</span>
+                <span className="truncate font-black text-sdl-ink">{e.repo}</span>
+                <span className="ml-auto shrink-0 font-mono text-[10px] font-bold text-sdl-sec/70">
+                  {e.commits > 1 ? `${e.commits} commits · ` : ''}{ago(e.at)}
+                </span>
+              </div>
             ))}
           </div>
         </div>
+      )}
+    </motion.div>
+  );
+};
 
-        {/* Current Role */}
-        <div className="py-4">
-          <h3 className="text-[10px] font-black text-sdl-sec uppercase tracking-widest mb-2">Current</h3>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#0077b5]/20 to-[#0077b5]/5 flex items-center justify-center border border-[#0077b5]/20">
-              <Briefcase size={18} className="text-[#70b5f9]" />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-sdl-ink">{linkedinData.title}</p>
-              <p className="text-xs text-[#70b5f9]">{linkedinData.company}</p>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
+/* ---------------------------------------------------------------------------------------- *
+ * LINKEDIN — human proof.
+ *
+ * This tab used to be a worse LinkedIn: invented skills, an invented location, a verification
+ * tick LinkedIn never granted, "500+ connections", and the GitHub avatar wearing a LinkedIn
+ * ring. It competed with linkedin.com and lost, while adding nothing AboutMe did not already
+ * say better.
+ *
+ * It now carries what GitHub structurally cannot: named humans vouching for the work, a dated
+ * career record, and endorsement counts. Every fact comes from src/config/profile.js, and the
+ * panel is labelled as a verified record rather than dressed up as a live feed. Sections whose
+ * data has not been imported yet do not render — a "0 recommendations" empty state would be
+ * worse than no section at all.
+ * ---------------------------------------------------------------------------------------- */
+export const LinkedinPanel = () => {
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
+  const experience = useMemo(() => humanizeMonths(totalExperienceMonths()), []);
 
   return (
-    <div className="flex flex-col h-full p-5 md:p-6 bg-gradient-to-br from-sdl-surface to-sdl-plane rounded-3xl border border-hairline/5 overflow-hidden relative group">
-      <div className={`absolute top-0 right-0 w-40 h-40 blur-3xl rounded-full transition-all duration-500 ${activeTab === 'github' ? 'bg-os-primary/5' : 'bg-[#0077b5]/10'}`} />
-      
-      {/* Tab Switcher */}
-      <div className="flex items-center gap-2 p-1.5 bg-veil/[0.03] rounded-2xl border border-hairline/5 mb-5 relative z-10 w-fit mx-auto">
-        <button
-          onClick={() => setActiveTab('github')}
-          className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-            activeTab === 'github' 
-              ? 'bg-os-primary text-sdl-onAccent shadow-lg shadow-os-primary/20' 
-              : 'text-sdl-sec hover:text-sdl-sec'
-          }`}
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex h-full flex-col gap-4">
+      <div className="flex items-start gap-4 border-b border-hairline/5 pb-4">
+        {/* A monogram, not the GitHub avatar. Honest placeholder until identity.photo exists. */}
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-os-primary/20 bg-gradient-to-br from-os-primary/25 to-os-primary/5">
+          <span className="text-lg font-black tracking-tight text-os-primary">
+            {identity.given[0]}{identity.family[0]}
+          </span>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-black tracking-tight text-sdl-ink">{identity.name}</h2>
+          <p className="mt-0.5 text-sm text-sdl-sec">{identity.headline}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-sdl-sec">
+            <MapPin size={12} />
+            <span>{identity.location}</span>
+            <span aria-hidden>·</span>
+            <span className="font-bold text-os-primary/80">{experience} experience</span>
+          </div>
+        </div>
+
+        <a
+          href={profileUrls.linkedin}
+          target="_blank"
+          rel="noreferrer"
+          onClick={() => unlockAchievement('socialite')}
+          aria-label="Open LinkedIn profile"
+          className="shrink-0 rounded-xl bg-veil/5 p-2.5 text-sdl-sec transition-all hover:bg-os-primary/10 hover:text-os-primary"
         >
-          <GithubIcon size={16} />
-          GitHub
-        </button>
-        <button
-          onClick={() => setActiveTab('linkedin')}
-          className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-            activeTab === 'linkedin' 
-              ? 'bg-[#0077b5] text-sdl-ink shadow-lg shadow-[#0077b5]/20' 
-              : 'text-sdl-sec hover:text-sdl-sec'
-          }`}
-        >
-          <LinkedinIcon size={16} />
-          LinkedIn
-        </button>
+          <LinkedinIcon size={18} />
+        </a>
       </div>
 
-      <div className="flex-1 overflow-auto custom-scrollbar pr-1">
-        {activeTab === 'github' ? renderGithub() : renderLinkedin()}
+      {recommendations.length > 0 && (
+        <div className="space-y-3">
+          <SectionLabel aside={`${recommendations.length}`}>Recommendations</SectionLabel>
+          <div className="flex flex-col gap-2.5">
+            {recommendations.map((r) => (
+              <figure key={`${r.author}-${r.date}`} className="rounded-2xl border border-hairline/5 bg-veil/[0.03] p-4">
+                <Quote size={14} className="mb-2 text-os-primary/60" />
+                <blockquote className="text-xs leading-relaxed text-sdl-ink/90">{r.text}</blockquote>
+                <figcaption className="mt-3 border-t border-hairline/5 pt-2.5">
+                  <p className="text-xs font-black text-sdl-ink">{r.author}</p>
+                  <p className="text-[10px] font-bold text-sdl-sec">{r.title}</p>
+                  {r.relationship && (
+                    <p className="mt-1 text-[10px] italic text-sdl-sec/70">{r.relationship}</p>
+                  )}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <SectionLabel aside={experience}>Career</SectionLabel>
+        <div className="flex flex-col gap-2.5">
+          {positions.map((p) => (
+            <div key={`${p.company}-${p.start}`} className="rounded-2xl border border-hairline/5 bg-veil/[0.03] p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-os-primary/20 bg-os-primary/10">
+                  <Briefcase size={16} className="text-os-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold leading-tight text-sdl-ink">{p.title}</p>
+                  <p className="text-xs font-bold text-os-primary/80">{p.company}</p>
+                  {/* Dates are stored; the duration is computed, so it cannot go stale. */}
+                  <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-sdl-sec">
+                    {formatMonth(p.start)} – {formatMonth(p.end)} · {tenure(p)}
+                  </p>
+                  <p className="text-[10px] text-sdl-sec/70">{p.location}</p>
+                </div>
+                {!p.end && (
+                  <span className="shrink-0 rounded-md bg-os-primary/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-os-primary">
+                    Now
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Footer Branding */}
-      <div className="mt-5 pt-4 border-t border-hairline/5 flex items-center justify-between text-xs font-black text-sdl-sec uppercase tracking-[0.2em]">
-        <span>Networking Hub</span>
-        <span>v1.2.0</span>
+      <div className="space-y-3">
+        <SectionLabel aside={endorsements.length ? 'Endorsed' : 'From Résumé'}>Skills</SectionLabel>
+        <div className="flex flex-wrap gap-1.5">
+          {endorsements.length > 0
+            ? endorsements.map((e) => (
+                <span
+                  key={e.skill}
+                  className="flex items-center gap-1.5 rounded-lg border border-hairline/5 bg-veil/5 px-2.5 py-1 text-xs text-sdl-ink/80"
+                >
+                  {e.skill}
+                  <span className="font-mono text-[10px] font-black text-os-primary">{e.count}</span>
+                </span>
+              ))
+            : [...skills.languages, ...skills.tools].map((s) => (
+                <span key={s} className="rounded-lg border border-hairline/5 bg-veil/5 px-2.5 py-1 text-xs text-sdl-ink/80">
+                  {s}
+                </span>
+              ))}
+        </div>
+      </div>
+
+      {awards.length > 0 && (
+        <div className="space-y-3">
+          <SectionLabel>Recognition</SectionLabel>
+          <div className="flex flex-col gap-2">
+            {awards.map((a) => (
+              <div key={a.title} className="flex items-start gap-3 rounded-xl border border-hairline/5 bg-veil/[0.03] p-3">
+                <Award size={14} className="mt-0.5 shrink-0 text-os-primary" />
+                <div className="min-w-0">
+                  <p className="text-xs font-black text-sdl-ink">
+                    {a.title} <span className="font-bold text-sdl-sec">· {a.org}</span>
+                  </p>
+                  <p className="mt-0.5 text-[10px] leading-relaxed text-sdl-sec/80">{a.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <SectionLabel>Education</SectionLabel>
+        <div className="flex flex-col gap-2">
+          {[...education, ...certifications].map((e) => (
+            <div key={e.title} className="flex items-start gap-3 rounded-xl border border-hairline/5 bg-veil/[0.03] p-3">
+              <GraduationCap size={14} className="mt-0.5 shrink-0 text-os-primary" />
+              <div className="min-w-0">
+                <p className="text-xs font-black text-sdl-ink">{e.title}</p>
+                <p className="text-[10px] font-bold text-sdl-sec">
+                  {e.school}{e.location ? ` · ${e.location}` : ''} · {e.year}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+/** `initialTab` lets an embedder open straight onto either panel — SystemDashboard and the desktop
+ *  widget grid have different reasons to lead. It also makes the shell's footer renderable in a
+ *  headless check, which matters here because the preview pane cannot composite frames. */
+const SocialWidget = ({ initialTab = 'github' }) => {
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const isGithub = activeTab === 'github';
+
+  return (
+    <div className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-hairline/5 bg-gradient-to-br from-sdl-surface to-sdl-plane p-5 md:p-6">
+      <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-os-primary/5 blur-3xl transition-all duration-pane" />
+
+      <div className="relative z-10 mx-auto mb-4 flex w-fit items-center gap-2 rounded-2xl border border-hairline/5 bg-veil/[0.03] p-1.5">
+        {[
+          { id: 'github', label: 'GitHub', Icon: GithubIcon },
+          { id: 'linkedin', label: 'LinkedIn', Icon: LinkedinIcon },
+        ].map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            aria-pressed={activeTab === id}
+            className={`flex items-center gap-2 rounded-xl px-5 py-2 text-xs font-black uppercase tracking-widest transition-all duration-hover ${
+              activeTab === id
+                ? 'bg-os-primary text-sdl-onAccent shadow-lg shadow-os-primary/20'
+                : 'text-sdl-sec hover:text-sdl-ink'
+            }`}
+          >
+            <Icon size={16} />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="custom-scrollbar flex-1 overflow-auto pr-1">
+        {isGithub ? <GithubPanel /> : <LinkedinPanel />}
+      </div>
+
+      {/* The two panels are different KINDS of claim, and the footer says which is which rather
+          than letting a static record pass itself off as a live feed. */}
+      <div className="mt-5 flex items-center justify-between border-t border-hairline/5 pt-4 text-[10px] font-black uppercase tracking-[0.2em] text-sdl-sec">
+        <span>{isGithub ? 'Machine Proof' : 'Human Proof'}</span>
+        <span className="flex items-center gap-1.5">
+          {isGithub ? (
+            <>
+              <span className={`h-1.5 w-1.5 rounded-full ${snapshot.stale ? 'bg-sdl-warn' : 'bg-os-primary'}`} />
+              {snapshot.stale ? 'Cached' : `Synced ${ago(snapshot.generatedAt)}`}
+            </>
+          ) : (
+            <>
+              <span className="h-1.5 w-1.5 rounded-full bg-os-primary" />
+              Verified {record.verifiedAt}
+            </>
+          )}
+        </span>
       </div>
     </div>
   );

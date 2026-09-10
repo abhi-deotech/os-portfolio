@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, Loader2, ShieldAlert } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { AlertCircle, Loader2, RefreshCw, ShieldAlert, Trophy } from 'lucide-react';
 import GameShell from './GameShell';
+import useHighScore from '../../hooks/useHighScore';
 import { getGamePayload } from '../../store/slices/gamesSlice';
 
 /**
@@ -80,8 +81,18 @@ const SandboxedGame = ({ gameId, entry, onBack, title }) => {
   const status = entry ? 'ready' : loadState;
   const [error, setError] = useState('');
   const [score, setScore] = useState(0);
+  const [runOver, setRunOver] = useState(false);
+  const [isRecord, setIsRecord] = useState(false);
   const [nonce, setNonce] = useState(0);
   const frameRef = useRef(null);
+  // Mirrors for the message listener, which subscribes once: reading `score` state there would be
+  // stale, and re-subscribing per point scored just to see it is the alternative nobody wants.
+  const scoreRef = useRef(0);
+  const overRef = useRef(false);
+  // useHighScore takes any string key — folder slugs and minted 'user:…' ids land in the same
+  // 'lumina-game-stats' map as the builtins — and the default 'max' direction fits the bridge,
+  // whose contract only speaks "higher score".
+  const [best, submitBest] = useHighScore(gameId);
 
   useEffect(() => {
     // A folder game is served from a real URL and loads via `src`, NOT srcdoc. Both are equally
@@ -110,35 +121,92 @@ const SandboxedGame = ({ gameId, entry, onBack, title }) => {
     return () => { cancelled = true; };
   }, [gameId, entry, nonce]);
 
+  /**
+   * The parent's half of the window.lumina contract (see SHIM above). 'score' streams the running
+   * total; 'gameover' ends the run, optionally carrying a final score; 'ready' is fire-and-forget.
+   * Until now only 'score' was handled, so the bridge advertised a game-over flow that dead-ended:
+   * the frame said the run was over and the shell kept insisting status="playing" with best={null}.
+   */
   useEffect(() => {
     const onMessage = (event) => {
       // Identity, not origin — see the note at the top of this file.
       if (!frameRef.current || event.source !== frameRef.current.contentWindow) return;
       const d = event.data;
       if (!d || d.ns !== NS || d.v !== 1) return;
+      // A finished run accepts nothing further until Restart reloads the frame. Without this gate
+      // a game that keeps ticking — or a hostile frame spamming 'gameover' — could rewrite the
+      // final score behind the overlay or hammer localStorage through submitBest.
+      if (overRef.current) return;
       if (d.type === 'score') {
         const n = Number(d.value);
         // Clamped: a hostile or buggy frame must not put Infinity or NaN into the UI.
-        if (Number.isFinite(n)) setScore(Math.max(0, Math.min(n, 1e9)));
+        if (Number.isFinite(n)) {
+          const v = Math.max(0, Math.min(n, 1e9));
+          scoreRef.current = v;
+          setScore(v);
+        }
+      } else if (d.type === 'gameover') {
+        // `value` is optional: a game that only ever streamed 'score' may end the run bare, and
+        // the last streamed total stands as the final.
+        const n = Number(d.value);
+        const final = Number.isFinite(n) ? Math.max(0, Math.min(n, 1e9)) : scoreRef.current;
+        scoreRef.current = final;
+        overRef.current = true;
+        setScore(final);
+        // Persisted from the event listener, never a setState updater — listeners run once per
+        // message, updaters twice under StrictMode (tasks/lessons.md). submitBest also settles
+        // "is it a record" against localStorage itself, so no comparison happens here.
+        setIsRecord(submitBest(final));
+        setRunOver(true);
       }
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, []);
+  }, [submitBest]);
+
+  // One reset for the toolbar Restart and the overlay's button. Remounting the iframe (nonce is
+  // its `key`) is the only way to restart a document we cannot reach into — the sandbox denies
+  // same-origin access in both directions, which is the point of it.
+  const restart = useCallback(() => {
+    scoreRef.current = 0;
+    overRef.current = false;
+    setScore(0);
+    setRunOver(false);
+    setIsRecord(false);
+    setError('');
+    if (!entry) setLoadState('loading');
+    setNonce((n) => n + 1);
+  }, [entry]);
 
   return (
     <GameShell
       gameId={gameId}
       onBack={onBack}
       score={score}
-      best={null}
-      status="playing"
-      onRestart={() => {
-        setScore(0);
-        setError('');
-        if (!entry) setLoadState('loading');
-        setNonce((n) => n + 1);
-      }}
+      best={best}
+      status={runOver ? 'over' : 'playing'}
+      onRestart={restart}
+      overlay={
+        <>
+          <Trophy size={40} className="text-os-secondary mb-3" />
+          <h2 className="text-xl font-black italic uppercase tracking-tighter">Game over</h2>
+          <p className="text-sdl-sec text-[10px] font-black uppercase tracking-[0.25em] mt-2">
+            {score} points{best != null ? ` · best ${best}` : ''}
+          </p>
+          {isRecord && (
+            <p className="text-os-primary text-[10px] font-black uppercase tracking-[0.25em] mt-1">
+              New personal best
+            </p>
+          )}
+          <button
+            onClick={restart}
+            className="mt-6 flex items-center gap-2 px-6 py-3 bg-os-primary text-sdl-onAccent font-black uppercase tracking-widest text-xs rounded-2xl shadow-[var(--sdl-lift)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+          >
+            <RefreshCw size={16} />
+            Restart
+          </button>
+        </>
+      }
       headerExtra={
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-sdl-sunken border border-hairline/10">
           <ShieldAlert size={12} className="text-sdl-sec shrink-0" />

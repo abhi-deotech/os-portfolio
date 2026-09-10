@@ -1,27 +1,43 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, File, AppWindow, Command, X, ArrowRight } from 'lucide-react';
+import { Search, File, Command, X, ArrowRight } from 'lucide-react';
 import useOSStore from '../store/osStore';
-import { GAMES } from '../config/games';
+import { GAMES, isGameId } from '../config/games';
+import { APPS } from '../config/apps';
 
-// This list held eight apps and not one game, so searching "snake" or "2048" — the most
-// guessable thing in the OS to search for — returned nothing at all. The games come from the
-// registry, so a new game is searchable the moment it is registered.
+// Both halves derive from their registries. The app half used to be a hand-maintained list of
+// nine — ten apps, Flow-Net among them, were simply unsearchable, the same drift the games half
+// already fixed for "snake". Apps that are ALSO game registry entries (retroarcade) are searched
+// as their game identity only, so one id never yields two rows sharing a React key. Terminal's
+// mark is `mono`, not a glyph component; Command stands in for it.
+const APP_ENTRIES = APPS.filter((a) => !isGameId(a.id)).map((a) => ({
+  id: a.id,
+  name: a.title,
+  type: 'app',
+  icon: a.glyph ?? Command,
+  quick: Boolean(a.pinned || a.featured),
+}));
+
 const SPOTLIGHT_APPS = [
-  { id: 'terminal', name: 'Terminal', type: 'app', icon: Command },
-  { id: 'settings', name: 'Settings', type: 'app', icon: AppWindow },
-  { id: 'music', name: 'Music', type: 'app', icon: AppWindow },
-  { id: 'benchmark', name: 'Benchmark', type: 'app', icon: AppWindow },
-  { id: 'mail', name: 'Mail', type: 'app', icon: AppWindow },
-  { id: 'chat', name: 'Guestbook', type: 'app', icon: AppWindow },
-  { id: 'files', name: 'File Explorer', type: 'app', icon: AppWindow },
-  { id: 'notepad', name: 'Notepad', type: 'app', icon: AppWindow },
-  { id: 'games', name: 'Game Center', type: 'app', icon: AppWindow },
+  ...APP_ENTRIES,
   ...GAMES.map((g) => ({ id: g.id, name: g.title, type: 'game', icon: g.icon })),
 ];
 
+// The empty-query grid is a shortcut row, not a directory — all ~30 registry entries there would
+// bury the handful a visitor actually reaches for. Search still spans everything above.
+const QUICK_APPS = APP_ENTRIES.filter((entry) => entry.quick);
+
 const Spotlight = () => {
-  const { isSpotlightOpen, toggleSpotlight, fileSystem, openWindow, openNotepad, unlockAchievement, transparencyEffects } = useOSStore();
+  // Field-by-field, not `useOSStore()`. This component is mounted for the whole session, so a
+  // whole-store subscription re-rendered it on every state change anywhere in the OS — including
+  // the metrics widget's 3-second tick and every file operation.
+  const isSpotlightOpen = useOSStore((s) => s.isSpotlightOpen);
+  const toggleSpotlight = useOSStore((s) => s.toggleSpotlight);
+  const fileSystem = useOSStore((s) => s.fileSystem);
+  const openWindow = useOSStore((s) => s.openWindow);
+  const openNotepad = useOSStore((s) => s.openNotepad);
+  const unlockAchievement = useOSStore((s) => s.unlockAchievement);
+  const transparencyEffects = useOSStore((s) => s.transparencyEffects);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -191,7 +207,7 @@ const Spotlight = () => {
                 <div className="px-8 py-6">
                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sdl-sec mb-4">Quick Shortcuts</p>
                    <div className="grid grid-cols-2 gap-3">
-                      {SPOTLIGHT_APPS.map(app => (
+                      {QUICK_APPS.map(app => (
                         <button
                           key={app.id}
                           type="button"

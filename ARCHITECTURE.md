@@ -30,10 +30,13 @@ Lumina OS is a single-page application (SPA) that simulates a desktop operating 
 │  └──────────────┘ └──────────────┘ └─────────────────────┘ │
 ├─────────────────────────────────────────────────────────────┤
 │                   Worker Layer (Off-thread)                  │
-│              Benchmark Worker / System Polling               │
+│     Benchmark pool · WebGPU compute · transformers.js AI     │
+├─────────────────────────────────────────────────────────────┤
+│                   Theme Engine (src/theme/)                  │
+│    registry (16 colorways) → cssVars → applyTheme → :root    │
 ├─────────────────────────────────────────────────────────────┤
 │                   Persistence Layer                          │
-│              localStorage (via Zustand)                      │
+│        IndexedDB via idb-keyval  (+ localStorage mirror)     │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -48,7 +51,10 @@ The application uses Zustand with persistence middleware. The store is defined i
 ```javascript
 {
   openWindows: ['terminal', 'music'],     // Array of open window IDs
-  activeWindow: 'terminal',                 // Currently focused window
+  activeWindow: 'terminal',               // Currently focused window
+  minimizedWindows: [],
+  maximizedWindows: [],
+  snappedWindows: {},                     // id -> 'left' | 'right'
   isControlCenterOpen: false,             // Control center visibility
   isAppLauncherOpen: false,               // App launcher visibility
   isSpotlightOpen: false,                 // Spotlight search visibility
@@ -56,17 +62,28 @@ The application uses Zustand with persistence middleware. The store is defined i
 }
 ```
 
+The three satellite lists are only meaningful for a window that is currently open, and the persist
+`merge` hook prunes them against `openWindows` on every load. That invariant matters: `closeWindow`
+once leaked into `maximizedWindows`, and because the dock hid itself whenever that list was
+non-empty, maximizing a window once and closing it hid the dock permanently, across reloads.
+
 #### User Preferences
 
 ```javascript
 {
-  activeAccent: 'purple',                 // 'purple' | 'cyan' | 'magenta' | 'green'
-  wallpaper: 'sunset-glow',               // Wallpaper ID
-  transparencyEffects: true,              // Glassmorphism toggle
-  brightness: 100,                        // Screen brightness (0-100)
-  accentIntensity: 80                     // Accent color intensity (0-100)
+  colorway: 'rose-dusk',      // the single source of truth for theming (16 available)
+  density: 'comfortable',     // 'comfortable' | 'compact'
+  reducedMotion: 'system',    // 'system' | 'on' | 'off'
+  iconTheme: 'harmonized',    // harmonized | solid | mono | outline | lumina
+  wallpaper: 'linux-default',
+  transparencyEffects: true,  // glassmorphism toggle
+  brightness: 100,            // screen brightness scrim (0-100)
+  accentIntensity: 80         // "Atmosphere": wash + motif + glow alpha (0-100)
 }
 ```
+
+Mode is **not** stored. SDL law 7 derives it from the colorway's temperature, so light and dark can
+never disagree with the palette. See [STYLING.md](./STYLING.md).
 
 #### Desktop State
 
@@ -135,7 +152,13 @@ The application uses Zustand with persistence middleware. The store is defined i
 
 ### Persistence Strategy
 
-The store uses Zustand's `persist` middleware with `localStorage`. The following state is persisted:
+State persists to **IndexedDB** through `idb-keyval`, which is asynchronous — so React's first
+render always uses defaults. That is harmless when every theme is dark and a full-screen white
+flash when it is not, so `applyTheme` additionally mirrors the resolved variable map into
+`localStorage`, and a small synchronous script in `index.html` stamps it before first paint.
+
+The store is versioned; `migrate` in `osStore.js` upgrades older payloads. The following state is
+persisted:
 
 **Persisted:**
 - User preferences (theme, colors, transparency)
@@ -231,19 +254,22 @@ App.jsx
 1. User interacts in FileExplorer or Terminal
 2. Component calls store method (createFolder, deleteNode, etc.)
 3. Zustand updates fileSystem state
-4. Change persists to localStorage
+4. Change persists to IndexedDB (via idb-keyval)
 5. UI re-renders with new file structure
 ```
 
 ### Theme Changes
 
 ```
-1. User selects accent color in Settings
-2. setActiveAccent('cyan') called
-3. CSS custom property --os-primary-rgb updated
-4. All components using the theme re-render
-5. Color changes propagated throughout UI
+1. User selects a colorway in Settings
+2. setColorway('jewel-night') called
+3. registry.js resolves the colorway to a full role map (OKLCH, contrast-verified)
+4. applyTheme() — the only module that writes theme state to the DOM — stamps every
+   --sdl-* variable plus data-mode / data-colorway / data-density / data-motion on :root
+5. Every component reads through those roles, so the whole UI re-skins at once
 ```
+
+Mode is derived from the colorway, never selected independently — see [STYLING.md](./STYLING.md).
 
 ## Authentication Flow
 

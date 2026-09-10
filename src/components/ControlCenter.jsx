@@ -29,7 +29,10 @@ const ControlCenter = () => {
   const metrics = useSystemMetrics();
   const network = useNetworkInfo();
   
-  const volume = Math.round(music.volume * 100);
+  // music.volume is canonical 0–100 (the YT player's own unit) — no rescaling. This
+  // slider used to write 0–1 into a field the Music app never read; both now speak
+  // through setMusicVolume, and the engine hook applies changes to the live player.
+  const volume = Math.round(music.volume);
   const [toggles, setToggles] = useState({ wifi: true, bluetooth: true, airdrop: false });
 
   const toggleState = (key) => setToggles(prev => ({ ...prev, [key]: !prev[key] }));
@@ -224,12 +227,12 @@ const ControlCenter = () => {
                       className="h-10 md:h-6 bg-os-surfaceContainerHighest/50 rounded-full relative overflow-hidden cursor-pointer shadow-inner focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                       onClick={(e) => {
                         const rect = e.currentTarget.getBoundingClientRect();
-                        setMusicVolume(Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width)));
+                        setMusicVolume(((e.clientX - rect.left) / rect.width) * 100);
                         playSound('click');
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === 'ArrowLeft') { setMusicVolume(Math.max(0, music.volume - 0.05)); playSound('click'); }
-                        if (e.key === 'ArrowRight') { setMusicVolume(Math.min(1, music.volume + 0.05)); playSound('click'); }
+                        if (e.key === 'ArrowLeft') { setMusicVolume(music.volume - 5); playSound('click'); }
+                        if (e.key === 'ArrowRight') { setMusicVolume(music.volume + 5); playSound('click'); }
                       }}
                    >
                       <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-sdl-accent/50 to-sdl-accent transition-all duration-300" style={{ width: `${volume}%` }} />

@@ -48,7 +48,9 @@ const Core = () => {
 };
 
 const QuantumWidget = () => {
-  const { lowPerformance } = useOSStore();
+  // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
+  // every state change anywhere in the OS, not just the fields it reads.
+  const lowPerformance = useOSStore((s) => s.lowPerformance);
   const [isVisible, setIsVisible] = useState(false);
   const widgetRef = useRef(null);
 
@@ -70,7 +72,10 @@ const QuantumWidget = () => {
   return (
     <div 
       ref={widgetRef}
-      className="w-full h-48 rounded-[2.5rem] bg-os-surfaceContainerLow/30 backdrop-blur-3xl border border-hairline/10 shadow-2xl overflow-hidden relative group"
+      // 24px, not 64px: a wide backdrop blur over a photo wallpaper makes the compositor re-blur
+      // only the dirty rectangle when anything nearby repaints, leaving a visible seam across the
+      // widget. Matches --sdl-glass-blur. The background stays as-is; only the radius was the problem.
+      className="w-full h-48 rounded-[2.5rem] bg-os-surfaceContainerLow/30 backdrop-blur-xl border border-hairline/10 shadow-2xl overflow-hidden relative group"
     >
       <div className="absolute top-4 left-6 z-10">
         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-os-primary opacity-80">Quantum Core</h3>

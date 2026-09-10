@@ -8,7 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/games-manifest.mjs && vite build",
+    "build": "node scripts/games-manifest.mjs && node scripts/github-sync.mjs && vite build",
+    "github:sync": "node scripts/github-sync.mjs",
+    "profile:check": "node scripts/profile-check.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "census": "node scripts/token-census.mjs",

@@ -12,6 +12,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--", "--port", "5175"],
       "port": 5175
+    },
+    {
+      "name": "vibe-os-dev-verify",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5176"],
+      "port": 5176
+    },
+    {
+      "name": "vibe-os-dev-gpu",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5177"],
+      "port": 5177
     }
   ]
 }

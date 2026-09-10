@@ -6,7 +6,28 @@ itself — proposals land upstream only during a "consolidate SDL" pass.
 
 ---
 
-## 2026-08-14 — full-repo audit: what P0–P8 missed
+## 2026-09-10 — Browser/Music/Game Center revamp: three new specimen surfaces
+
+The three media apps were revamped in one pass (tasks/todo.md holds the full ledger). SDL-relevant
+outcomes, all verified by screenshot in Carbon Vivid + Garden Dawn:
+
+- **Flow-Net is now a first-class SDL citizen** — the last untokenized app chrome is gone, and its
+  `MEDIA_FILES` letterbox exemption (which the 2026-08-14 audit already called a weak fit) is
+  removed with the debt. New specimens: a tab strip (active = surface lift + accent hairline), a
+  block splash on the `sdl-warn` voice replacing stock yellow-500 (law 6), and a start page whose
+  wordmark uses the law-9 title-pop (solid accent on one glyph).
+- **musicData.js came off the denylist too** — category "gradient identities" are now OKLCH hues
+  rendered through `iconStyle` at the active colorway's chroma, the same identity contract as
+  apps.jsx / achievements.js. Two denylist entries removed in one day; the list only shrinks when
+  debt actually dies, which is the point of recording reasons.
+- **The audit's "done-grey reads disabled" lesson got its first deliberate application**: the
+  Trophy Room renders earned badges in accent-soft + aInk and locked ones in quiet veil — the
+  inverse of the mistake the audit caught.
+- **Law-5 chips as data badges**: game cards carry best/plays in the quiet sunken+hairline chip
+  treatment rather than accent-soft, keeping accent for the one voice (Launch). Reads correctly in
+  both modes; worth remembering as the pattern for stat-chips-on-cards.
+- Census after the pass: white/black literals 226 → **81**, untokenized colour sites → **118**
+  (−495); token-lint allowance re-blessed at 8 files / 109 occurrences.
 
 Full review: `SDL-AUDIT-2026-08-14.md`. Owner asked what else needs attention; six parallel research
 passes plus direct verification turned up ~180 findings. Headlines: the `SHELL` list in

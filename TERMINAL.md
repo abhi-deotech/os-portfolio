@@ -1,295 +1,248 @@
 # Terminal Commands Reference
 
-The Lumina OS terminal provides a simulated shell environment with file system navigation, system commands, and Easter eggs.
+The Lumina OS terminal is a simulated shell over the same virtual filesystem the File Explorer,
+Notepad and Spotlight use. Files created here are real state: they persist to IndexedDB and appear
+in the other apps immediately.
 
-## Basic Commands
+Implemented in `src/hooks/useTerminal.js` (command set, history, completion) and rendered by
+`src/components/Terminal.jsx`.
+
+## Basic commands
 
 ### help
-Displays available commands list.
+Lists the available commands.
+
 ```
 $ help
 Available commands:
-  help, clear, ls, cd, cat, neofetch, whoami, date, matrix
-  ssh, lumina-get, theme, man, lumina-ai
+  help, clear, ls, cd, cat, mkdir, touch, rm, ps, top, vim
+  neofetch, whoami, date, matrix, ssh, lumina-get, theme, man, lumina-ai
+  node, npm
 ```
+
+One command is deliberately missing from that list. It is findable.
 
 ### clear
-Clears the terminal screen and history.
-```
-$ clear
-[Terminal cleared]
-```
+Clears the screen and the stored scrollback.
 
 ### whoami
-Shows current user identity.
 ```
 $ whoami
 guest@lumina-os
 ```
 
 ### date
-Displays current date and time.
-```
-$ date
-Sat Mar 29 2025 12:30:00 GMT+0530 (India Standard Time)
-```
+Prints the real system date.
 
-## File System Commands
+## File system commands
 
-### ls [directory]
-Lists contents of current or specified directory.
+These operate on the live virtual filesystem. Names are matched **case-insensitively**, so
+`cat readme.md` finds `README.md`.
+
+### ls [-a] [-l] [directory]
+Lists the current or a named directory. Directories are suffixed with `/`.
+
 ```
 $ ls
-Projects/  Documents/  Media/  sys/
-
-$ ls Projects/
-System.md  MERN-Dashboard.md  IoT-Controller.md  Benchmark.exe
+Documents/  Private/  Projects/  Downloads/  Desktop/  Pictures/
+Music/  Videos/  Program Files/  System/  Temp/
 ```
+
+**Flags:**
+
+| Flag | Effect |
+|------|--------|
+| `-a` | include dotfiles (hidden by default) |
+| `-l` | long format — permission string, owner, size, date |
+
+```
+$ ls -l Projects
+-rwxr-xr-x  1 guest  staff     42 Mar 29, 12:30 Lumina-OS.md
+drwxr-xr-x  1 guest  staff   4096 Mar 29, 12:30 assets/
+```
+
+The permission column is cosmetic — there is no permission model behind it. Sizes are derived
+(`content.length` for files, `children.length * 4096` for directories).
 
 ### cd <directory>
-Changes current directory.
-```
-$ cd Projects
-~/Projects
-
-$ cd ..
-~
-
-$ cd ~
-~
-```
-
-**Supported paths:**
-- Directory names (case-insensitive)
-- `..` (parent directory)
-- `~` or `/` (home directory)
+Changes directory. Accepts a directory name, `..`, or `~` / `/` for home.
 
 ### cat <filename>
-Displays file contents.
-```
-$ cat System.md
-# Lumina OS
-Version 2.0.0
+Prints file contents. Non-text nodes report `[Binary file or non-text content]`.
 
-Welcome to my interactive portfolio OS...
-```
-
-### mkdir <name>
-Creates a new directory in the current path.
-```
-$ mkdir NewFolder
-```
-
-### touch <filename>
-Creates a new empty file in the current path.
-```
-$ touch notes.txt
-```
+### mkdir <name> · touch <filename>
+Create a directory or an empty file in the current path. Both unlock the `architect` achievement.
 
 ### rm <name>
-Removes a file or empty directory.
+Removes a file or directory.
+
 ```
-$ rm old_file.txt
+$ rm kernel.log
+rm: cannot remove 'kernel.log': Permission denied (System Protected)
 ```
 
-## The Modal Editor: Vim
+Nodes whose id begins with `root-` or `sys-` are protected — the seeded top-level folders and
+system files cannot be deleted, so the filesystem can't be emptied into an unrecoverable state.
+
+## The Vim trap
 
 ### vim <filename>
-Opens a modal text editor inside the terminal.
-- **Normal Mode**: Navigate or enter commands.
-- **Insert Mode**: Type `i` to begin editing text. Press `Esc` to return to Normal Mode.
-- **Save & Exit**: Type `:wq` in Normal Mode to save changes to the virtual file system and exit.
-- **Discard & Exit**: Type `:q!` to exit without saving.
 
-## System Commands
+Not a modal editor. There is no Normal mode, no Insert mode, and `i` does nothing. The window
+labels itself `[Read-Only Trap]` in its own title bar, and it is a joke about the single most
+googled question in software.
+
+File content is displayed as **read-only** text (an empty file shows the classic column of `~`).
+The only input is the `:` command line at the bottom.
+
+| Input | Effect |
+|-------|--------|
+| `:q` or `:q!` | exit |
+| `:wq` | exit, writing the file back unchanged |
+
+All three unlock `devops_escape` — *"Successfully escaped the simulated Vim trap."* Because the
+buffer is read-only, `:wq` cannot change content; it is a no-op write that preserves the fiction.
+
+## System commands
+
+### ps
+Lists the actually-open windows as processes. PIDs are randomised per call.
+
+```
+$ ps
+USER       PID  %CPU %MEM COMMAND
+guest      4821  0.0  0.1  terminal
+guest      7193  0.0  0.1  music
+```
+
+### top
+Opens the Task Manager window (it does not print a table).
 
 ### neofetch
-Displays system information in ASCII art style.
 ```
 $ neofetch
-OS: Lumina Desktop v2.0.0
+OS: Lumina Desktop v1.0.0
 Kernel: 6.8.0-lumina-os
-Uptime: 4 years, 1 month
-Packages: 1542 (npm)
+Uptime: 3 years, 2 months
+Packages: 1337 (npm)
 Shell: zsh 5.9
 Resolution: 2560x1440
 DE: Lumina
 WM: Framer-Motion
 Terminal: Lumina-Term
-CPU: Quantum M3 Max (8) @ 4.06GHz
-Memory: 128GB
+CPU: M3 Max (8) @ 4.06GHz
+Memory: 64GB
 ```
-
-## Package Manager
-
-### lumina-get install <package>
-APT-style package manager for installing apps.
-
-**Available packages:**
-| Package | Unlocks | Description |
-|---------|---------|-------------|
-| `matrix-mode` | matrix command | Matrix rain Easter egg |
-| `task-monitor` | TaskManager | System monitoring app |
-| `cloud-sync` | Settings | Cloud settings sync |
-| `quantum-bench` | Benchmark | Performance testing |
-
-```
-$ lumina-get install matrix-mode
-Reading package lists... Done
-Building dependency tree... Done
-Downloading matrix-mode... [100%]
-Setting up matrix-mode (v1.0.0)... Done
-Application "matrix-mode" is now available in your launcher.
-```
-
-## Terminal Themes
-
-### theme [name]
-Changes terminal color scheme.
-
-**Available themes:**
-| Theme | Background | Text Colors |
-|-------|------------|-------------|
-| `default` | Dark gray | Purple/Cyan accents |
-| `dracula` | #282a36 | Purple/Green |
-| `solarized` | #002b36 | Blue/Green |
-| `monokai` | #272822 | Pink/Green |
-| `retro` | Black | Green monochrome |
-| `cyberpunk` | #050505 | Yellow/Magenta |
-| `matrix-glow` | #000d00 | Green glow |
-| `ocean` | #001b2b | Cyan/Teal |
-
-```
-$ theme dracula
-Theme changed to dracula.
-
-$ theme
-Available themes: default, dracula, solarized, monokai, retro, cyberpunk, matrix-glow, ocean
-```
-
-## Manual Pages
-
-### man <command>
-Displays documentation for commands.
-```
-$ man lumina-get
-LUMINA-GET(8) - Package Manager
-
-NAME
-  lumina-get - APT-like tool for Lumina OS
-
-APPS
-  matrix-mode, task-monitor, cloud-sync, quantum-bench
-```
-
-**Documented commands:** `lumina-get`, `ssh`, `theme`, `cat`, `cd`
-
-## SSH (Simulation)
 
 ### ssh <host>
-Simulates SSH connection to remote host.
+Pure flavour text — no connection is attempted. Unlocks `hacker`.
+
+## Node.js — real, via WebContainer
+
+### node · npm
+
+These boot a genuine [WebContainer](https://webcontainer.io) — an actual Node.js runtime compiled
+to WebAssembly, running in the tab. The boot is real; **command piping is not yet wired**, so
+after boot these report readiness rather than executing your input.
+
 ```
-$ ssh localhost
-Connecting to localhost...
-Establishing encrypted tunnel... [OK]
-Neural handshake successful.
-
-Welcome to localhost (Lumina-OS v2.4.1)
-Last login: Sat Mar 29 2025 from 127.0.0.1
-
-[NOTICE] Remote system restricted. Use 'exit' to return.
+$ node
+Booting WebContainer...
+Mounting filesystem...
+Initializing Node.js runtime...
 ```
 
-## Easter Eggs
+## Package manager
+
+### lumina-get install <package>
+
+APT-style installer. The output is theatre, but completion genuinely unlocks the app in the
+launcher.
+
+| Package | Unlocks |
+|---------|---------|
+| `matrix-mode` | the Matrix rain window |
+| `task-monitor` | Task Manager |
+| `cloud-sync` | Settings sync pane |
+| `quantum-bench` | Quantum Benchmark |
+
+## Terminal themes
+
+### theme [name]
+
+Eight palettes, persisted across sessions. Run `theme` with no argument to list them.
+
+| Theme | Background | Accents |
+|-------|------------|---------|
+| `default` | dark gray | purple / cyan |
+| `dracula` | `#282a36` | purple / green |
+| `solarized` | `#002b36` | blue / green |
+| `monokai` | `#272822` | pink / green |
+| `retro` | black | green monochrome |
+| `cyberpunk` | `#050505` | yellow / magenta |
+| `matrix-glow` | `#000d00` | green glow |
+| `ocean` | `#001b2b` | cyan / teal |
+
+## Manual pages
+
+### man <command>
+Documented commands: `lumina-get`, `ssh`, `theme`, `cat`, `cd`. Anything else returns
+`No manual entry for <cmd>`.
+
+## AI
+
+### lumina-ai [question]
+
+Runs the **local** model — `Xenova/all-MiniLM-L6-v2` via transformers.js in a Web Worker, not a
+cloud API. First invocation loads the model (~20 MB). Called bare, it reports the backend the
+worker actually resolved to:
+
+```
+$ lumina-ai
+Lumina AI v2.0 (Local). Ask me anything!
+Runtime: WebGPU (hardware accelerated)
+```
+
+or, where WebGPU is unavailable:
+
+```
+Runtime: WASM · 6 threads of 8 cores
+```
+
+That line is measured per machine, never asserted. The question-answering itself is keyword
+matching over a small set of topics (author, stack, hiring, greeting) — the loaded model provides
+embeddings, not these replies. For real conversational AI, use the **AI Chat** app, which is
+Gemini-backed.
+
+## Easter eggs
 
 ### matrix
-Activates Matrix mode (requires `matrix-mode` package).
-```
-$ lumina-get install matrix-mode
-$ matrix
-Wake up, Neo...
-[Opens Matrix rain animation]
-```
+With `matrix-mode` installed, opens the Matrix rain window. Without it, prints a teaser.
 
-Without the package:
-```
-$ matrix
-System trace initiated... [OK]
-Intercepting data packets... [OK]
-Decoding neural link... [OK]
-Welcome to the construct.
-(Tip: Install matrix-mode via lumina-get to unlock the full Construct)
-```
+There is also one undocumented command. Finding it unlocks `easter_egg`.
 
-## AI Assistant
+## Achievements reachable from the terminal
 
-### lumina-ai <query>
-Built-in AI assistant for portfolio information.
+| Trigger | Achievement |
+|---------|-------------|
+| 5 commands executed | `terminal_wiz` |
+| `ssh <host>` | `hacker` |
+| the undocumented command | `easter_egg` |
+| `mkdir` or `touch` | `architect` |
+| exiting the Vim trap | `devops_escape` |
 
-**Supported queries:**
-- "who built this", "author" - Developer information
-- "stack", "tech", "built with" - Technology stack
-- "hire", "contact" - Contact information
-- "hello", "hi" - Greeting
+## Input handling
 
-```
-$ lumina-ai who built this
-I was built by Abhimanyu Saxena, a senior full-stack developer 
-who loves building OS-style web experiences.
+- **Tab completion** completes **filenames and directories** in the current path — a single match
+  autofills, multiple matches list. It does *not* complete command names.
+- **↑ / ↓** walk the command history, which persists across sessions (capped at 500 entries).
+- Commands are lowercased before dispatch.
 
-$ lumina-ai what is your stack
-Lumina OS is built with React, Tailwind CSS, Framer Motion, 
-and Zustand for state management.
-```
+## Technical notes
 
-## File System Structure
-
-```
-~ (home)
-├── Projects/
-│   ├── System.md
-│   ├── MERN-Dashboard.md
-│   ├── IoT-Controller.md
-│   └── Benchmark.exe
-├── Documents/
-│   ├── README.md
-│   ├── ARCHITECTURE.md
-│   ├── TERMINAL.md
-│   ├── STYLING.md
-│   ├── Resume.pdf
-│   └── CoverLetter.docx
-├── Pictures/
-│   ├── Hero_Shot.jpg
-│   ├── sunset-glow.jpg
-│   └── cyber-grid.jpg
-└── sys/
-    ├── kernel.log
-    ├── boot.log
-    ├── secrets.txt
-    └── system.ini
-```
-
-## Achievement Triggers
-
-Certain terminal actions unlock achievements:
-
-| Action | Achievement |
-|--------|-------------|
-| First command executed | `terminal_wiz` |
-| Use `ssh` command | `hacker` |
-| Use `matrix` with package installed | `easter_egg` |
-
-## Tips
-
-1. **Tab completion is not implemented** - type full command names
-2. **File names are case-insensitive** - `cat system.md` works
-3. **Paths use forward slashes** - consistent with Unix systems
-4. **Hidden files** - check `sys/secrets.txt` for hints
-5. **Konami code** - The secrets file hints at hidden features
-
-## Technical Details
-
-- File system is stored in Zustand state (persisted to localStorage)
-- Navigation state is session-only (resets on reload)
-- Terminal history is persisted across sessions
-- Commands return strings or null (for commands that modify state)
+- The filesystem is Zustand state persisted to **IndexedDB** via `idb-keyval` — not localStorage.
+  `applyTheme` keeps a small localStorage mirror for theme only, to avoid a pre-paint flash.
+- The current working directory is session state and resets on reload; history and created files
+  do not.
+- Commands return a string, `null` (for commands that only mutate state), or a
+  `{ type: 'progressive', steps, onComplete }` object that streams output line by line.

@@ -3,14 +3,13 @@ import { persist } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
 import { createAuthSlice } from './slices/authSlice';
 import { createFileSystemSlice } from './slices/fileSystemSlice';
-import { createMusicSlice } from './slices/musicSlice';
+import { createMusicSlice, sanitizePersistedMusic } from './slices/musicSlice';
 import { createSystemSlice } from './slices/systemSlice';
 import { createWindowSlice } from './slices/windowSlice';
 import { createContainerSlice } from './slices/containerSlice';
 import { createAiSlice } from './slices/aiSlice';
 import { createPuterSlice } from './slices/puterSlice';
 import { createGamesSlice } from './slices/gamesSlice';
-import { MUSIC_DATA } from '../data/musicData';
 
 /**
  * Zustand store for Lumina OS state management.
@@ -93,16 +92,12 @@ const useOSStore = create(
         if (merged.activeWindow && !open.has(merged.activeWindow)) merged.activeWindow = null;
 
         if (merged.music) {
-          // Never rehydrate as "playing" — no audio engine is running yet.
-          // Re-resolve the persisted track against the current catalog so
-          // removed/renamed local files can't leave a dead currentTrack.
-          const found = MUSIC_DATA.find((t) => t.id === merged.music.currentTrack?.id);
-          merged.music = {
-            ...merged.music,
-            currentTrack: found || MUSIC_DATA[0],
-            isPlaying: false,
-            currentTime: 0,
-          };
+          // All music-payload repair lives beside the slice it protects: never rehydrate
+          // as "playing", re-resolve currentTrack against the catalog, validate the
+          // queue / playContext / playlist trackIds the same way, and migrate the old
+          // 0–1 volume scale to the canonical 0–100 (a persisted value ≤ 1 can only be
+          // the old scale). Rationale for each rule is on the function itself.
+          merged.music = sanitizePersistedMusic(merged.music);
         }
         return merged;
       },
@@ -132,6 +127,8 @@ const useOSStore = create(
         fileSystem: state.fileSystem,
         widgets: state.widgets,
         notes: state.notes,
+        // `music` carries queue / playlists / playContext / volume with it; each is
+        // validated (and volume migrated) in merge() via sanitizePersistedMusic.
         music: state.music,
         isAuthenticated: state.isAuthenticated,
         userRole: state.userRole,
@@ -146,7 +143,17 @@ const useOSStore = create(
         achievements: state.achievements,
         userGames: state.userGames,
         gameStats: state.gameStats,
-        systemMetrics: state.systemMetrics,
+        // `systemMetrics` is DELIBERATELY not persisted.
+        //
+        // SystemMetricsWidget re-rolls it from Math.random() on a 3-second interval, and zustand's
+        // persist middleware serialises the whole partialized payload on every `set`. That measured
+        // 26,066 bytes written to IndexedDB every 3 seconds — roughly 30 MB an hour — of which the
+        // 62 bytes of systemMetrics were the only part that had changed, and they are overwritten
+        // by the next tick anyway. The remaining 26 KB is mostly `fileSystem`, so the cost grew
+        // with the user's own data.
+        //
+        // Nothing is lost by dropping it: the slice declares its own defaults and the widget's
+        // interval repopulates it within 3 seconds of load.
         lastSyncTime: state.lastSyncTime,
         syncError: state.syncError,
         puterUser: state.puterUser,
