@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 /**
  * Draws a *simulated* spectrum, not a measured one — deliberately, and not as a shortcut.
  *
- * Playback runs through a cross-origin `youtube-nocookie.com` iframe (credentialless, for COEP).
+ * Playback runs through a cross-origin `youtube-nocookie.com` iframe (see useYouTubePlayer.js).
  * The Web Audio API can only analyse a media element it is permitted to touch: `AnalyserNode`
  * requires `createMediaElementSource()` on a *same-origin* `HTMLMediaElement`, and a cross-origin
  * iframe's internal audio sits behind a hard browser security boundary. No API reaches it. This

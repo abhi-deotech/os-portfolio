@@ -5,13 +5,10 @@ services:
     buildCommand: npm run build
     staticPublishDir: dist
     autoDeploy: true
+    # No COOP/COEP: cross-origin isolation broke every external embed on Firefox and Safari
+    # (NS_ERROR_DOM_COEP_FAILED) and its only real consumer, the DOOM emulator, is disabled.
+    # See the header comment in vite.config.js — these files are kept identical.
     headers:
-      - path: /*
-        name: Cross-Origin-Opener-Policy
-        value: same-origin
-      - path: /*
-        name: Cross-Origin-Embedder-Policy
-        value: credentialless
       - path: /*
         name: Cross-Origin-Resource-Policy
         value: cross-origin

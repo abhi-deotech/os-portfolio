@@ -7,6 +7,7 @@ import {
   Clock, Star, MoreVertical, FilePlus, FolderPlus
 } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import { osAlert, osConfirm, osPrompt } from '../utils/dialog';
 
 /**
  * Premium File Explorer for Lumina OS.
@@ -92,6 +93,23 @@ const Node = ({ node, style, dragHandle }) => {
     setIsRenaming(false);
   };
 
+  // Delete used to fire straight off the hover button with nothing between the click and the loss.
+  // A folder takes its whole subtree with it, so the dialog says how much is about to go.
+  const handleDelete = async () => {
+    const childCount = isFolder ? (node.data.children?.length ?? 0) : 0;
+    const ok = await osConfirm({
+      kicker: 'Lumina Cloud',
+      tone: 'danger',
+      icon: 'trash',
+      title: `Delete “${node.data.name}”?`,
+      message: childCount
+        ? `This folder and the ${childCount} item${childCount === 1 ? '' : 's'} inside it will be removed. This cannot be undone.`
+        : 'This cannot be undone.',
+      confirmLabel: 'Delete',
+    });
+    if (ok) deleteNode(node.id);
+  };
+
   return (
     // Deliberately NOT role="button"/tabIndex here: react-arborist already wraps every node in a
     // role="treeitem" with a roving tabIndex={-1} and owns the arrow/Space keyboard model. A second
@@ -141,7 +159,7 @@ const Node = ({ node, style, dragHandle }) => {
             <Edit3 size={11} />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }}
+            onClick={(e) => { e.stopPropagation(); handleDelete(); }}
             aria-label={`Delete ${node.data.name}`}
             className="p-1.5 rounded-lg hover:bg-sdl-alert/10 text-os-onSurfaceVariant hover:text-sdl-alert transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
           >
@@ -186,26 +204,47 @@ const FileExplorer = () => {
     moveNode(dragIds[0], parentId, index);
   };
 
-  const handleCreateFile = () => {
-    const name = prompt('Enter file name (e.g., notes.txt):', 'newfile.txt');
-    if (name) {
-      const parentId = selectedNodeId && findNodeById(selectedNodeId)?.children ? selectedNodeId : null;
-      createFile(name, '', parentId);
-    }
+  // A new node lands inside the selection only when the selection is a FOLDER; a selected file
+  // means "beside this", which is the root.
+  const targetParentId = () =>
+    (selectedNodeId && findNodeById(selectedNodeId)?.children ? selectedNodeId : null);
+
+  const handleCreateFile = async () => {
+    const name = await osPrompt({
+      kicker: 'Lumina Cloud',
+      icon: 'file',
+      title: 'New file',
+      message: 'Give it an extension and Lumina will open it in the matching app.',
+      defaultValue: 'newfile.txt',
+      placeholder: 'notes.txt',
+      hint: '.txt opens in Notepad · .md in Docs · .mp3 in Music',
+    });
+    if (name) createFile(name, '', targetParentId());
   };
 
-  const handleCreateFolder = () => {
-    const name = prompt('Enter folder name:', 'New Folder');
-    if (name) {
-      const parentId = selectedNodeId && findNodeById(selectedNodeId)?.children ? selectedNodeId : null;
-      createFolder(name, parentId);
-    }
+  const handleCreateFolder = async () => {
+    const name = await osPrompt({
+      kicker: 'Lumina Cloud',
+      icon: 'folder',
+      title: 'New folder',
+      defaultValue: 'New Folder',
+      placeholder: 'Folder name',
+    });
+    if (name) createFolder(name, targetParentId());
   };
 
   const handleMountFolder = async () => {
     try {
       if (!window.showDirectoryPicker) {
-        alert('File System Access API not supported in this browser.');
+        await osAlert({
+          kicker: 'Lumina Cloud',
+          tone: 'warn',
+          title: 'Cannot mount a local folder here',
+          message:
+            'This browser does not support the File System Access API. Chrome, Edge or Opera on '
+            + 'desktop can mount a real folder into Lumina.',
+          confirmLabel: 'Got it',
+        });
         return;
       }
       const handle = await window.showDirectoryPicker();
@@ -213,6 +252,19 @@ const FileExplorer = () => {
     } catch (err) {
       console.error('Mount failed:', err);
     }
+  };
+
+  const handleResetFileSystem = async () => {
+    const ok = await osConfirm({
+      kicker: 'Lumina Cloud',
+      tone: 'danger',
+      icon: 'reset',
+      title: 'Reset Lumina Cloud?',
+      message: 'Every file and folder you have created goes back to the factory set. This cannot be undone.',
+      confirmLabel: 'Reset everything',
+      cancelLabel: 'Keep my files',
+    });
+    if (ok) resetFileSystem();
   };
 
   return (
@@ -257,7 +309,7 @@ const FileExplorer = () => {
             </button>
             <div className="w-px h-6 bg-os-outline/10 mx-1" />
             <button 
-              onClick={resetFileSystem}
+              onClick={handleResetFileSystem}
               className="p-2 rounded-xl hover:bg-sdl-alert/10 text-os-onSurfaceVariant hover:text-sdl-alert transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
               title="Reset All"
               aria-label="Reset All"

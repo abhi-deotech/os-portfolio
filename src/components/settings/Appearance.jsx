@@ -7,6 +7,8 @@ import { ICON_THEMES, iconAudit } from '../../theme/icons';
 import { WALLPAPERS, isCustomWallpaper, resolveWallpaper } from '../../theme/wallpapers';
 import { APPS } from '../../config/apps';
 import AppIcon from '../common/AppIcon';
+import { APPEARANCE_RESET_DIALOG } from '../../config/dialogs';
+import { osConfirm } from '../../utils/dialog';
 
 /**
  * Appearance — the single pane for how Lumina OS looks.
@@ -375,7 +377,9 @@ const Appearance = () => {
       <Card title="Reset" sub="Restores colorway, icons, wallpaper, density, motion and both dials to factory defaults.">
         <button
           type="button"
-          onClick={resetSettingsToDefault}
+          onClick={async () => {
+            if (await osConfirm(APPEARANCE_RESET_DIALOG)) resetSettingsToDefault();
+          }}
           className="flex items-center gap-2 text-[12px] px-4 rounded-full transition-colors duration-hover ease-sdl focus-visible:outline-none focus-visible:ring-2"
           style={{
             height: 'var(--sdl-control-h, 36px)',

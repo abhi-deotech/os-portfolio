@@ -10,6 +10,7 @@ import { createContainerSlice } from './slices/containerSlice';
 import { createAiSlice } from './slices/aiSlice';
 import { createPuterSlice } from './slices/puterSlice';
 import { createGamesSlice } from './slices/gamesSlice';
+import { createDialogSlice } from './slices/dialogSlice';
 
 /**
  * Zustand store for Lumina OS state management.
@@ -28,6 +29,9 @@ const useOSStore = create(
       ...createAiSlice(set, get),
       ...createPuterSlice(set, get),
       ...createGamesSlice(set, get),
+      // `dialogs` is deliberately absent from `partialize` below: a modal that survives a reload is
+      // a question nobody asked, and its promise resolver died with the previous session anyway.
+      ...createDialogSlice(set, get),
     }),
     {
       name: 'os-settings',
@@ -36,7 +40,7 @@ const useOSStore = create(
       // theme fields change shape (P2), every existing user silently lands on defaults.
       // NOTE: this store uses a custom async `storage` object rather than createJSONStorage; verify
       // against a real IndexedDB payload that `migrate` fires before relying on it in P2.
-      version: 3,
+      version: 4,
       // Verified in-browser against a real v0 IndexedDB payload: this hook DOES fire despite the
       // custom async `storage` object (zustand's docs assume createJSONStorage).
       migrate: (persistedState, fromVersion) => {
@@ -71,6 +75,18 @@ const useOSStore = create(
         }
         // 'colorway' and 'duotone' were the pre-v3 theme ids and no longer resolve.
         if (next.iconTheme === 'colorway' || next.iconTheme === 'duotone') next.iconTheme = 'harmonized';
+
+        // v3 → v4: the DOOM emulator is disabled (see src/config/games.js), so `retroarcade` is no
+        // longer a registered id. `openWindows` is persisted, so anyone who left it open would
+        // rehydrate into WindowContentRenderer's final default arm and read "Nothing is registered
+        // for 'retroarcade'" — a message written for whoever forgot a registry entry, not for a
+        // visitor. Dropping it here rather than in `merge` because it is a one-time consequence of
+        // this change, not a standing invariant; and because `migrate` runs FIRST, the satellite
+        // repair in `merge` then clears the matching maximized/minimized/snapped/active entries
+        // without needing to know about this id at all.
+        if (fromVersion < 4 && Array.isArray(next.openWindows)) {
+          next.openWindows = next.openWindows.filter((id) => id !== 'retroarcade');
+        }
 
         return next;
       },

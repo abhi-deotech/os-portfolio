@@ -216,3 +216,49 @@ dock ink, and a Quantum core that rendered as a black hole because `metalness: 0
 environment map reflects nothing — were found by looking at a PNG, and neither was reachable by any
 contrast walk. *Measurement proves a colour is right; only a picture proves it is on the right
 thing.*
+
+---
+
+## 2026-09-11 — system dialogs, and a role SDL does not name
+
+Owner reaction, verbatim: *"the application still uses the default alert modal in many places, but
+this is unacceptable."* Correct about the offence, off on the count — three native call sites, all
+in FileExplorer. The "many" feeling was real but came from a different failure: five destructive
+actions (delete node, reset filesystem, remove sideloaded game, reset personalization, clear
+history) raised **no** dialog at all. Both classes are now on one surface.
+
+### The specimen
+
+`src/components/SystemDialog.jsx` — 430px, `surface` on `scrim`, `radius-panel`, `lift-window`,
+translateY(8)+fade, tone badge left, hairline-separated action row right. Three tones: `info`
+(soft/aInk), `warn`, `danger`. Verified legible on `carbon-vivid` and `honey-vivid`.
+
+### Proposal: SDL needs a DESTRUCTIVE button spec, not just an alert colour
+
+`components/SKILL.md` gives primary (accent bg + plane-family ink) and secondary (surface + line).
+It says nothing about the destructive primary, and the obvious construction is unsafe:
+
+> `--sdl-on-accent` is computed against the ACCENT. There is no equivalent for `alert`, `warn` or
+> `done` — so `bg: alert; color: on-accent` is unmeasured by construction and lands cream-on-red
+> on some packs.
+
+This codebase had already hit it once (`TaskManager.jsx:170`) and resolved it the same way twice
+now, which is the signal it should be a rule rather than a recurring rediscovery:
+
+> **A destructive primary is a TINT, not a fill:** `alert/15` ground, `alert/40` hairline,
+> `alert` ink, hover to `alert/25`. It stays measurable against `surface` on every pack because
+> the ink never changes plane, and it reads as the loudest button in the row without needing an
+> `on-alert` role to exist.
+
+The alternative — mint `--sdl-on-alert` / `--sdl-on-warn` / `--sdl-on-done` alongside
+`--sdl-on-accent` — is the more complete fix and would let a destructive button be solid. It is
+three more roles per colorway across sixteen packs, so it is a v2.1 question, not a patch. Related:
+the `onAccent`-needs-a-sibling note from 2026-08-13 is the same shape of gap. Both are really one
+observation: **every role that names an ink implies a plane, and SDL only names that plane once.**
+
+### Method note
+
+Both this pass's apparent failures were in the *harness*, not the component (untrusted keyboard
+events; a selector-list precedence bug). Recorded in `tasks/lessons.md`. Restating the 2026-08-13
+lesson from the other side: measurement proves a colour is right and a picture proves it is on the
+right thing — but neither proves the thing *does* anything. That needs trusted input.

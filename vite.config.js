@@ -7,6 +7,22 @@ import compression from 'vite-plugin-compression'
 // happened: this header set applies to EVERY response, including public/games/<slug>/index.html,
 // and `frame-ancestors 'none'` on those made the sandboxed game frames fail to load with
 // ERR_BLOCKED_BY_RESPONSE. 'self' still blocks another origin from framing the portfolio.
+//
+// ── Why there is no COOP/COEP here any more ──────────────────────────────────────────────────
+// `COOP: same-origin` + `COEP: require-corp` arrived in one commit (d3579d3, 2026-04-17) for one
+// reason: `EJS_threads = true` in public/arcade/index.html, whose threaded WASM core needs
+// SharedArrayBuffer, which cross-origin isolation gates. Three days later (1ed0f71) COEP was
+// softened to `credentialless` because `require-corp` refused every cross-origin embed the OS
+// has — and `credentialless` only works via the `<iframe credentialless>` attribute, which is
+// Chromium-only (MDN BCD: Firefox false, Safari false). So on Firefox and Safari EVERY external
+// embed failed with NS_ERROR_DOM_COEP_FAILED: Flow-Net could not open a single URL, and the Music
+// and Visualizer YouTube players were dead. The emulator is now disabled, which leaves isolation
+// with no working consumer — WebContainer's node/npm never had an implementation behind them, and
+// the AI worker's thread count already self-adapts to `crossOriginIsolated`. Isolation was paid
+// for site-wide by three apps and one browser family; it bought one 1993 shareware game.
+//
+// Re-adding COOP/COEP means re-breaking all cross-origin embedding on non-Chromium browsers. If
+// SharedArrayBuffer is ever genuinely needed again, isolate the feature, not the whole document.
 const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; child-src 'self' blob: https:; frame-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 
 // https://vite.dev/config/
@@ -26,15 +42,11 @@ export default defineConfig({
   ],
   server: {
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
       'Content-Security-Policy': CSP,
     },
   },
   preview: {
     headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'credentialless',
       'Content-Security-Policy': CSP,
     },
   },

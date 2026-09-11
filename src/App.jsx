@@ -31,6 +31,8 @@ import Taskbar from './components/Taskbar';
 import useOSStore from './store/osStore';
 import { GAME_BY_ID } from './config/games';
 import { APP_BY_ID } from './config/apps';
+import { APPEARANCE_RESET_DIALOG } from './config/dialogs';
+import { osConfirm } from './utils/dialog';
 import { applyTheme } from './theme/applyTheme';
 import './theme/grammar.css';
 import { useIsMobile } from './hooks/useMediaQuery';
@@ -181,11 +183,11 @@ function App() {
       onContextMenu={handleDesktopContextMenu}
     >
       <LiveWallpaper />
-      {/* Widgets step aside while the emulator runs. This used to read a separate `activeRetroGame`
-          field that `setRetroGame` set on launch and `closeWindow` never cleared — so closing the
-          arcade with the window X left the desktop widget-less for the rest of the session.
-          Derived from openWindows, which closeWindow already maintains, it cannot get stuck. */}
-      {!isMobile && !openWindows.includes('retroarcade') && <Widgets />}
+      {/* The `!openWindows.includes('retroarcade')` guard that used to live here existed solely so
+          widgets stepped aside while the DOOM emulator ran. The emulator is disabled (see
+          src/config/games.js), so the guard would now only ever hide widgets for a stale persisted
+          window id — restore it alongside the registry entries if DOOM comes back. */}
+      {!isMobile && <Widgets />}
 
       {/* Context Menus — Desktop */}
       {!isMobile && (
@@ -204,7 +206,11 @@ function App() {
               icon={RotateCcw}
               label="Reset Settings"
               danger
-              onClick={() => { resetSettingsToDefault(); closeWindow('settings'); }}
+              onClick={async () => {
+                if (!(await osConfirm(APPEARANCE_RESET_DIALOG))) return;
+                resetSettingsToDefault();
+                closeWindow('settings');
+              }}
             />
             <MenuRow icon={RefreshCw} label="Reset Icon Layout" danger onClick={resetIconPositions} />
           </Menu>

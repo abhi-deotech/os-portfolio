@@ -184,3 +184,32 @@ style you are reading in the source may not be the one on screen.
 fix, and I nearly concluded the fix hadn't applied. It had — my selector had matched the
 full-viewport Widgets overlay instead of the window. `trafficLightTops: []` was the tell that the
 element was wrong. Check that a probe found what it claims to have found before trusting its number.
+
+## A synthetic KeyboardEvent cannot prove a default action ran
+
+Verifying the system dialogs meant proving that Enter submits the prompt form. The first harness
+dispatched `new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })` — which React receives
+and which therefore *looks* like a working test. It is not: untrusted events never run default
+actions, so implicit form submission never happens and the assertion fails against correct code.
+
+The same trap has a second floor. Switching to CDP `Input.dispatchKeyEvent` is necessary but not
+sufficient — **without a `text` field Chrome emits a rawKeyDown**, which also skips the default
+action. Enter needs `text: '\r'`; printable characters need `text: ch` (and `Input.insertText`
+mutates the field without producing the sequence React's controlled-input path listens for, so the
+DOM shows the typed string while the component's state stays empty).
+
+**How to apply:** when a test is about a *default action* — form submission, focus movement on Tab,
+a checkbox toggling — the events must be trusted AND carry `text`. Before believing a FAIL, prove
+the harness can do the thing at all: probe the input's `.value` right after typing. Both of this
+pass's "failures" were harness bugs, and one of them was a third one hiding underneath.
+
+## `${SEL} child` does not mean what it looks like when SEL is a selector LIST
+
+`const DLG = '[role=dialog],[role=alertdialog]'` then `querySelector(\`${DLG} input\`)` produces
+`[role=dialog],[role=alertdialog] input` — a list of TWO selectors, where the descendant combinator
+binds only to the last one. It matched the dialog panel itself, and every probe of `.value` came
+back `undefined` rather than erroring, so it read as "React never got the text."
+
+**How to apply:** distribute the descendant across each alternative
+(`[role=dialog] input,[role=alertdialog] input`) or keep list constants out of interpolation
+entirely. A selector that silently matches the *wrong* node is worse than one that matches nothing.

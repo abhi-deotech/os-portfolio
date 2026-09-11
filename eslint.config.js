@@ -38,6 +38,16 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^[A-Z_]' }],
+      // The browser's own dialogs render the BROWSER's chrome inside an app whose entire premise is
+      // that it is an operating system — wrong face, wrong radius, wrong scrim, and stamped with
+      // the deployment's hostname. They also block the main thread, freezing every animation behind
+      // them. Lumina has its own; this is the rule that keeps the three that were here from coming
+      // back one convenient call at a time.
+      'no-restricted-globals': ['error',
+        { name: 'alert', message: 'Use osAlert from src/utils/dialog.js — native dialogs break the OS illusion.' },
+        { name: 'confirm', message: 'Use osConfirm from src/utils/dialog.js — native dialogs break the OS illusion.' },
+        { name: 'prompt', message: 'Use osPrompt from src/utils/dialog.js — native dialogs break the OS illusion.' },
+      ],
       'react/jsx-uses-react': 'error',
       'react/jsx-uses-vars': 'error',
       'react/react-in-jsx-scope': 'off', // Not needed for React 17+

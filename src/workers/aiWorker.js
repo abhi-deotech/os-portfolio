@@ -16,10 +16,12 @@ const MODEL = 'Xenova/all-MiniLM-L6-v2';
  * That ceiling is the thing worth changing. It binds from eight cores upward — a 16-core machine
  * still gets four threads — and ORT applies it whether or not the host can do better.
  *
- * This app satisfies the isolation precondition already: COOP `same-origin` + COEP
- * `credentialless` are served in dev and preview from `vite.config.js` and in production from
- * `netlify.toml` / `vercel.json`. So `SharedArrayBuffer` is available and threaded WASM works;
- * the cap was the only limit.
+ * This app NO LONGER satisfies the isolation precondition. COOP `same-origin` + COEP
+ * `credentialless` used to be served everywhere, but COEP made every cross-origin iframe fail on
+ * Firefox and Safari — the in-OS browser could not open a single URL — so the headers were removed
+ * (see `vite.config.js` for the full account). `SharedArrayBuffer` is therefore absent and the
+ * branch below settles on one thread; the ceiling this function exists to raise only binds if
+ * isolation ever returns. WebGPU, when present, is unaffected and remains the fast path.
  *
  * We leave one core for the main thread and stop at eight. MiniLM is a small model, and past that
  * point thread synchronisation costs more than the extra parallelism returns.

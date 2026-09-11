@@ -8,6 +8,7 @@ import { GAMES, FEATURED_GAME, userGameEntry } from '../config/games';
 import { ACHIEVEMENTS, ACHIEVEMENT_BY_ID } from '../config/achievements';
 import { readAllGameStats } from '../hooks/useHighScore';
 import AddGameDialog from './games/AddGameDialog';
+import { osConfirm } from '../utils/dialog';
 
 const Badge = ({ children }) => (
   <span className="px-2 py-1 rounded-lg bg-sdl-sunken border border-hairline/10 text-[9px] font-black uppercase tracking-widest text-sdl-sec whitespace-nowrap">
@@ -183,7 +184,20 @@ const Games = () => {
             {game.unverified && <Badge>Unverified</Badge>}
             {game.unverified && (
               <button
-                onClick={(e) => { e.stopPropagation(); removeUserGame(game.id); }}
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  // The HTML lives only in this browser — there is no copy to restore it from,
+                  // which is exactly why a one-click delete was the wrong affordance.
+                  const ok = await osConfirm({
+                    kicker: 'Game Center',
+                    tone: 'danger',
+                    icon: 'trash',
+                    title: `Remove “${game.title}”?`,
+                    message: 'Lumina holds the only copy of this file. You would have to add it again from your own disk.',
+                    confirmLabel: 'Remove',
+                  });
+                  if (ok) removeUserGame(game.id);
+                }}
                 onKeyDown={(e) => e.stopPropagation()}
                 aria-label={`Remove ${game.title}`}
                 className="p-1.5 rounded-lg bg-sdl-sunken border border-hairline/10 text-sdl-sec hover:text-sdl-alert transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"

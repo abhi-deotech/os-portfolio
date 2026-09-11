@@ -62,6 +62,39 @@ const useTerminal = () => {
     }
   }, [terminalHistory]);
 
+  /**
+   * `node` and `npm` are one command with two labels — they boot the WebContainer and report its
+   * status, and neither has ever run anything (containerSlice's `runCommand` has no call sites).
+   *
+   * WebContainer requires cross-origin isolation, which this app no longer serves: COOP + COEP
+   * made every external iframe fail on Firefox and Safari, taking Flow-Net, the music player and
+   * the visualizer with them (see vite.config.js). So `WebContainer.boot()` now rejects — and the
+   * previous `onComplete: () => bootContainer()` had no `.catch()`, which meant the visitor
+   * watched three progress steps, then got silence and an unhandled rejection in the console.
+   *
+   * Checking `crossOriginIsolated` up front turns that into a straight answer, and the `.catch()`
+   * covers a boot that fails for any other reason by putting it in the terminal where it was
+   * asked for, rather than in a console nobody has open.
+   */
+  const webContainerCommand = (label) => () => {
+    if (!window.crossOriginIsolated) {
+      return `${label} is unavailable: the WebContainer runtime needs cross-origin isolation `
+        + `(COOP + COEP), which this site does not set.\n`
+        + `Those headers blocked every external embed on non-Chromium browsers — Flow-Net could `
+        + `not open a single URL. The runtime lost that trade. See vite.config.js.`;
+    }
+    if (containerStatus === 'idle') {
+      return {
+        type: 'progressive',
+        steps: ['Booting WebContainer...', 'Mounting filesystem...', 'Initializing Node.js runtime...'],
+        onComplete: () => bootContainer().catch((err) => {
+          addTerminalEntry({ type: 'output', text: `${label}: WebContainer failed to boot — ${err?.message || err}` });
+        }),
+      };
+    }
+    return `${label} ${containerStatus === 'ready' ? 'ready' : 'booting...'}. (Implementation pending pipe logic)`;
+  };
+
   const commands = {
     // Lists every implemented command except `magic`, which is a discoverable easter egg —
     // printing it here would hand over the find. `node`/`npm` were missing from this string for
@@ -359,26 +392,8 @@ const useTerminal = () => {
       unlockAchievement('easter_egg');
       return "The rabbit hole goes deep... You have discovered the magic within the command line.";
     },
-    node: () => {
-      if (containerStatus === 'idle') {
-        return {
-          type: 'progressive',
-          steps: ['Booting WebContainer...', 'Mounting filesystem...', 'Initializing Node.js runtime...'],
-          onComplete: () => bootContainer()
-        };
-      }
-      return `Node.js ${containerStatus === 'ready' ? 'ready' : 'booting...'}. (Implementation pending pipe logic)`;
-    },
-    npm: () => {
-      if (containerStatus === 'idle') {
-        return {
-          type: 'progressive',
-          steps: ['Booting WebContainer...', 'Mounting filesystem...', 'Initializing Node.js runtime...'],
-          onComplete: () => bootContainer()
-        };
-      }
-      return `npm ${containerStatus === 'ready' ? 'ready' : 'booting...'}. (Implementation pending pipe logic)`;
-    }
+    node: webContainerCommand('Node.js'),
+    npm: webContainerCommand('npm'),
   };
 
   const handleCommand = (e) => {

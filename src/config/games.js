@@ -1,5 +1,5 @@
 import {
-  Gamepad2, Layers, Grid3x3, Brain, Hash, Joystick, Blocks, Bomb, Grid2x2, Circle,
+  Gamepad2, Layers, Grid3x3, Brain, Hash, Blocks, Bomb, Grid2x2, Circle,
 } from 'lucide-react';
 import FOLDER_GAMES from './folderGames.json';
 
@@ -142,23 +142,39 @@ const BUILTIN_GAMES = [
     controls: { keys: ['Space'], touch: 'tap', desc: 'Space or tap to drop the block.' },
     achievements: ['tower_pro'],
   },
-  {
-    // Kept as `retroarcade` rather than renamed to `doom`: the id is also the window id, the dock
-    // entry in apps.jsx and the key in any persisted openWindows array. The title is what the
-    // user reads, and that is now honest about which single game this is.
-    id: 'retroarcade',
-    title: 'DOOM',
-    tagline: 'id Software, 1993. Shareware WAD, in an emulator.',
-    genre: 'arcade',
-    icon: Joystick,
-    hue: 34,
-    source: 'emulator',
-    novelty: true,
-    window: { width: 1040, height: 780 },
-    controls: { keys: ['↑', '↓', '←', '→', 'Z', 'X', 'Enter'], touch: 'none', desc: 'Arrow keys to move, Z and X to act, Enter for the menu. Keyboard only.' },
-    achievements: ['retro_gamer'],
-    credit: { author: 'id Software', url: 'https://github.com/nneonneo/universal-doom', license: 'Shareware WAD (freely redistributable)' },
-  },
+  // ── DOOM / the EmulatorJS arcade is DISABLED, not deleted ──────────────────────────────────
+  // src/components/RetroArcade.jsx and public/arcade/ are untouched on disk; only the three
+  // registry hooks are gone (this entry, the GAME_MODULES loader below, and the apps.jsx dock
+  // entry). Everything else — Spotlight, window titles, the launcher grid — derives from those
+  // registries, so it disappeared on its own.
+  //
+  // WHY: the emulator ran `EJS_threads = true`, whose threaded WASM core needs SharedArrayBuffer,
+  // which forced COOP/COEP cross-origin isolation site-wide. That isolation made every external
+  // iframe fail on Firefox and Safari — Flow-Net could not open a single URL. One 1993 shareware
+  // game was costing three working apps on two browser families. See vite.config.js.
+  //
+  // TO RESTORE: re-add this entry (plus `Joystick` to the lucide import above, dropped with it),
+  // the GAME_MODULES line, the apps.jsx dock entry, and the widget guard in App.jsx. Do NOT put
+  // the COOP/COEP headers back with it — set
+  // `window.EJS_threads = typeof SharedArrayBuffer === 'function'` in public/arcade/index.html
+  // instead, so prboom falls back to a single thread rather than hard-failing with EmulatorJS's
+  // "Error for site owner" (it does not fall back on its own; verified in emulator.min.js).
+  // `requiresThreads` there lists only ppsspp and dosbox_pure, so prboom runs fine unthreaded.
+  //
+  //   {
+  //     id: 'retroarcade',
+  //     title: 'DOOM',
+  //     tagline: 'id Software, 1993. Shareware WAD, in an emulator.',
+  //     genre: 'arcade',
+  //     icon: Joystick,
+  //     hue: 34,
+  //     source: 'emulator',
+  //     novelty: true,
+  //     window: { width: 1040, height: 780 },
+  //     controls: { keys: ['↑', '↓', '←', '→', 'Z', 'X', 'Enter'], touch: 'none', desc: 'Arrow keys to move, Z and X to act, Enter for the menu. Keyboard only.' },
+  //     achievements: ['retro_gamer'],
+  //     credit: { author: 'id Software', url: 'https://github.com/nneonneo/universal-doom', license: 'Shareware WAD (freely redistributable)' },
+  //   },
 ];
 
 /**
@@ -175,7 +191,7 @@ export const GAME_MODULES = {
   breakout: () => import('../components/games/Breakout.jsx'),
   minesweeper: () => import('../components/games/Minesweeper.jsx'),
   towerstack: () => import('../components/games/TowerStack.jsx'),
-  retroarcade: () => import('../components/RetroArcade.jsx'),
+  // retroarcade: () => import('../components/RetroArcade.jsx'),  // disabled — see the note above
 };
 
 /**

@@ -1,153 +1,110 @@
-# Revamp: Flow-Net Browser · Music · Game Center
+# System Dialogs — replace browser-default `alert` / `confirm` / `prompt`
 
-Owner request: *"suggest and implement a complete revamp and improvement of our Browser app,
-Music app and Gaming Center."* Grounded in a full exploration pass: the Browser is a 215-line
-stub (inert Back/Forward, fake 1s loading timer, no tabs/history/persistence, fully untokenized
-and denylist-exempted); Music works but has split-brain volume, duplicated categories, hardcoded
-durations and a Last.fm-only Now Playing widget; the Game Center records stats it never shows and
-leaves 4 of 12 games without achievements.
+Owner request: *"the application still uses the default alert modal in many places, but this is
+unacceptable, we need to ensure that is not the case and there are proper os appropriate popups."*
 
-Plan: Phase 0 shell enablers directly, then three parallel per-app agents on disjoint file sets,
-then one integration + verification pass.
+## What the audit actually found
 
-## Phase 0 — Shared shell enablers (direct, before agents)
-- [x] `apps.jsx`: per-app `window` sizes for browser/music/games; `App.jsx` consults
-      `APP_BY_ID[id]?.window` (and `title`, fixing "Aichat"/"Taskmanager"-style window titles)
-- [x] `Spotlight.jsx`: derive the app list from the APPS registry — the hand list covered 9 of 19
-      apps and was missing Flow-Net entirely; quick-shortcuts grid shows pinned/featured only
-      (retroarcade excluded from the app half so it can't collide with its game entry's key)
-- [x] `achievements.js`: registered 7 new ids — `netizen`, `tab_hoarder` (browser), `curator`
-      (music), `breakout_pro`, `mines_master`, `tower_pro`, `retro_gamer` (games); icons/hues
-      match each game's registry identity — eslint clean on all four files
+A repo-wide scan (`src/`, `public/`, `scripts/`, excluding `node_modules`/`dist`) turns up
+**three** native-dialog call sites, all in `FileExplorer.jsx` — and they are the three most visible
+ones, because they sit on the New File / New Folder / Mount buttons:
 
-## Phase 1 — Flow-Net Browser (rewrite) — agent complete (86/86 harness, eslint clean)
-- [x] Real tab model (cap 8): per-tab history stacks, working Back/Forward (Alt+←/→), all
-      iframes stay mounted so switches don't reload — Browser.jsx 487 lines + browser/ modules
-      (browserCore.js pure logic, StartPage, BlockedSplash, Favicon)
-- [x] Real loading from iframe `onLoad` + 12s safety + 2px accent indeterminate bar
-- [x] Start page (`lumina://start`): autofocused search, bookmarks grid (hover-reveal remove),
-      Recent (8, relative time) + Clear — tokenized
-- [x] Bookmarks persisted ('lumina-browser-bookmarks'), star toggle, seeded with the 5 defaults;
-      explicitly emptied list stays empty (seed only while key absent)
-- [x] History persisted ('lumina-browser-history'), cap 100, consecutive-dup skip, clearable
-- [x] Blocklist: parsed-URL matcher (github.com.evil.com no longer matches); splash on sdl-warn
-      voice. PLUS integration fix: google search WITH `igu=1` embeds (measured: 200, no
-      XFO/frame-ancestors) so address-bar search now WORKS; bare google.com/search stays blocked
-      (measured SAMEORIGIN) — old app showed the splash for every search
-- [x] `openBrowser(url)` → new tab via consumedNavRef-guarded effect (StrictMode-safe);
-      WindowContentRenderer no longer keys/remounts on browserNav; at tab cap reuses active tab
-- [x] DuckDuckGo ip3 favicons w/ failed-host memo + Globe fallback; Ctrl/Cmd+L; full aria pass
-- [x] Achievements on handler paths: `netizen` (navigateTo user paths), `tab_hoarder` (3rd tab)
-- [x] Fully tokenized — Browser.jsx REMOVED from denylist MEDIA_FILES (verified 0 violations)
+| Site | Call |
+|---|---|
+| `FileExplorer.jsx:190` | `prompt('Enter file name (e.g., notes.txt):', 'newfile.txt')` |
+| `FileExplorer.jsx:198` | `prompt('Enter folder name:', 'New Folder')` |
+| `FileExplorer.jsx:208` | `alert('File System Access API not supported in this browser.')` |
 
-## Phase 2 — Music — agent complete (367/367 harness, eslint clean, 0 literals in MusicApp)
-- [x] Volume: canonical 0–100 in store, clamped in slice; PlayerBar + ControlCenter both drive
-      `setMusicVolume`; persisted old-scale values (≤1) migrate ×100 in `sanitizePersistedMusic`
-- [x] Real durations: 1s poll reconciles `getDuration()` (guarded by `getVideoData().video_id`
-      so a loading track can't inherit the previous duration)
-- [x] Queue: queueNext/queueLast/dequeue/clearQueue + UpNextPanel + per-row TrackMenu;
-      resolution order repeat-one > queue > shuffle-bag > sequential (asserted numerically)
-- [x] Shuffle = Fisher–Yates bag keyed to context signature; no repeats per cycle (33-track
-      catalog cycled 3×, union=33); session-only by design
-- [x] Playlists: full CRUD persisted + Play All context (Liked too); `curator` fires from
-      LibraryView submitCreate and TrackMenu "New playlist" handlers
-- [x] `CATEGORIES` reshaped `{id,name,hue,genres}` in musicData.js, single-sourced; Explore
-      filters genuinely (33/33 tracks reachable); cards use iconStyle washes, not stock gradients
-- [x] NowPlayingWidget local-first, Last.fm fallback; background/blur untouched as documented
-- [x] Fixes: :216 deps warning gone honestly; fill="black"→currentColor; via.placeholder→
-      tokenized element; end-of-playlist now sets isPlaying(false)
-- [x] Structure: MusicApp 832→299 composing 11 music/ modules incl. pure playback.js +
-      useYouTubePlayer hook (StrictMode-safe destroy — old code leaked the player)
-- [x] Visualizer untouched
+The second half of the problem is the mirror image: **destructive actions that should raise a
+dialog and raise nothing at all.** Deleting a file, resetting the whole filesystem, removing a
+sideloaded game, resetting personalization and clearing browser history are all one unguarded
+click. A browser `confirm()` would have been ugly; *no* confirm is worse.
 
-## Phase 3 — Game Center — agent complete (36/36 harness, eslint + token-lint clean)
-- [x] Launcher home: "Jump back in" row (≤4 by lastPlayed desc), stat badges (best, plays) on
-      cards; card heights h-40→h-44 / h-48→h-52 to fit the chip row (screenshot-check this)
-- [x] `gamesSlice`: `{ plays, lastPlayed }` with lazy migration of persisted `{ plays }`;
-      `useHighScore` exports `readAllGameStats()` ({} on any failure)
-- [x] Genre filter chips on All Games (law-5 chip treatment, stranded-filter falls back to All)
-- [x] Trophy Room: grouped by game + earned/total; earned = accent-soft + aInk, locked = veil
-- [x] Achievements wired on event paths: `breakout_pro` (Breakout.jsx:490 board-clear),
-      `mines_master` (Minesweeper.jsx:302 endWin), `tower_pro` (TowerStack.jsx:341 15th drop),
-      `retro_gamer` (RetroArcade.jsx:61, gated on emulator status==='ready')
-- [x] SandboxedGame: `gameover` handled (spam-gated, clamped), best via useHighScore(gameId),
-      tokenized overlay + Restart; sandbox attrs unchanged
-- [x] Keyboard focus pass on launcher cards (real buttons / tileProps contract + visible rings)
-- [x] Token sweep: Snake/Sudoku/TriviaGame audited — already clean, untouched
+## Plan
 
-## Phase 4 — Integration & verification (direct)
-- [x] eslint clean: `npx eslint src scripts` → zero problems
-- [x] `npm run build` passes (run after the final edit; compression pass completed)
-- [x] token-lint: −320 vs allowance, no regressions → blessed (8 files / 109). Browser.jsx AND
-      musicData.js removed from the denylist (both verifiably literal-free now)
-- [x] Census: white/black literals −145 → 81; untokenized colour sites −495 → 118
-- [x] shot.mjs: 7 screenshots (3 apps × dark/light + browser-nav), fresh server, store-instance
-      check passed; all reviewed by eye
-- [x] End-to-end numeric probes: bookmark click → Wikipedia rendered in-tab, history entry
-      persisted ({url, host, ts} correct), `netizen` present in store achievements
-- [x] sdl-notes.md entry (2026-09-10); this review section
+### 1. The mechanism
+- [x] `src/store/slices/dialogSlice.js` — a queue in the store + a promise resolver map held at
+      module scope (a resolver is a live continuation; it cannot round-trip through `persist`)
+- [x] `src/utils/dialog.js` — `osAlert` / `osConfirm` / `osPrompt`, promise-returning, with the
+      same return contract as the natives (`true` / `boolean` / `string | null`), callable from
+      non-React code (store slices, terminal) as well as components
+- [x] Register the slice in `osStore.js`; keep `dialogs` out of `partialize`
 
----
+### 2. The surface — `src/components/SystemDialog.jsx`
+- [x] SDL roles only: `bg-sdl-surface`, `border-hairline/10`, `bg-scrim` backdrop,
+      `shadow-[var(--sdl-lift-window)]`, `rounded-sdl-panel`
+- [x] Tone badge — info = `soft`/`aInk` (law 3), warn = `warn`, danger = `alert`
+- [x] Destructive confirm is a **tint**, not a solid `alert` fill: `--sdl-on-accent` is computed
+      against the ACCENT and is not guaranteed to read on `alert` (same reasoning already recorded
+      in `TaskManager.jsx:170`)
+- [x] Modal choreography per SDL motion: translateY(8) + fade; reduced motion via the root
+      `MotionGate`
+- [x] Focus: capture → focus default action (or the input) → **trap Tab** → restore on close
+- [x] Keyboard: Escape cancels, Enter confirms (prompt is a real `<form>`), backdrop click cancels
+- [x] `role="alertdialog"` for alert/confirm, `role="dialog"` for prompt, `aria-modal`,
+      `aria-labelledby` / `aria-describedby`
+- [x] One dialog visible at a time; the rest queue behind it, the way an OS serialises modals
+- [x] Mounted at the root in `main.jsx` (inside `MotionGate`) so login/boot can raise one too
 
-# Review — what shipped and what was verified
+### 3. Replace the three natives
+- [x] `handleCreateFile` → `osPrompt` (required, `.txt` placeholder)
+- [x] `handleCreateFolder` → `osPrompt` (required)
+- [x] `handleMountFolder` → `osAlert` (unsupported-browser notice)
 
-**Flow-Net Browser** went from a 215-line stub to a real tabbed browser (487-line component +
-four `browser/` modules incl. a React-free `browserCore.js`): up to 8 tabs with per-tab history
-and working Back/Forward, true iframe-load state with a 12s safety, a tokenized start page
-(search / bookmarks grid / recent), persisted bookmarks + history, a parsed-URL blocklist with a
-measured `igu=1` carve-out (in-app Google search now actually renders instead of hitting the
-splash — verified by header inspection: with igu=1 Google sends no XFO/frame-ancestors), external
-`openBrowser` launches land as new tabs without remounting, favicons, Ctrl/Cmd+L and Alt+←/→,
-achievements `netizen` + `tab_hoarder`. 86/86 harness assertions on the shipped core module.
+### 4. Give the unguarded destructive actions a dialog
+- [x] `FileExplorer` — delete file/folder (names the item), Reset All
+- [x] `Games` — remove a sideloaded game
+- [x] `Appearance` + desktop context menu — Reset Personalization
+- [x] `Browser` StartPage — Clear browsing history
 
-**Music** was restructured from an 832-line monolith to a 299-line entry over 11 `music/`
-modules (pure `playback.js`, `useYouTubePlayer` engine hook with StrictMode-safe destroy, views,
-PlayerBar, UpNext, TrackMenu). Features: store-canonical 0–100 volume with persisted-value
-migration (Control Center slider finally controls playback), duration reconciliation from the
-real player, a queue (play-next/add/remove/clear) with Up Next panel, Fisher–Yates shuffle bag,
-full playlist CRUD persisted through `sanitizePersistedMusic`, single-sourced categories that
-genuinely filter Explore, local-first NowPlayingWidget with Last.fm fallback, `curator`
-achievement, and the :216 deps warning fixed honestly. 367/367 harness assertions.
+### 5. Make the regression impossible, not just absent
+- [x] `no-restricted-globals` in `eslint.config.js` for `alert` / `confirm` / `prompt`, with a
+      message pointing at `src/utils/dialog.js`
 
-**Game Center**: registry-declared achievements for the four games that had none, wired on real
-event paths (Breakout board-clear, Minesweeper endWin, Tower Stack 15th placement, DOOM
-emulator-ready); `{plays, lastPlayed}` stats with lazy migration; "Jump back in" row; best/plays
-chips on cards; genre filter chips; Trophy Room grouped by game with earned=accent treatment;
-SandboxedGame now honors its own `gameover` contract with a tokenized overlay and per-game best
-via `useHighScore`; launcher fully keyboard-reachable. 36/36 harness assertions.
+### 6. Verify
+- [x] `npm run lint` clean
+- [x] `npm run build` clean
+- [x] Drive the real thing in a browser: open Files, exercise every dialog kind, confirm the
+      keyboard model and that focus returns
 
-**Shell**: per-app window geometry + registry titles; Spotlight derives from the APPS registry
-(10 previously unsearchable apps incl. Flow-Net now searchable); 21 → 28 achievements.
+## Review
 
-### Honest boundaries — NOT exercised
-- YouTube playback audio (headless run can't hear; engine behavior against the real YT API is
-  logic-verified only). Smoke-check in dev: audio should start on a second mount too, since the
-  hook now destroys the player on unmount (the old code leaked it).
-- `retro_gamer` depends on the EmulatorJS CDN boot succeeding; a failed boot awards nothing.
-- The Games "Jump back in" row and stat chips render only once something has been played —
-  screenshots show the empty-state variant (correct conditional), not the populated one.
-- ControlCenter's decorative Skip button remains unwired (pre-existing, out of scope; a store-
-  level skip channel would be the fix).
-- Card heights in the launcher grew (h-40→h-44 / h-48→h-52) to fit stat chips — reviewed in both
-  modes at 1440×900; worth one glance on a small laptop viewport.
+**Shipped.** Four new files, seven touched, no native dialog left in `src/`.
 
----
+| File | What it is |
+|---|---|
+| `src/store/slices/dialogSlice.js` | queue + module-scope resolver map |
+| `src/utils/dialog.js` | `osAlert` / `osConfirm` / `osPrompt` — the public API |
+| `src/components/SystemDialog.jsx` | the surface; mounted once in `main.jsx` |
+| `src/config/dialogs.js` | the one spec two surfaces share |
 
-# Carried over from the previous task — still needs the owner
+### Verification — 34 assertions, all passing
 
-*(The GitHub-sync / profile work in this file is complete and shipped. These items were left
-open for the repository owner and are preserved here so they are not lost.)*
+Driven through real CDP `Input.*` events in headless Chrome (`scratchpad/verify-dialogs.mjs`,
+`verify-wireups.mjs`), because the in-app Browser pane does not composite — see the standing
+lesson in `lessons.md`. Trusted events matter here specifically: a synthetic
+`dispatchEvent(new KeyboardEvent('keydown'))` never runs a default action, so it cannot prove that
+Enter submits the prompt form.
 
-- **`recommendations` and `endorsements` ship empty on purpose** — inventing them was the original
-  sin. Pull the LinkedIn archive (Settings → Data privacy → Get a copy of your data → *larger
-  archive*), then paste `Recommendations_Received.csv` and `Endorsement_Received_Info.csv` into
-  the marked slots in `profile.js`. Both sections appear automatically once non-empty.
-- **Confirm `identity.location`** — set to *Kota, Rajasthan* (résumé address + what AboutMe
-  already showed). If the LinkedIn header says Jaipur, change that one line.
-- **`handles.email` is `null`** — `contact@abhi.dev` was hardcoded and is not real; the mail tile
-  is filtered out until a real address is supplied. The in-app Mail window still works.
-- **Set `GH_SYNC_TOKEN` in the deploy host's env** (any GitHub PAT, no scopes needed). Without it
-  the deploy still works but the contribution data ages instead of refreshing.
-- **A home street address was being published** — `AboutMe`'s System Info card rendered
-  `1-C-27 S.F.S Talwandi, Kota, RJ` on a public site; it now shows city-level
-  `identity.location`. Revert that line if the full address was intended.
+Pass 1 (24/24) — `role`/`aria-modal`/`aria-labelledby` resolve to real nodes · input autofocused
+and pre-selected · Tab ×8 never escapes the panel · empty required prompt disables Create · Enter
+creates the folder and focus returns to the button that raised the dialog · Escape creates nothing
+· destructive confirm is an `alertdialog` naming the item · Escape and backdrop click both keep the
+file · confirming deletes it · warn alert has exactly one action · two queued dialogs show one
+panel and settle with their own separate answers · legible on both a dark (`carbon-vivid`) and a
+light (`honey-vivid`) colorway.
+
+Pass 2 (10/10) — Appearance reset, sideloaded-game removal and Clear history each raise a dialog,
+each leave state untouched on cancel, each apply on confirm.
+
+`npm run lint` adds zero errors (63 pre-existing, all in vendored `public/games/`). `npm run build`
+clean.
+
+### Two things worth remembering
+
+- **The audit number was 3, not "many".** The perception of "many" came from the *second* class of
+  problem — five destructive actions with no dialog at all. Both are fixed; only counting the
+  `alert`/`prompt` calls would have fixed half the complaint.
+- **A solid `--sdl-alert` button would have been wrong.** `--sdl-on-accent` is computed against the
+  ACCENT and carries no guarantee against `alert`, so destructive confirms are a tint with a
+  strong border — the constraint already recorded at `TaskManager.jsx:170`, now reused.

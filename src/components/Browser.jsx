@@ -12,6 +12,7 @@ import {
 import Favicon from './browser/Favicon';
 import StartPage from './browser/StartPage';
 import BlockedSplash from './browser/BlockedSplash';
+import { osConfirm } from '../utils/dialog';
 
 /**
  * Flow-Net — the OS browser, now with real tabs.
@@ -254,7 +255,17 @@ const Browser = () => {
     setBookmarks((prev) => prev.filter((b) => b.url !== url));
   };
 
-  const clearHistory = () => setHistory([]);
+  const clearHistory = async () => {
+    const ok = await osConfirm({
+      kicker: 'Flow-Net',
+      tone: 'danger',
+      icon: 'erase',
+      title: 'Clear browsing history?',
+      message: 'Every page in Recent is forgotten. Bookmarks and open tabs are left alone.',
+      confirmLabel: 'Clear history',
+    });
+    if (ok) setHistory([]);
+  };
 
   const handleIframeLoad = (tabId) => {
     disarmLoadTimer(tabId);
@@ -456,7 +467,6 @@ const Browser = () => {
               onLoad={() => handleIframeLoad(tab.id)}
               className={tab.id === activeId ? 'absolute inset-0 w-full h-full border-none bg-sdl-surface' : 'hidden'}
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-              credentialless="true"
             />
           );
         })}

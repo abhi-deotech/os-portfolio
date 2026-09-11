@@ -1,5 +1,5 @@
 import {
-  User, FileText, Code, HardDrive, Gamepad2, Music, Joystick, Monitor, Image as Wallpaper,
+  User, FileText, Code, HardDrive, Gamepad2, Music, Monitor, Image as Wallpaper,
   Activity, Mail, MessageSquare, Settings as SettingsIcon, Trophy, Globe, Brain, Book,
 } from 'lucide-react';
 
@@ -174,15 +174,13 @@ export const APPS = [
     hue: 56,            // orange — warm, social
     legacyHex: '#cc97ff',
   },
-  {
-    id: 'retroarcade',
-    title: 'Retro Arcade',
-    // Was a second Gamepad2, identical to Game Center in both glyph AND colour — two dock targets
-    // you could not tell apart.
-    glyph: Joystick,
-    hue: 34,            // vermilion
-    legacyHex: '#cc97ff',
-  },
+  // The `retroarcade` dock entry is DISABLED, not deleted — see the note beside the matching hole
+  // in src/config/games.js. Restoring it is this block, verbatim:
+  //
+  //   { id: 'retroarcade', title: 'Retro Arcade', glyph: Joystick, hue: 34, legacyHex: '#cc97ff' }
+  //
+  // Restoring it also means re-adding `Joystick` to the lucide import above — it was dropped with
+  // the entry because this file had no other use for it.
   {
     id: 'notepad',
     title: 'Notepad',

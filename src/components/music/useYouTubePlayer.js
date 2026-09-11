@@ -5,9 +5,8 @@ import useOSStore from '../../store/osStore';
  * The YouTube IFrame engine, extracted from MusicApp so the component composes views
  * instead of interleaving player lifecycle with layout.
  *
- * Playback is a hidden credentialless iframe on youtube-nocookie.com driven through
- * window.YT.Player — an embed, not an <audio> element. Everything that follows from
- * that is owned here:
+ * Playback is a hidden iframe on youtube-nocookie.com driven through window.YT.Player —
+ * an embed, not an <audio> element. Everything that follows from that is owned here:
  *
  *  - the IFrame API script loads once, app-wide, shared via window.onYouTubeIframeAPIReady
  *  - the player is created ONCE per mount; track changes go through loadVideoById, so
@@ -65,11 +64,13 @@ export default function useYouTubePlayer({ onEnded }) {
       try {
         containerRef.current.innerHTML = '';
 
-        // credentialless so the embed can load inside the app's COEP context.
+        // This iframe used to be marked `credentialless`, the Chromium-only escape hatch that let
+        // it load inside the app's COEP context. The app no longer sets COEP (see vite.config.js),
+        // so the attribute is not just redundant: a credentialless frame gets an ephemeral context
+        // with no cookies or storage, which cost the embed its normal YouTube state. Dropping it
+        // is also what makes this load at all on Firefox and Safari, which never supported it.
         const iframe = document.createElement('iframe');
         iframe.id = 'yt-player-iframe';
-        iframe.credentialless = true;
-        iframe.setAttribute('credentialless', 'true');
         iframe.style.width = '1px';
         iframe.style.height = '1px';
         const origin = window.location.origin;

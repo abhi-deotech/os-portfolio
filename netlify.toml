@@ -6,11 +6,12 @@
   # Set your Render signaling server URL here after deploying
   # VITE_SIGNALING_SERVER = "wss://y-webrtc-signaling-xxx.onrender.com"
 
+# No COOP/COEP: cross-origin isolation broke every external embed on Firefox and Safari
+# (NS_ERROR_DOM_COEP_FAILED) and its only real consumer, the DOOM emulator, is disabled.
+# See the header comment in vite.config.js — these three files are kept identical.
 [[headers]]
   for = "/*"
   [headers.values]
-    Cross-Origin-Opener-Policy = "same-origin"
-    Cross-Origin-Embedder-Policy = "credentialless"
     Cross-Origin-Resource-Policy = "cross-origin"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; child-src 'self' blob: https:; frame-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
     X-Content-Type-Options = "nosniff"
