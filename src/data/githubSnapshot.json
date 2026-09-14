@@ -7,60 +7,24 @@
   "repos": 5,
   "stars": 0,
   "contributions": {
-    "total": 2306,
-    "commits": 1583,
-    "pullRequests": 587,
+    "total": 2257,
+    "commits": 209,
+    "pullRequests": 64,
     "issues": 0,
-    "reposContributedTo": 21,
+    "reposContributedTo": 7,
     "current": 0,
     "longest": 62,
-    "activeDays": 269
+    "activeDays": 263
   },
   "calendar": {
-    "from": "2025-09-03",
-    "to": "2026-09-02",
+    "from": "2025-09-15",
+    "to": "2026-09-14",
     "thresholds": [
       3,
       7,
       11
     ],
     "active": [
-      [
-        "2025-09-04",
-        9
-      ],
-      [
-        "2025-09-05",
-        5
-      ],
-      [
-        "2025-09-06",
-        5
-      ],
-      [
-        "2025-09-08",
-        10
-      ],
-      [
-        "2025-09-09",
-        4
-      ],
-      [
-        "2025-09-10",
-        4
-      ],
-      [
-        "2025-09-11",
-        2
-      ],
-      [
-        "2025-09-12",
-        10
-      ],
-      [
-        "2025-09-13",
-        2
-      ],
       [
         "2025-09-16",
         3
@@ -127,11 +91,11 @@
       ],
       [
         "2025-10-06",
-        2
+        3
       ],
       [
         "2025-10-07",
-        12
+        11
       ],
       [
         "2025-10-09",
@@ -618,8 +582,12 @@
         1
       ],
       [
+        "2026-03-23",
+        1
+      ],
+      [
         "2026-03-24",
-        8
+        7
       ],
       [
         "2026-03-25",
@@ -627,11 +595,11 @@
       ],
       [
         "2026-03-26",
-        12
+        13
       ],
       [
         "2026-03-27",
-        12
+        11
       ],
       [
         "2026-03-28",
@@ -651,11 +619,11 @@
       ],
       [
         "2026-04-02",
-        2
+        3
       ],
       [
         "2026-04-03",
-        6
+        5
       ],
       [
         "2026-04-06",
@@ -1100,25 +1068,33 @@
       [
         "2026-08-24",
         2
+      ],
+      [
+        "2026-09-10",
+        1
+      ],
+      [
+        "2026-09-11",
+        1
       ]
     ]
   },
   "languages": [
     {
       "name": "JavaScript",
-      "pct": 65
+      "pct": 67.8
     },
     {
       "name": "TypeScript",
-      "pct": 19.1
+      "pct": 17.5
     },
     {
       "name": "Go",
-      "pct": 6.2
+      "pct": 5.7
     },
     {
       "name": "Rust",
-      "pct": 5.3
+      "pct": 4.9
     },
     {
       "name": "CSS",
@@ -1152,31 +1128,11 @@
     {
       "type": "PushEvent",
       "repo": "os-portfolio",
-      "commits": 2,
-      "at": "2026-08-24T07:03:11Z"
-    },
-    {
-      "type": "PullRequestEvent",
-      "repo": "os-portfolio",
-      "commits": 0,
-      "at": "2026-08-14T19:35:54Z"
-    },
-    {
-      "type": "PullRequestEvent",
-      "repo": "os-portfolio",
-      "commits": 0,
-      "at": "2026-08-14T19:35:52Z"
-    },
-    {
-      "type": "PushEvent",
-      "repo": "os-portfolio",
-      "commits": 1,
-      "at": "2026-08-14T19:35:53Z"
+      "commits": 4,
+      "at": "2026-09-10T11:58:42Z"
     }
   ],
-  "source": "rest+cached-graphql",
-  "generatedAt": "2026-09-10T18:54:16.532Z",
-  "stale": true,
-  "staleReason": "no token this run; contribution data carried over from the last authenticated sync",
-  "contributionsAsOf": "2026-09-10T18:43:24.322Z"
+  "source": "graphql",
+  "generatedAt": "2026-09-14T12:54:05.862Z",
+  "stale": false
 }
