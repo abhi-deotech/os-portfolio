@@ -1,12 +1,208 @@
-import React, { useState } from 'react';
+import React, { useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Cloud, Wifi, Bluetooth, Sun, Volume2, BatteryFull, Signal, Play, Pause, SkipForward, Settings2, X, Music } from 'lucide-react';
+import {
+  Cloud, Wifi, WifiOff, Sun, Volume2, BatteryCharging, BatteryFull, BatteryMedium, BatteryLow, Signal,
+  Play, Pause, SkipForward, Settings2, X, Music, Maximize2,
+} from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
+import { MAX_TOASTS } from '../store/slices/systemSlice';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import useSystemMetrics from '../hooks/useSystemMetrics';
 import useNetworkInfo from '../hooks/useNetworkInfo';
 import useSoundEffects from '../hooks/useSoundEffects';
+import { useSystemFact } from '../hooks/useSystemFacts';
+import { fmt } from '../system/facts.js';
+import useCapability from '../capabilities/useCapability.js';
+import { notifyUnavailable } from '../capabilities/notify.js';
+import { enterImmersive, exitImmersive } from '../hooks/useImmersive';
+
+const batteryIcon = ({ level, charging }) => {
+  if (charging) return BatteryCharging;
+  if (level >= 0.9) return BatteryFull;
+  if (level >= 0.4) return BatteryMedium;
+  return BatteryLow;
+};
+
+/**
+ * Everything in the panel that reads a system fact. Rendered only while the Control Center is open,
+ * so the battery observer and network listeners exist only while someone can see them — the pause the
+ * old `useSystemMetrics(!isControlCenterOpen)` flag used to provide.
+ */
+const ControlCenterBody = ({ isMobile, playSound, toggleControlCenter }) => {
+  const isPuterSignedIn = useOSStore(state => state.isPuterSignedIn);
+  const puterUser = useOSStore(state => state.puterUser);
+  // Was called in the "Link Puter" onClick without ever being pulled from the store, so the button
+  // threw a ReferenceError — and it renders whenever signed out, which is the default state.
+  const signInWithPuter = useOSStore(state => state.signInWithPuter);
+  const focusMode = useOSStore(state => state.focusMode);
+  const setFocusMode = useOSStore(state => state.setFocusMode);
+  // Entries Focus is holding back: everything queued that is not urgent.
+  const heldCount = useOSStore(state => (state.focusMode ? state.achievementQueue.filter((e) => !e?.urgent).length : 0));
+  const battery = useSystemFact('battery');
+  const network = useNetworkInfo();
+  // Immersive: the tile reads the store, which only fullscreenchange writes (useImmersiveSync).
+  const isImmersive = useOSStore(state => state.isImmersive);
+  const fullscreen = useCapability('fullscreen');
+  const keyboardLock = useCapability('keyboardLock');
+  const immersiveSubId = useId();
+  const immersiveOn = fullscreen.supported && isImmersive;
+  const immersiveSub = !fullscreen.supported ? 'Unavailable' : isImmersive ? 'Fullscreen' : 'Off';
+
+  const toggleImmersive = () => {
+    playSound('click');
+    if (!fullscreen.supported) {
+      notifyUnavailable('fullscreen');
+      return;
+    }
+    // The page's own fullscreen state backs up the store, so a stale Off can still leave it.
+    if (isImmersive || document.fullscreenElement === document.documentElement) {
+      exitImmersive();
+      return;
+    }
+    // Synchronously from the click: requestFullscreen needs the gesture. A refusal leaves the tile
+    // off (nothing but fullscreenchange turns it on) and says so, rather than doing nothing visible.
+    const coarse = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+    enterImmersive({ keyboardLock, browser: fullscreen.browser, coarse }).then((result) => {
+      if (!result.ok) {
+        console.warn('Immersive mode: fullscreen was refused', result.error);
+        notifyUnavailable('fullscreen', { kind: 'refused', errName: result.error?.name });
+      }
+    });
+  };
+
+  // The queue is capped at MAX_TOASTS, so once Focus holds that many, older ones have been dropped.
+  const focusSub = !focusMode
+    ? 'Off'
+    : heldCount >= MAX_TOASTS
+      ? `Holding latest ${MAX_TOASTS}`
+      : heldCount > 0 ? `Holding ${heldCount}` : 'Do Not Disturb';
+  const hasEstimate = network.effectiveType !== 'unknown' && network.downlink > 0;
+
+  return (
+    <>
+            {/* Header / Status row */}
+            <div className="flex justify-between items-center px-2 pt-1 pb-2">
+                {/* Only when the browser reports it. Otherwise nothing is drawn here, and Settings →
+                    Compatibility says why the battery is missing. */}
+                {battery.source === 'reported' ? (
+                  <div className="flex items-center space-x-2" title={battery.text}>
+                    <CustomIcon icon={batteryIcon(battery.value)} size={16} color="text-sdl-ink" glow />
+                    <span className="text-xs font-bold text-sdl-ink tracking-wide tabular-nums">{Math.round(battery.value.level * 100)}%</span>
+                  </div>
+                ) : <div />}
+               <div className="flex items-center gap-4">
+                  {!isPuterSignedIn ? (
+                    <button
+                      onClick={() => { signInWithPuter(); playSound('click'); }}
+                      className="px-3 py-1.5 bg-os-primary/10 border border-os-primary/30 rounded-lg text-[10px] font-black text-os-primary uppercase tracking-widest hover:bg-os-primary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+                    >
+                      Link Puter
+                    </button>
+                  ) : (
+                    <div className="flex flex-col items-end border-r border-hairline/5 pr-4">
+                      <span className="text-[10px] font-bold text-sdl-accent uppercase tracking-widest">Puter Cloud</span>
+                      <div className="flex items-center space-x-1 text-sdl-done">
+                        <Cloud size={12} />
+                        <span className="text-xs font-bold truncate max-w-[80px] uppercase tabular-nums">{puterUser?.username || 'Synced'}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest">Network</span>
+                      <div className="flex items-center space-x-1">
+                        <CustomIcon icon={Signal} size={12} color="text-sdl-sec" />
+                        <span className="text-xs font-bold text-sdl-ink uppercase truncate max-w-[80px] tabular-nums">{fmt.networkText(network)}</span>
+                      </div>
+                  </div>
+                  {isMobile && (
+                    <button
+                      type="button"
+                      aria-label="Close Control Center"
+                      onClick={toggleControlCenter}
+                      className="p-2 bg-veil/5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
+                    >
+                       <X size={20} className="text-sdl-ink" />
+                    </button>
+                  )}
+               </div>
+            </div>
+
+            {/* Quick Actions Grid (Asymmetric).
+                Every toggle now speaks in the ONE accent voice rather than a per-toggle hue. The
+                cyan/violet/green trio was the legacy palette hardcoded three ways, so on the 15
+                non-legacy colorways an "on" toggle lit up in a colour the theme does not contain —
+                and on the 10 light ones it sat on a black slab. Active reads soft + accent border +
+                aInk; inactive reads sunken + hairline. */}
+            <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2'} gap-4`}>
+               {/* Left column: what the browser says about the connection. Information, not a switch —
+                   a page cannot turn Wi-Fi or Bluetooth on or off. */}
+               <div className="col-span-1 space-y-4">
+                   <div className="w-full p-4 rounded-2xl flex flex-col justify-between min-h-28 border relative overflow-hidden text-left bg-sdl-sunken/80 border-hairline/10">
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-os-surfaceContainerHighest text-os-onSurfaceVariant">
+                         <CustomIcon icon={network.isOnline ? Wifi : WifiOff} size={16} />
+                      </div>
+                     <div>
+                        <span className="block text-sm font-bold text-sdl-ink">Connection</span>
+                        <span className="block text-[10px] uppercase font-bold tracking-widest text-sdl-sec">
+                          {network.isOnline ? 'Online' : 'Offline'}
+                        </span>
+                        {/* Own line, not uppercased: "MBPS"/"MS" would lose bits vs bytes and read ambiguously. */}
+                        {network.isOnline && hasEstimate && (
+                          <span className="block text-[10px] font-bold text-sdl-sec tabular-nums">~{network.downlink} Mbps · ~{network.rtt} ms estimate</span>
+                        )}
+                     </div>
+                   </div>
+                   <button
+                     type="button"
+                     role="switch"
+                     aria-checked={immersiveOn}
+                     aria-describedby={fullscreen.supported ? undefined : immersiveSubId}
+                     onClick={toggleImmersive}
+                     className={`w-full p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${immersiveOn ? 'bg-sdl-soft border-sdl-accent shadow-[inset_0_0_20px_var(--sdl-glow)]' : 'bg-sdl-sunken/80 border-hairline/10 hover:bg-sdl-surface2'}`}
+                   >
+                       <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-inner ${immersiveOn ? 'bg-sdl-sunken border border-sdl-accent/30' : 'bg-os-surfaceContainerHighest'}`}>
+                           <CustomIcon
+                             icon={Maximize2}
+                             size={24}
+                             color={immersiveOn ? 'text-sdl-aInk' : 'text-os-onSurfaceVariant'}
+                             glow={immersiveOn}
+                           />
+                       </div>
+                      <div className="text-center">
+                          <span className={`block text-xs font-bold ${immersiveOn ? 'text-sdl-ink' : 'text-os-onSurfaceVariant'}`}>Immersive</span>
+                          <span id={immersiveSubId} className={`block text-[10px] uppercase font-bold tracking-widest ${immersiveOn ? 'text-sdl-aInk' : 'text-sdl-sec'}`}>{immersiveSub}</span>
+                      </div>
+                   </button>
+               </div>
+
+               {/* Right Stack - Focus */}
+               <div className="col-span-1 flex flex-col gap-4">
+                   <button
+                     type="button"
+                     role="switch"
+                     aria-checked={focusMode}
+                     onClick={() => { setFocusMode(!focusMode); playSound('click'); }}
+                     className={`flex-1 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${focusMode ? 'bg-sdl-soft border-sdl-accent shadow-[inset_0_0_20px_var(--sdl-glow)]' : 'bg-sdl-sunken/80 border-hairline/10 hover:bg-sdl-surface2'}`}
+                   >
+                       <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-inner ${focusMode ? 'bg-sdl-sunken border border-sdl-accent/30' : 'bg-os-surfaceContainerHighest'}`}>
+                           <CustomIcon
+                             icon={Settings2}
+                             size={24}
+                             color={focusMode ? 'text-sdl-aInk' : 'text-os-onSurfaceVariant'}
+                             glow={focusMode}
+                           />
+                       </div>
+                      <div className="text-center">
+                          <span className={`block text-xs font-bold ${focusMode ? 'text-sdl-ink' : 'text-os-onSurfaceVariant'}`}>Focus</span>
+                          <span className={`block text-[10px] uppercase font-bold tracking-widest ${focusMode ? 'text-sdl-aInk' : 'text-sdl-sec'}`}>{focusSub}</span>
+                      </div>
+                   </button>
+               </div>
+            </div>
+
+    </>
+  );
+};
 
 const ControlCenter = () => {
   const { playSound } = useSoundEffects();
@@ -19,23 +215,12 @@ const ControlCenter = () => {
   const brightness = useOSStore(state => state.brightness);
   const setBrightness = useOSStore(state => state.setBrightness);
   const setMusicVolume = useOSStore(state => state.setMusicVolume);
-  const isPuterSignedIn = useOSStore(state => state.isPuterSignedIn);
-  const puterUser = useOSStore(state => state.puterUser);
-  // Was called in the "Link Puter" onClick without ever being pulled from the store, so the button
-  // threw a ReferenceError — and it renders whenever signed out, which is the default state.
-  const signInWithPuter = useOSStore(state => state.signInWithPuter);
-  
   const isMobile = useIsMobile();
-  const metrics = useSystemMetrics();
-  const network = useNetworkInfo();
-  
+
   // music.volume is canonical 0–100 (the YT player's own unit) — no rescaling. This
   // slider used to write 0–1 into a field the Music app never read; both now speak
   // through setMusicVolume, and the engine hook applies changes to the live player.
   const volume = Math.round(music.volume);
-  const [toggles, setToggles] = useState({ wifi: true, bluetooth: true, airdrop: false });
-
-  const toggleState = (key) => setToggles(prev => ({ ...prev, [key]: !prev[key] }));
 
   return (
     <AnimatePresence>
@@ -63,117 +248,7 @@ const ControlCenter = () => {
             <div className="absolute -top-20 -right-20 w-[250px] h-[250px] bg-sdl-accent/20 blur-[80px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
             <div className="absolute -bottom-20 -left-20 w-[200px] h-[200px] bg-sdl-soft/40 blur-[80px] rounded-full pointer-events-none -z-10 mix-blend-screen" />
 
-            {/* Header / Status row */}
-            <div className="flex justify-between items-center px-2 pt-1 pb-2">
-                <div className="flex items-center space-x-2">
-                  <CustomIcon icon={BatteryFull} size={16} color={metrics.ram > 80 ? "text-sdl-alert" : "text-sdl-done"} glow />
-                  <span className="text-xs font-bold text-sdl-ink tracking-wide tabular-nums">{100 - Math.round(metrics.cpu / 10)}%</span>
-                </div>
-               <div className="flex items-center gap-4">
-                  {!isPuterSignedIn ? (
-                    <button
-                      onClick={() => { signInWithPuter(); playSound('click'); }}
-                      className="px-3 py-1.5 bg-os-primary/10 border border-os-primary/30 rounded-lg text-[10px] font-black text-os-primary uppercase tracking-widest hover:bg-os-primary/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-                    >
-                      Link Puter
-                    </button>
-                  ) : (
-                    <div className="flex flex-col items-end border-r border-hairline/5 pr-4">
-                      <span className="text-[10px] font-bold text-sdl-accent uppercase tracking-widest">Puter Cloud</span>
-                      <div className="flex items-center space-x-1 text-sdl-done">
-                        <Cloud size={12} />
-                        <span className="text-xs font-bold truncate max-w-[80px] uppercase tabular-nums">{puterUser?.username || 'Synced'}</span>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-bold text-os-onSurfaceVariant uppercase tracking-widest">Network</span>
-                      <div className="flex items-center space-x-1">
-                        <CustomIcon icon={Signal} size={12} color="text-sdl-sec" />
-                        <span className="text-xs font-bold text-sdl-ink uppercase truncate max-w-[80px] tabular-nums">{network.isOnline ? 'Nexus-5G' : 'Offline'}</span>
-                      </div>
-                  </div>
-                  {isMobile && (
-                    <button
-                      type="button"
-                      aria-label="Close Control Center"
-                      onClick={toggleControlCenter}
-                      className="p-2 bg-veil/5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
-                    >
-                       <X size={20} className="text-sdl-ink" />
-                    </button>
-                  )}
-               </div>
-            </div>
-
-            {/* Quick Actions Grid (Asymmetric).
-                Every toggle now speaks in the ONE accent voice rather than a per-toggle hue. The
-                cyan/violet/green trio was the legacy palette hardcoded three ways, so on the 15
-                non-legacy colorways an "on" toggle lit up in a colour the theme does not contain —
-                and on the 10 light ones it sat on a black slab. Active reads soft + accent border +
-                aInk; inactive reads sunken + hairline. */}
-            <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2'} gap-4`}>
-               {/* Primary Network Block - Larger */}
-               <div className="col-span-1 space-y-4">
-                   <button
-                     type="button"
-                     role="switch"
-                     aria-checked={toggles.wifi}
-                     onClick={() => { toggleState('wifi'); playSound('click'); }}
-                     className={`w-full p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${toggles.wifi ? 'bg-sdl-soft border-sdl-accent' : 'bg-sdl-sunken/80 border-hairline/10 hover:bg-sdl-surface2'}`}
-                   >
-                     {toggles.wifi && <div className="absolute inset-x-0 bottom-0 h-1 bg-sdl-accent shadow-[0_0_15px_var(--sdl-glow)]" />}
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${toggles.wifi ? 'bg-sdl-accent text-sdl-onAccent' : 'bg-os-surfaceContainerHighest text-os-onSurfaceVariant'}`}>
-                         <CustomIcon icon={Wifi} size={16} glow={toggles.wifi} />
-                      </div>
-                     <div>
-                        <span className="block text-sm font-bold text-sdl-ink">Wi-Fi</span>
-                        <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.wifi ? 'text-sdl-aInk' : 'text-sdl-sec'}`}>{toggles.wifi ? (network.isOnline ? 'Nexus-Home' : 'Connected') : 'Off'}</span>
-                     </div>
-                   </button>
-                   
-                   <button
-                     type="button"
-                     role="switch"
-                     aria-checked={toggles.bluetooth}
-                     onClick={() => { toggleState('bluetooth'); playSound('click'); }}
-                     className={`w-full p-4 rounded-2xl flex flex-col justify-between h-28 cursor-pointer transition-all duration-300 border relative overflow-hidden text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${toggles.bluetooth ? 'bg-sdl-soft border-sdl-accent' : 'bg-sdl-sunken/80 border-hairline/10 hover:bg-sdl-surface2'}`}
-                   >
-                     {toggles.bluetooth && <div className="absolute inset-x-0 bottom-0 h-1 bg-sdl-accent shadow-[0_0_15px_var(--sdl-glow)]" />}
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${toggles.bluetooth ? 'bg-sdl-accent text-sdl-onAccent' : 'bg-os-surfaceContainerHighest text-os-onSurfaceVariant'}`}>
-                         <CustomIcon icon={Bluetooth} size={16} glow={toggles.bluetooth} />
-                      </div>
-                     <div>
-                        <span className="block text-sm font-bold text-sdl-ink">Bluetooth</span>
-                        <span className={`text-[10px] uppercase font-bold tracking-widest ${toggles.bluetooth ? 'text-sdl-aInk' : 'text-sdl-sec'}`}>{toggles.bluetooth ? 'On' : 'Off'}</span>
-                     </div>
-                   </button>
-               </div>
-
-               {/* Right Stack - Focus */}
-               <div className="col-span-1 flex flex-col gap-4">
-                   <button
-                     type="button"
-                     role="switch"
-                     aria-checked={toggles.airdrop}
-                     onClick={() => { toggleState('airdrop'); playSound('click'); }}
-                     className={`flex-1 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-300 border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${toggles.airdrop ? 'bg-sdl-soft border-sdl-accent shadow-[inset_0_0_20px_var(--sdl-glow)]' : 'bg-sdl-sunken/80 border-hairline/10 hover:bg-sdl-surface2'}`}
-                   >
-                       <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-inner ${toggles.airdrop ? 'bg-sdl-sunken border border-sdl-accent/30' : 'bg-os-surfaceContainerHighest'}`}>
-                           <CustomIcon
-                             icon={Settings2}
-                             size={24}
-                             color={toggles.airdrop ? 'text-sdl-aInk' : 'text-os-onSurfaceVariant'}
-                             glow={toggles.airdrop}
-                           />
-                       </div>
-                      <div className="text-center">
-                          <span className={`block text-xs font-bold ${toggles.airdrop ? 'text-sdl-ink' : 'text-os-onSurfaceVariant'}`}>Focus</span>
-                          <span className={`block text-[10px] uppercase font-bold tracking-widest ${toggles.airdrop ? 'text-sdl-aInk' : 'text-sdl-sec'}`}>{toggles.airdrop ? 'Do Not Disturb' : 'Off'}</span>
-                      </div>
-                   </button>
-               </div>
-            </div>
+            <ControlCenterBody isMobile={isMobile} playSound={playSound} toggleControlCenter={toggleControlCenter} />
 
             {/* Sliders Container */}
             <div className="bg-sdl-sunken/60 p-5 rounded-[2rem] border border-os-outline/10 space-y-6 flex-grow overflow-y-auto">

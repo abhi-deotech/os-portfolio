@@ -309,7 +309,7 @@ Mode is derived from the colorway, never selected independently — see [STYLING
 | `src/App.jsx` | Main system entry point |
 | `src/components/Desktop.jsx` | Core OS shell & window manager |
 | `src/components/Window.jsx` | Window container component |
-| `src/hooks/useSystemMetrics.js` | Performance monitoring |
+| `src/system/facts.js` + `src/hooks/useSystemFacts.js` | Browser-reported system facts (or why they are unavailable) |
 | `src/hooks/useSoundEffects.js` | Audio feedback |
 
 ## Extension Points

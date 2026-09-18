@@ -100,7 +100,7 @@ src/
 │   ├── widgets/             # Desktop widgets
 │   ├── sdl/                 # Live design-language showcase
 │   └── common/              # Shared primitives
-├── hooks/                   # useTerminal, useSystemMetrics, useSoundEffects, …
+├── hooks/                   # useTerminal, useSystemFacts, useSoundEffects, …
 ├── workers/                 # aiWorker, benchmark.worker, gpuBench (WebGPU)
 ├── config/                  # apps, games, achievements, profile — declarative registries
 └── data/                    # Seed filesystem, GitHub snapshot, media catalogues

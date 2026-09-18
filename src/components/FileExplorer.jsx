@@ -7,7 +7,11 @@ import {
   Clock, Star, MoreVertical, FilePlus, FolderPlus
 } from 'lucide-react';
 import useOSStore from '../store/osStore';
-import { osAlert, osConfirm, osPrompt } from '../utils/dialog';
+import { osConfirm, osPrompt } from '../utils/dialog';
+import { isSupported } from '../capabilities/support.js';
+import { notifyUnavailable } from '../capabilities/notify.js';
+import { useSystemFact } from '../hooks/useSystemFacts';
+import { FactValue } from './common/FactValue';
 
 /**
  * Premium File Explorer for Lumina OS.
@@ -174,6 +178,9 @@ const Node = ({ node, style, dragHandle }) => {
 // --- Main File Explorer Component ---
 const FileExplorer = () => {
   const fileSystem = useOSStore(state => state.fileSystem);
+  // This site's storage quota as the browser reports it — not the disk, and the caption says so.
+  const storage = useSystemFact('storage');
+  const storagePct = storage.source === 'reported' ? storage.detail.percent : 0;
   const createFolder = useOSStore(state => state.createFolder);
   const createFile = useOSStore(state => state.createFile);
   const moveNode = useOSStore(state => state.moveNode);
@@ -234,23 +241,16 @@ const FileExplorer = () => {
   };
 
   const handleMountFolder = async () => {
+    if (!isSupported('fileSystemAccess')) {
+      await notifyUnavailable('fileSystemAccess');
+      return;
+    }
     try {
-      if (!window.showDirectoryPicker) {
-        await osAlert({
-          kicker: 'Lumina Cloud',
-          tone: 'warn',
-          title: 'Cannot mount a local folder here',
-          message:
-            'This browser does not support the File System Access API. Chrome, Edge or Opera on '
-            + 'desktop can mount a real folder into Lumina.',
-          confirmLabel: 'Got it',
-        });
-        return;
-      }
       const handle = await window.showDirectoryPicker();
       await useOSStore.getState().mountPhysicalFolder(handle);
     } catch (err) {
-      console.error('Mount failed:', err);
+      // Dismissing the picker rejects with AbortError; that is a choice, not a failure.
+      if (err?.name !== 'AbortError') console.error('Mount failed:', err);
     }
   };
 
@@ -415,11 +415,15 @@ const FileExplorer = () => {
           <div className="p-4 border-t border-os-outline/5">
              <div className="flex items-center gap-3 mb-2">
                 <div className="h-1.5 flex-1 bg-veil/5 rounded-full overflow-hidden">
-                   <div className="h-full w-2/3 bg-gradient-to-r from-os-primary to-os-secondary rounded-full" />
+                   <div className="h-full bg-gradient-to-r from-os-primary to-os-secondary rounded-full transition-[width] duration-pane ease-sdl" style={{ width: `${storagePct}%` }} />
                 </div>
-                <span className="text-[10px] font-black text-os-onSurfaceVariant">64%</span>
+                {storage.source === 'reported' && (
+                  <span className="text-[10px] font-black text-os-onSurfaceVariant">{storagePct > 0 && storagePct < 1 ? '<1' : Math.round(storagePct)}%</span>
+                )}
              </div>
-             <p className="text-[9px] font-bold text-os-onSurfaceVariant uppercase tracking-widest text-center opacity-40">128 GB of 256 GB used</p>
+             <p className="text-[9px] font-bold text-os-onSurfaceVariant uppercase tracking-widest text-center opacity-40">
+               {storage.source === 'reported' ? storage.text : <FactValue fact={storage} />}
+             </p>
           </div>
         </div>
 

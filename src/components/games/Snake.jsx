@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Trophy, Skull, RefreshCw } from 'lucide-react';
 import GameShell from './GameShell';
 import useGameLoop from '../../hooks/useGameLoop';
+import useWindowVisibility from '../../hooks/useWindowVisibility';
 import useGameInput from '../../hooks/useGameInput';
 import useGameAudio from '../../hooks/useGameAudio';
 import useHighScore from '../../hooks/useHighScore';
@@ -175,7 +176,9 @@ const Snake = ({ onBack }) => {
   }, [commit, play, submit, unlockAchievement]);
 
   const stepMs = Math.max(MIN_MS, START_MS - Math.floor(view.score / SPEEDUP_EVERY) * 10);
-  useGameLoop(tick, stepMs, view.status === 'playing');
+  // Paused while minimised or the tab is hidden — see useWindowVisibility.
+  const visible = useWindowVisibility('snake');
+  useGameLoop(tick, stepMs, view.status === 'playing' && visible);
 
   const steer = useCallback((next) => {
     const g = gameRef.current;

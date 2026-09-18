@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import Appearance from './settings/Appearance';
+import Compatibility from './settings/Compatibility';
+import SystemTab from './settings/SystemTab';
 import DesignLanguage from './sdl/DesignLanguage';
 import DL_SECTIONS from './sdl/sections';
 import { SDL_VERSION, SDL_AUTHOR } from '../theme/registry';
@@ -13,12 +15,12 @@ import {
   RefreshCw,
   Download,
   Upload,
-  Cloud
+  Cloud,
+  ShieldCheck
 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
-import useSystemMetrics from '../hooks/useSystemMetrics';
 
 const Settings = () => {
   const isMobile = useIsMobile();
@@ -36,7 +38,6 @@ const Settings = () => {
   const syncPrefsToPuter = useOSStore((s) => s.syncPrefsToPuter);
   const loadPrefsFromPuter = useOSStore((s) => s.loadPrefsFromPuter);
   const lastSyncTime = useOSStore((s) => s.lastSyncTime);
-  const metrics = useSystemMetrics();
 
   // Two labelled groups rather than four flat tabs. The Design Language group is the showcase;
   // it shares the same store and the same controls as Appearance — it documents the thing you are
@@ -50,6 +51,7 @@ const Settings = () => {
       id: 'system', label: 'System', items: [
         { id: 'appearance', icon: Palette, label: 'Appearance' },
         { id: 'system', icon: Cpu, label: 'System' },
+        { id: 'compat', icon: ShieldCheck, label: 'Compatibility' },
         { id: 'user', icon: User, label: 'Account & Sync' },
       ],
     },
@@ -63,107 +65,8 @@ const Settings = () => {
     if (isMobile) setShowSidebar(false);
   };
 
-  const renderSystem = () => {
-    // metrics are now passed from the top-level scope
-    
-    return (
-      <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-        <div>
-          <h2 className="text-3xl md:text-4xl font-display font-black tracking-tight mb-2">System</h2>
-          <p className="text-os-onSurfaceVariant text-sm">Hardware utilization and OS architecture details.</p>
-        </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-              <section className="p-6 md:p-8 rounded-[2rem] bg-os-surfaceContainerLow/30 border border-os-outline/10 backdrop-blur-2xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-full md:w-[400px] h-full bg-gradient-to-l from-sdl-accent/5 to-transparent pointer-events-none" />
-                  
-                  <div className="flex items-center justify-between mb-8">
-                      <div className="flex flex-col">
-                        <span className="text-2xl md:text-3xl font-black font-display text-sdl-accent">Lumina OS</span>
-                        <span className="text-xs md:text-sm font-semibold text-os-onSurfaceVariant">Version 1.0.0</span>
-                      </div>
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-os-primary/20 to-os-secondary/20 border border-os-outline/10 flex items-center justify-center shadow-[0_0_30px_rgb(var(--sdl-accent-rgb)/0.15)]">
-                          <CustomIcon icon={Cpu} size={isMobile ? 24 : 28} color="text-os-onSurface" glow="rgb(var(--os-primary-rgb) / 0.3)" />
-                      </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="p-4 rounded-xl bg-os-surfaceContainerHighest/50">
-                          <span className="block text-xs text-os-onSurfaceVariant mb-1">Architecture</span>
-                          <span className="block text-sm font-semibold">Web-Native Edge</span>
-                      </div>
-                      <div className="p-4 rounded-xl bg-os-surfaceContainerHighest/50">
-                          <span className="block text-xs text-os-onSurfaceVariant mb-1">Rendering Engine</span>
-                          <span className="block text-sm font-semibold">React + Vite + WebGL</span>
-                      </div>
-                  </div>
-              </section>
-
-              <section className="p-6 rounded-[2rem] bg-os-surfaceContainerLow/30 border border-os-outline/10 backdrop-blur-md">
-                 <h3 className="text-lg font-bold mb-6">Device Specifications</h3>
-                 <div className="space-y-4">
-                     <div className="flex flex-col md:flex-row border-b border-os-outline/5 pb-4 last:border-0 last:pb-0 gap-1 md:gap-0">
-                         <div className="w-full md:w-1/3 text-xs md:text-sm text-os-onSurfaceVariant font-medium">Processor</div>
-                         <div className="w-full md:w-2/3 text-xs md:text-sm font-semibold">{metrics.cores} Core Web-Optimized CPU</div>
-                     </div>
-                     <div className="flex flex-col md:flex-row border-b border-os-outline/5 pb-4 last:border-0 last:pb-0 gap-1 md:gap-0">
-                         <div className="w-full md:w-1/3 text-xs md:text-sm text-os-onSurfaceVariant font-medium">Installed RAM</div>
-                         <div className="w-full md:w-2/3 text-xs md:text-sm font-semibold">{metrics.ramGb}.0 GB (Physical Memory)</div>
-                     </div>
-                     <div className="flex flex-col md:flex-row border-b border-os-outline/5 pb-4 last:border-0 last:pb-0 gap-1 md:gap-0">
-                         <div className="w-full md:w-1/3 text-xs md:text-sm text-os-onSurfaceVariant font-medium">System Type</div>
-                         <div className="w-full md:w-2/3 text-xs md:text-sm font-semibold">{metrics.agent} Architecture</div>
-                     </div>
-                 </div>
-              </section>
-          </div>
-
-          <div className="space-y-6">
-              <section className="p-6 rounded-[2rem] bg-gradient-to-b from-os-surfaceContainerLow/50 to-os-surfaceContainerLowest/80 border border-os-outline/10 backdrop-blur-xl relative">
-                  <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-sdl-accent shadow-[0_0_8px_rgb(var(--sdl-accent-rgb))] animate-pulse" />
-                  <h3 className="text-sm font-semibold text-os-onSurfaceVariant mb-4 uppercase tracking-wider">Performance</h3>
-                  
-                  <div className="mb-4">
-                      <div className="flex items-end gap-2 mb-1">
-                          <span className="text-4xl md:text-5xl font-display font-black tracking-tighter text-os-secondary">{metrics.cpu}</span>
-                          <span className="text-xl font-bold text-os-onSurfaceVariant pb-1">%</span>
-                      </div>
-                      <span className="text-xs text-os-onSurfaceVariant font-bold uppercase tracking-widest">CPU Load</span>
-                  </div>
-
-                  <div className="mb-8">
-                      <div className="flex items-end flex-wrap gap-x-1 mb-1">
-                          <span className="text-4xl md:text-5xl font-display font-black tracking-tighter text-os-tertiary leading-none">{metrics.ramUsedMb}</span>
-                          <span className="text-xl font-bold text-os-onSurfaceVariant leading-none pb-0.5">MB</span>
-                          <span className="text-sm text-os-onSurfaceVariant/50 font-bold leading-none ml-1 pb-1">/ {metrics.ramLimitMb} MB</span>
-                      </div>
-                      <span className="text-xs text-os-onSurfaceVariant font-bold uppercase tracking-widest">RAM Usage ({metrics.ram}%)</span>
-                  </div>
-
-                  <div className="h-24 md:h-32 flex items-end gap-1 mb-4">
-                      {Array.from({ length: 15 }).map((_, i) => {
-                          const val = (i === 14) ? metrics.ram : (Math.random() * 20 + 40);
-                          return (
-                            <div 
-                              key={i} 
-                              className={`flex-1 rounded-t-sm transition-all duration-300 ${i === 14 ? 'bg-os-tertiary' : 'bg-os-tertiary/20'}`}
-                              style={{ height: `${val}%` }}
-                            />
-                          );
-                      })}
-                  </div>
-              </section>
-          </div>
-      </div>
-    </div>
-    );
-  };
-
-
-
   return (
-    <div className="flex h-full w-full bg-os-surface/80 text-os-onSurface rounded-2xl overflow-hidden font-sans backdrop-blur-2xl relative">
+    <div className="flex h-full w-full bg-os-surface/80 text-os-onSurface overflow-hidden font-sans backdrop-blur-2xl relative">
       
       {/* Settings Navigation Sidebar */}
       <div className={`${isMobile ? (showSidebar ? 'w-full absolute inset-0' : 'hidden') : 'w-64 border-r'} bg-os-surfaceContainerLow/50 backdrop-blur-3xl border-os-outline/10 flex flex-col p-4 shadow-xl z-20 transition-all`}>
@@ -243,7 +146,8 @@ const Settings = () => {
             {DL_SECTIONS.some((sec) => sec.id === activeTab) && (
               <div className="max-w-4xl mx-auto"><DesignLanguage section={activeTab} /></div>
             )}
-            {activeTab === 'system' && renderSystem()}
+            {activeTab === 'system' && <SystemTab />}
+            {activeTab === 'compat' && <Compatibility onOpenTab={handleTabClick} />}
             {activeTab === 'user' && (
               <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div>

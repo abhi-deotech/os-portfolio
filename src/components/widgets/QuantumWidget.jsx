@@ -4,6 +4,7 @@ import { Float, MeshDistortMaterial, Sphere, PerspectiveCamera } from '@react-th
 import useOSStore from '../../store/osStore';
 import { useColorway } from '../../theme/useColorway';
 import { accentAtLightness } from '../../theme/registry';
+import { useDocumentVisible } from '../../hooks/useWindowVisibility';
 
 const Core = () => {
   const meshRef = useRef();
@@ -52,6 +53,9 @@ const QuantumWidget = () => {
   // every state change anywhere in the OS, not just the fields it reads.
   const lowPerformance = useOSStore((s) => s.lowPerformance);
   const [isVisible, setIsVisible] = useState(false);
+  // The IntersectionObserver below handles scrolled-away; this handles a hidden TAB, where rAF is
+  // throttled but the WebGL context and its per-frame vertex displacement are not free.
+  const docVisible = useDocumentVisible();
   const widgetRef = useRef(null);
 
   useEffect(() => {
@@ -84,7 +88,7 @@ const QuantumWidget = () => {
       
       <div className="absolute inset-0 cursor-crosshair">
         {isVisible && (
-          <Canvas>
+          <Canvas frameloop={docVisible ? 'always' : 'never'}>
             <PerspectiveCamera makeDefault position={[0, 0, 5]} />
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} intensity={1.5} />

@@ -1,3 +1,6 @@
+// FIRST import, on purpose: the DEV capability mask (?caps=firefox|safari|-id) must remove features
+// before any module detects them. A no-op in production.
+import './capabilities/devMask.js'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'

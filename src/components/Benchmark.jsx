@@ -6,6 +6,10 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../store/osStore';
 import { createGpuBench } from '../workers/gpuBench';
+import { useSystemFact } from '../hooks/useSystemFacts';
+import useWakeLock from '../hooks/useWakeLock';
+import { describeBrowser } from '../capabilities/browser.js';
+import { unavailableText } from '../system/facts.js';
 
 const STAGES = [
   { id: 'int', kind: 'cpu', name: 'Integer Math', desc: 'Stress testing ALU with prime calculations', color: 'text-blue-400', icon: Cpu },
@@ -37,9 +41,10 @@ const SLICE_MS = 16;
 const POOL_SIZE = Math.max(1, Math.min((navigator.hardwareConcurrency || 4) - 1, 16));
 
 const Benchmark = () => {
-  const updateMetrics = useOSStore((s) => s.updateMetrics);
   const unlockAchievement = useOSStore((s) => s.unlockAchievement);
   const [status, setStatus] = useState('idle'); // idle, running, completed
+  // A run is minutes of unattended work; don't let the display sleep in the middle of a stage.
+  useWakeLock(status === 'running', 'Benchmark');
   const [currentStage, setCurrentStage] = useState(0);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState({});
@@ -48,6 +53,8 @@ const Benchmark = () => {
   // Work per second in the current stage's own unit: iterations for CPU stages, FLOPs for the GPU.
   const [rate, setRate] = useState(0);
   const [gpuInfo, setGpuInfo] = useState(null);
+  // What the browser says about the GPU before anything runs on it.
+  const gpuFact = useSystemFact('gpu');
 
   const poolRef = useRef(null);
   const runIdRef = useRef(0);
@@ -55,21 +62,29 @@ const Benchmark = () => {
   const totalRef = useRef(0);     // CPU iterations across the whole run
   const lastTickRef = useRef(0);
 
-  // Build the pool once. A run cannot create workers on demand: spawning sixteen threads is slow
-  // enough to eat a measurable slice of the first stage and skew it.
+  // Build the pool on the FIRST run, before that run's clock starts, and keep it for the life of
+  // the window. A run cannot create workers on demand — spawning sixteen threads is slow enough to
+  // eat a measurable slice of the first stage and skew it — but spawning them on mount meant
+  // sixteen idle threads for every visitor who merely opened the window (thirty-two under
+  // StrictMode's double mount) and never clicked Run.
+  const ensurePool = () => {
+    if (!poolRef.current) {
+      poolRef.current = Array.from({ length: POOL_SIZE }, () =>
+        new Worker(new URL('../workers/benchmark.worker.js', import.meta.url))
+      );
+    }
+    return poolRef.current;
+  };
   useEffect(() => {
-    poolRef.current = Array.from({ length: POOL_SIZE }, () =>
-      new Worker(new URL('../workers/benchmark.worker.js', import.meta.url))
-    );
-    const pool = poolRef.current;
-    // Hold the ref object, not `.current`. Cleanup must bump the *live* run id — that is what
+    // Hold the ref objects, not `.current`. Cleanup must bump the *live* run id — that is what
     // stops the GPU loop calling setState on an unmounted component — and reading `.current` here
     // instead would capture the mount-time value, which is exactly what the lint rule warns about.
     const runId = runIdRef;
+    const pool = poolRef;
     return () => {
       runId.current++;
-      pool.forEach((w) => w.terminate());
-      poolRef.current = null;
+      pool.current?.forEach((w) => w.terminate());
+      pool.current = null;
     };
   }, []);
 
@@ -158,6 +173,7 @@ const Benchmark = () => {
 
   const startBenchmark = async () => {
     const runId = ++runIdRef.current;
+    ensurePool();
     setStatus('running');
     setCurrentStage(0);
     setProgress(0);
@@ -191,7 +207,6 @@ const Benchmark = () => {
     if (runIdRef.current !== runId) return;
     setStatus('completed');
     setRate(0);
-    updateMetrics({ isOverridden: false });
   };
 
   const stopBenchmark = () => {
@@ -199,7 +214,6 @@ const Benchmark = () => {
     setStatus('idle');
     setRate(0);
     setProgress(0);
-    updateMetrics({ isOverridden: false });
   };
 
   // Rate + sparkline ticker.
@@ -222,23 +236,6 @@ const Benchmark = () => {
 
     return () => clearInterval(interval);
   }, [status]);
-
-  // Flag the shell as stressed for the duration of the run. This used to fire on every worker
-  // reply; with a pool that would be POOL_SIZE * 60 store writes a second.
-  useEffect(() => {
-    if (status !== 'running') return;
-
-    const interval = setInterval(() => {
-      updateMetrics({
-        cpu: Math.floor(Math.random() * 5) + 95,
-        ram: Number((Math.random() * 0.2 + 7.8).toFixed(1)),
-        temp: Math.floor(Math.random() * 3) + 72,
-        isOverridden: true
-      });
-    }, 500);
-
-    return () => clearInterval(interval);
-  }, [status, updateMetrics]);
 
   const gpuResult = results.gpu;
   const gflops = gpuResult && !gpuResult.unavailable ? gpuResult.gflops : null;
@@ -496,7 +493,9 @@ const Benchmark = () => {
                 {gflops === null ? '—' : gflops.toFixed(1)} <span className="text-[10px] opacity-40">GFLOPS</span>
               </span>
               <span className="text-[9px] font-bold text-os-onSurfaceVariant/40 uppercase tracking-wider truncate">
-                {adapterName || (gpuResult?.unavailable ? 'WebGPU unavailable' : 'Not measured')}
+                {adapterName || (gpuResult?.unavailable
+                  ? 'WebGPU unavailable'
+                  : gpuFact.source === 'reported' ? gpuFact.text : unavailableText(gpuFact, describeBrowser().name))}
               </span>
             </div>
           </div>

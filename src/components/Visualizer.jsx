@@ -22,9 +22,18 @@ const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
     const ctx = canvas.getContext('2d');
     let animationFrameId;
 
+    // One full-height gradient, rebuilt only when the canvas or accent changes. This used to be
+    // `createLinearGradient` per bar per frame — 48 × 60 = 2,880 gradient objects a second — each
+    // spanning that bar's own height. Anchoring one gradient to the canvas instead means a tall
+    // bar brightens toward its top and a short one stays dim, which is the spectrum-analyser read
+    // anyway, and costs a single allocation.
+    let barFill = null;
     const resize = () => {
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
+      barFill = ctx.createLinearGradient(0, canvas.height, 0, 0);
+      barFill.addColorStop(0, `${accentColor}44`);
+      barFill.addColorStop(1, `${accentColor}aa`);
     };
 
     window.addEventListener('resize', resize);
@@ -61,7 +70,9 @@ const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
       const bass = Math.max(0, Math.sin(time * 2) * 0.5 + Math.sin(time * 5) * 0.5);
       const mid = Math.sin(time * 8) * 0.3 + 0.3;
       const treble = Math.random() * 0.2;
+      let energy = 0;
 
+      ctx.fillStyle = barFill;
       bars.forEach((bar, i) => {
         if (isPlaying) {
           // Calculate theoretical "Spectral Intensity" for this bar's frequency slice
@@ -83,15 +94,12 @@ const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
         }
 
         // Draw the bar
-        const gradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - bar.height);
-        gradient.addColorStop(0, `${accentColor}44`);
-        gradient.addColorStop(1, `${accentColor}aa`);
-        
-        ctx.fillStyle = gradient;
         const x = i * width;
         const h = Math.max(2, bar.height);
-        
+        energy += bar.height;
+
         // Rounded top bars
+        ctx.fillStyle = barFill;
         ctx.beginPath();
         ctx.roundRect(x + 1, canvas.height - h, width - 2, h, [4, 4, 0, 0]);
         ctx.fill();
@@ -104,11 +112,19 @@ const Visualizer = ({ isPlaying, accentColor = '#a855f7' }) => {
         }
         
         if (peaks[i] > 2) {
+            energy += peaks[i];
             ctx.fillStyle = `${accentColor}cc`;
             ctx.fillRect(x + 1, canvas.height - peaks[i] - 4, width - 2, 2);
         }
       });
 
+      // Paused and settled: stop. `bar.height *= 0.85` only approaches zero, so without this the
+      // loop ran at 60 fps for as long as the Music window existed — minimised included. The
+      // effect re-runs (and restarts the loop) when `isPlaying` flips back on.
+      if (!isPlaying && energy < 1) {
+        animationFrameId = 0;
+        return;
+      }
       animationFrameId = requestAnimationFrame(render);
     };
 

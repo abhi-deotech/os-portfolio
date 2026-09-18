@@ -23,7 +23,7 @@ const Terminal = () => {
 
   if (isVimMode) {
     return (
-      <div className={`h-full w-full ${theme.bg} backdrop-blur-md rounded-xl p-0 font-mono text-sm overflow-hidden border ${theme.border} flex flex-col`}>
+      <div className={`h-full w-full ${theme.bg} backdrop-blur-md p-0 font-mono text-sm overflow-hidden flex flex-col`}>
         <div className="bg-veil/10 px-4 py-1 text-xs flex justify-between select-none">
           <span>VIM - {vimFile?.name}</span>
           <span className="opacity-50 tracking-widest uppercase text-[10px] font-bold">[Read-Only Trap]</span>
@@ -50,7 +50,7 @@ const Terminal = () => {
   return (
     <div 
       ref={scrollRef}
-      className={`h-full w-full ${theme.bg} backdrop-blur-md rounded-xl p-4 font-mono text-sm overflow-y-auto scrollbar-hide border ${theme.border} transition-all duration-300`}
+      className={`h-full w-full ${theme.bg} backdrop-blur-md p-4 font-mono text-sm overflow-y-auto scrollbar-hide transition-all duration-300`}
     >
       <div className="flex flex-col gap-2">
         {terminalHistory.map((entry, i) => (

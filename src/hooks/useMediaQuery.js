@@ -19,7 +19,9 @@ export function useMediaQuery(query) {
     const listener = () => setMatches(media.matches);
     media.addEventListener('change', listener);
     return () => media.removeEventListener('change', listener);
-  }, [matches, query]);
+    // `matches` was in this list. The effect neither reads it nor needs it, so every breakpoint
+    // crossing tore down and re-registered the listener in all ten call sites for nothing.
+  }, [query]);
 
   return matches;
 }

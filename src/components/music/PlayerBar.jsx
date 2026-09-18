@@ -11,13 +11,16 @@ import { formatTime } from './playback';
  */
 const PlayerBar = ({ isMobile, onPrev, onNext, onSeek, onOpenFullscreen, onToggleUpNext, upNextOpen }) => {
   const music = useOSStore((s) => s.music);
+  // Top-level and unpersisted — see musicSlice. This is the one component that legitimately
+  // re-renders once a second while a track plays; nothing else does now.
+  const currentTime = useOSStore((s) => s.musicCurrentTime);
   const setMusicIsPlaying = useOSStore((s) => s.setMusicIsPlaying);
   const setMusicVolume = useOSStore((s) => s.setMusicVolume);
   const toggleShuffle = useOSStore((s) => s.toggleShuffle);
   const setRepeatMode = useOSStore((s) => s.setRepeatMode);
   const unlockAchievement = useOSStore((s) => s.unlockAchievement);
 
-  const { currentTrack, currentTime, isPlaying, shuffle, repeatMode, volume, queue } = music;
+  const { currentTrack, isPlaying, shuffle, repeatMode, volume, queue } = music;
   const progress = currentTrack.duration > 0 ? (currentTime / currentTrack.duration) * 100 : 0;
 
   const cycleRepeatMode = () => {

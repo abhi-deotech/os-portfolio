@@ -501,4 +501,6 @@ const SocialWidget = ({ initialTab = 'github' }) => {
   );
 };
 
-export default SocialWidget;
+// Memoised: SystemDashboard re-renders every 2 s on its metrics tick, and this subtree carries the
+// ~650-element contribution heatmap SVG. It takes no props that change, so the tick stops here.
+export default React.memo(SocialWidget);

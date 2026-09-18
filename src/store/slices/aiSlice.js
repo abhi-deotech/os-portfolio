@@ -38,10 +38,15 @@ export const createAiSlice = (set, get) => ({
         return;
       }
 
+      // Detach on EITHER outcome. This only detached on 'embedding', so every error reply left a
+      // handler on the worker for the rest of the session.
       const handler = (e) => {
         if (e.data.type === 'embedding') {
           worker.removeEventListener('message', handler);
           resolve(e.data.embedding);
+        } else if (e.data.type === 'error') {
+          worker.removeEventListener('message', handler);
+          reject(e.data.error);
         }
       };
 

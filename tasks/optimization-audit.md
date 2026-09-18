@@ -1,4 +1,6 @@
-# Optimization audit — 2026-09-03
+# Optimization audit
+
+## 2026-09-03 — first-paint bundle size
 
 Every number here was measured on this checkout, not estimated. Method is noted per finding so
 each one can be re-run.
@@ -200,3 +202,59 @@ Things that looked wrong and are not:
 - Desktop icon labels over an arbitrary wallpaper: the three-layer `plane`-coloured halo in
   `Desktop.jsx:22-26` genuinely rescues them. An early version of the Surprise Me analysis assumed
   raw ink-on-wallpaper contrast and overstated the problem by a wide margin.
+
+
+---
+
+## 2026-09-17 — steady-state runtime cost
+
+The 09-03 fix held (eager set still ~163 KB br), so the "starting to slow down" report was runtime,
+not download. Three parallel audits (shell / store / per-app), every finding re-verified by hand.
+Plan: `~/.claude/plans/splendid-stirring-flute.md`; checklist and measured results: `tasks/todo.md`.
+
+### The two mechanisms
+
+1. **zustand `persist` writes the whole partialized payload on every `set()`** with no diffing
+   (`zustand/middleware.js`, `setItem` inside `persistImpl`). Measured: ten `setMusicCurrentTime`
+   calls → ten IndexedDB puts of 44,664 B. The player called it once a second whenever the Music
+   window had ever been opened — paused or minimised — so playback was ~150 MB/hour of
+   structured-clone + IDB, and every `s.music` subscriber (ControlCenter is always mounted)
+   re-rendered at 1 Hz. Fix: `src/store/persistStorage.js` (trailing throttle, flush on pagehide)
+   + playback position moved to a top-level unpersisted `musicCurrentTime`.
+2. **Always-mounted timers with a wide blast radius**: a 2 s metrics tick re-rendered the ~650-node
+   GitHub heatmap SVG for the session; a second copy ran in the closed Control Center; two 1 s
+   clocks re-rendered the whole dock and the clock widget to show HH:MM. Fix: `React.memo`
+   boundary, the hook's existing `disabled` flag, and one `useMinuteClock`.
+
+### Everything else, one line each
+- One `AudioContext` per `useSoundEffects` caller → 8 on the bare desktop, +2 per window (Chrome
+  caps at 6). Now one, module-scope, created on first sound.
+- `Window` ran a `ResizeObserver → setState` loop whose only consumer read none of the values;
+  `WindowGlass` was a backdrop-blur under a backdrop-blur. Both removed; three dead props too.
+- Dock magnification was `hoveredIndex` state → whole-dock re-render per mouseenter. Now CSS.
+- Two permanent `filter: blur(100px)` glow layers → one radial-gradient layer; root
+  `transition-all` → `transition-colors`; 19 desktop tiles no longer each carry a backdrop blur;
+  Taskbar / SystemDashboard 64 px blur → 24 px (the radius the rest of the shell already uses).
+- Minimised windows kept every loop running. `useWindowVisibility(id)` now gates the four
+  `useGameLoop` callers, the Visualizer and the seek poll. Visualizer also exits its rAF loop once
+  settled (it never reached zero before) and allocates one gradient instead of 2,880/s.
+- `MarkdownRenderer` rebuilt its `components` map per render (remount + re-tokenise per keystroke
+  in the Docs search) and shipped every Prism grammar. Static map, `React.memo`, `PrismLight` with
+  eight languages: 216 → 55 KB br.
+- Uploaded wallpaper was a base64 string inside the persisted payload (cloned on every write,
+  shipped to Puter on every pref change). Now a Blob under its own idb key + a `'custom'`
+  sentinel; legacy data-URL payloads migrate on first load.
+- `openWindow` called `trackRecentFile` inside its own updater (two writes, doubled under
+  StrictMode); `focusWindow` re-allocated `minimizedWindows` on every click; `|| []` fallbacks
+  removed from four selectors; AI worker listener leaked on error replies; terminal's
+  progressive-output interval outlived the window; Spotlight fired an achievement per keystroke;
+  Benchmark spawned 16 workers on mount; `useMediaQuery` re-subscribed on every match change;
+  `applyTheme` recomputed the whole palette per slider move; idle watcher re-armed a timer per
+  mousemove; `SystemMetricsWidget.jsx` (409 lines, never rendered) and `App.css` deleted.
+
+### Found and NOT fixed (out of scope)
+- Dev/prod CSP blocks `https://www.youtube.com/iframe_api` and Google Fonts — the music player
+  cannot load at all. Pre-existing; policy decision for the owner.
+- Maximize/snap animate `top/left/width/height` via spring (layout per frame).
+- Persisted `fileSystem` is 33 KB of `?raw` docs that never change; a diff would be smaller.
+- Puter `syncFilesToPuter` pretty-prints and uploads the whole tree per file op.

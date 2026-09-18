@@ -1,5 +1,30 @@
-import { useRef, useEffect } from 'react';
+import { useCallback } from 'react';
 import useOSStore from '../store/osStore';
+
+/**
+ * One AudioContext for the whole OS, created lazily on the first sound.
+ *
+ * This hook used to construct an AudioContext in a mount effect — per caller. It is called by
+ * Desktop, Taskbar, MenuBar, ControlCenter and every open Window, so a bare desktop held eight
+ * live contexts under StrictMode (measured) and each window added two more. Chrome caps a document
+ * at six and throws on the seventh; each one also owns a real audio thread. And a context created
+ * before any user gesture boots `suspended` and never resumes, so those early sounds were silent
+ * anyway (the same note is on useGameAudio.js, which already did this the lazy way).
+ *
+ * Module scope, never closed: the shell is mounted for the session and a closed context cannot be
+ * reopened. `resume()` is a no-op once running and is the sanctioned way past the autoplay gate,
+ * since every call site sits inside a click handler.
+ */
+let sharedCtx = null;
+const getAudioContext = () => {
+  if (!sharedCtx) {
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    sharedCtx = new Ctor();
+  }
+  if (sharedCtx.state === 'suspended') sharedCtx.resume().catch(() => {});
+  return sharedCtx;
+};
 
 /**
  * Custom hook for generating OS-style sound effects using Web Audio API.
@@ -13,7 +38,7 @@ import useOSStore from '../store/osStore';
  * - 'achievement' - Ascending chime for achievements
  *
  * @returns {Object} Sound control object
- * @returns {Function} returns.playSound - Function to play a sound by type
+ * @returns {Function} returns.playSound - Function to play a sound by type (stable identity)
  *
  * @example
  * const { playSound } = useSoundEffects();
@@ -24,27 +49,19 @@ const useSoundEffects = () => {
   // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
   // every state change anywhere in the OS, not just the fields it reads.
   const soundEnabled = useOSStore((s) => s.soundEnabled);
-  const audioCtx = useRef(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    return () => {
-      if (audioCtx.current) audioCtx.current.close();
-    };
-  }, []);
+  const playSound = useCallback((type) => {
+    if (!soundEnabled) return;
+    const ctx = getAudioContext();
+    if (!ctx) return;
 
-  const playSound = (type) => {
-    if (!soundEnabled || !audioCtx.current) return;
-
-    const osc = audioCtx.current.createOscillator();
-    const gain = audioCtx.current.createGain();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
     osc.connect(gain);
-    gain.connect(audioCtx.current.destination);
+    gain.connect(ctx.destination);
 
-    const now = audioCtx.current.currentTime;
+    const now = ctx.currentTime;
 
     switch (type) {
       case 'click':
@@ -98,7 +115,7 @@ const useSoundEffects = () => {
       default:
         break;
     }
-  };
+  }, [soundEnabled]);
 
   return { playSound };
 };

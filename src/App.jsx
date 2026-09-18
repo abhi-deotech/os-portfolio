@@ -13,7 +13,7 @@ import {
 import 'react-contexify/ReactContexify.css';
 import { AnimatePresence, MotionConfig } from 'framer-motion';
 
-import Window from './components/Window';
+import WindowSlot from './components/WindowSlot';
 import ControlCenter from './components/ControlCenter';
 import LiveWallpaper from './components/LiveWallpaper';
 import Widgets from './components/Widgets';
@@ -23,19 +23,20 @@ import AchievementToast from './components/AchievementToast';
 import Screensaver from './components/Screensaver';
 import BootSequence from './components/BootSequence';
 import BSOD from './components/BSOD';
-import WindowContentRenderer from './components/WindowContentRenderer';
 import Desktop from './components/Desktop';
 import MenuBar from './components/MenuBar';
 import Taskbar from './components/Taskbar';
 
 import useOSStore from './store/osStore';
-import { GAME_BY_ID } from './config/games';
-import { APP_BY_ID } from './config/apps';
 import { APPEARANCE_RESET_DIALOG } from './config/dialogs';
 import { osConfirm } from './utils/dialog';
 import { applyTheme } from './theme/applyTheme';
 import './theme/grammar.css';
 import { useIsMobile } from './hooks/useMediaQuery';
+import { useIdleDetection } from './hooks/useIdleDetection';
+import { useImmersiveSync } from './hooks/useImmersive';
+import { IDLE_MS } from './utils/idle.js';
+import { onPopoutActivity } from './utils/popout.js';
 import './index.css';
 
 // Context menu IDs for desktop and icon menus
@@ -79,16 +80,15 @@ const MenuRow = ({ icon, label, onClick, danger = false }) => (
  */
 function App() {
   const openWindows = useOSStore(state => state.openWindows);
-  const minimizedWindows = useOSStore(state => state.minimizedWindows || []);
-  const activeWindow = useOSStore(state => state.activeWindow);
+  const minimizedWindows = useOSStore(state => state.minimizedWindows);
   const openWindow = useOSStore(state => state.openWindow);
-  const focusWindow = useOSStore(state => state.focusWindow);
   const closeWindow = useOSStore(state => state.closeWindow);
   const resetIconPositions = useOSStore(state => state.resetIconPositions);
   const createFolder = useOSStore(state => state.createFolder);
   const isAuthenticated = useOSStore(state => state.isAuthenticated);
   const toggleSpotlight = useOSStore(state => state.toggleSpotlight);
   const achievementQueue = useOSStore(state => state.achievementQueue);
+  const focusMode = useOSStore(state => state.focusMode);
   const removeAchievementToast = useOSStore(state => state.removeAchievementToast);
   const brightness = useOSStore(state => state.brightness);
   const accentIntensity = useOSStore(state => state.accentIntensity);
@@ -99,6 +99,7 @@ function App() {
   const resetSettingsToDefault = useOSStore(state => state.resetSettingsToDefault);
   const randomizeAppearance = useOSStore(state => state.randomizeAppearance);
   const isBSOD = useOSStore(state => state.isBSOD);
+  const idleDetection = useOSStore(state => state.idleDetection);
 
   const [isIdle, setIsIdle] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
@@ -128,22 +129,44 @@ function App() {
 
 
 
-    useEffect(() => {    const handleActivity = () => {
-      setIsIdle(false);
+  useEffect(() => {
+    // Re-arm at most once a second. `mousemove` fires at pointer rate (60–120/s), and this used
+    // to clear and re-create the 2-minute timeout on every event. Skipping a re-arm can only make
+    // the screensaver arrive up to 1 s early — the idle threshold is 120 s, so nobody can tell.
+    let lastArm = 0;
+    const handleActivity = () => {
+      setIsIdle(false); // bails out when already false
+      const now = Date.now();
+      if (now - lastArm < 1000) return;
+      lastArm = now;
       if (idleTimer.current) clearTimeout(idleTimer.current);
       idleTimer.current = setTimeout(() => {
         if (isAuthenticated) setIsIdle(true);
-      }, 120000); // 2 minutes
+      }, IDLE_MS);
     };
 
-    window.addEventListener('mousemove', handleActivity);
-    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('mousemove', handleActivity, { passive: true });
+    window.addEventListener('keydown', handleActivity, { passive: true });
+    // Pop-out windows report their own pointer and key activity here, so typing in a popped-out
+    // app keeps the screensaver away.
+    const offPopoutActivity = onPopoutActivity(handleActivity);
     return () => {
       window.removeEventListener('mousemove', handleActivity);
       window.removeEventListener('keydown', handleActivity);
+      offPopoutActivity();
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
   }, [isAuthenticated]);
+
+  // System idle detection adds transitions on top of the timer above; the timer stays in charge.
+  // Only runs once the visitor switched it on in Settings → System (which asked for permission).
+  useIdleDetection({
+    enabled: isAuthenticated && idleDetection === 'on',
+    onTransition: (transition) => setIsIdle(transition === 'show'),
+  });
+
+  // Immersive mode's truth: the store follows `fullscreenchange`, never the click that asked for it.
+  useImmersiveSync();
 
   // Theme goes onto documentElement, not onto the JSX below. This hook sits ABOVE the early
   // returns at the end of this component, so boot, login and portaled context menus are themed too.
@@ -152,7 +175,9 @@ function App() {
   }, [colorway, density, transparencyEffects, brightness, accentIntensity, reducedMotion]);
 
   const handleDesktopContextMenu = (e) => {
-    if (isMobile) return;
+    // Popped-out content is still portaled from this tree, so its right-clicks bubble here. Leave
+    // those alone: the popup keeps its native menu, and no desktop menu opens unseen in this window.
+    if (isMobile || e.target?.ownerDocument !== document) return;
     e.preventDefault();
     showDesktopMenu({ event: e });
   };
@@ -179,7 +204,9 @@ function App() {
 
   return (
     <div
-      className="h-screen w-screen overflow-hidden font-sans select-none flex flex-col relative text-os-onSurface transition-all duration-500"
+      /* `transition-colors`, not `transition-all`: on the root element `all` meant any computed-style
+         change animated every animatable property of the whole shell for 500ms. */
+      className="h-screen w-screen overflow-hidden font-sans select-none flex flex-col relative text-os-onSurface transition-colors duration-500"
       onContextMenu={handleDesktopContextMenu}
     >
       <LiveWallpaper />
@@ -221,9 +248,20 @@ function App() {
         </>
       )}
 
-      {/* Ambient Neo-Glows */}
-      <div className="absolute top-1/4 left-1/4 w-[40vw] h-[40vw] bg-os-primaryDim/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] bg-os-secondaryDim/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
+      {/* Ambient Neo-Glows. Two radial gradients on one layer, not two `filter: blur(100px)` divs:
+          a 100px Gaussian on a 40vw square is a permanently rasterised offscreen texture (over a
+          megapixel each on a 2560-wide display) that the compositor re-samples under every frame of
+          every window drag. A blurred disc IS a radial falloff, so the gradient reads the same and
+          costs one plain paint. Centres and radii match the old boxes (a 40vw box at 25%/25%
+          centres at 45%/45%; a 30vw box at 75%/75% from the bottom-right centres at 60%/60%). */}
+      <div
+        className="absolute inset-0 -z-10 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle at 45% 45%, rgb(var(--os-primary-dim-rgb) / 0.10) 0%, rgb(var(--os-primary-dim-rgb) / 0.04) 18vw, transparent 30vw), ' +
+            'radial-gradient(circle at 60% 60%, rgb(var(--os-secondary-dim-rgb) / 0.10) 0%, rgb(var(--os-secondary-dim-rgb) / 0.04) 14vw, transparent 24vw)',
+        }}
+      />
 
       {/* First flex child: Desktop is flex-grow, so the icon coordinate space starts below the bar
           rather than underneath it. See the note in MenuBar.jsx. */}
@@ -236,27 +274,10 @@ function App() {
         <div className="relative w-full h-full pointer-events-none flex items-center justify-center">
           <Suspense fallback={null}>
             <AnimatePresence>
+              {/* A slot per window: the docked frame, or the stand-in while the window is popped out.
+                  Titles and geometry are looked up inside (src/config/windowTitle.js). */}
               {openWindows.map((id) => (
-                <Window
-                  key={id}
-                  id={id}
-                  // Titles were derived as `id[0].toUpperCase() + id.slice(1)`, which produced
-                  // "Retroarcade" and "Taskmanager" — and "Aichat" and "Browser" for apps, whose
-                  // registry titles are "Lumina AI" and "Flow-Net". Both registries are consulted:
-                  // games first (retroarcade lives in both; the game entry is the specific one),
-                  // then apps, then the derived fallback for ids in neither (none today).
-                  // Window geometry follows the same lookup — Window defaults to 900x650 and App
-                  // used to pass nothing for apps, so a 420px Snake board and the whole Game
-                  // Center launcher sat in the same generic frame.
-                  title={GAME_BY_ID[id]?.title ?? APP_BY_ID[id]?.title ?? id.charAt(0).toUpperCase() + id.slice(1)}
-                  {...(GAME_BY_ID[id]?.window ?? APP_BY_ID[id]?.window ?? {})}
-                  isActive={activeWindow === id}
-                  isMinimized={minimizedWindows.includes(id)}
-                  onClose={() => closeWindow(id)}
-                  onFocus={() => focusWindow(id)}
-                >
-                  <WindowContentRenderer id={id} />
-                </Window>
+                <WindowSlot key={id} id={id} isMinimized={minimizedWindows.includes(id)} />
               ))}
             </AnimatePresence>
           </Suspense>
@@ -279,7 +300,9 @@ function App() {
       {/* Achievement Toasts Container */}
       <div className={`fixed ${isMobile ? 'bottom-[calc(6.5rem+env(safe-area-inset-bottom))]' : 'bottom-24'} right-6 z-[2000] flex flex-col gap-4 items-end pointer-events-none`}>
         <AnimatePresence>
-          {achievementQueue.map((entry) => {
+          {/* Focus holds every non-urgent toast: it stays queued but unmounted, so its timer never
+              starts, and it appears once Focus turns off. */}
+          {achievementQueue.filter((entry) => !focusMode || entry?.urgent).map((entry) => {
             // Entries are either a bare achievement id or a { id, title, desc } one-off toast.
             const key = entry?.id ?? entry;
             return (

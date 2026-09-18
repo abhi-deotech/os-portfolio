@@ -69,12 +69,14 @@ const BUTTON_BASE =
 
 // `:not([disabled])` matters: the confirm button of an empty required prompt is disabled, and a
 // trap that cycles onto a disabled node strands the keyboard user on a dead stop.
-const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+// `a[href]` is required for notice links (Why / Support table): without it Tab wraps on the confirm
+// button alone and the links are unreachable by keyboard.
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 const DialogCard = ({ dialog, onResolve }) => {
   const {
     kind, tone = 'info', title, message, kicker, icon,
-    confirmLabel, cancelLabel, defaultValue = '', placeholder, required = true, hint,
+    confirmLabel, cancelLabel, defaultValue = '', placeholder, required = true, hint, links,
   } = dialog;
 
   const isPrompt = kind === 'prompt';
@@ -204,6 +206,23 @@ const DialogCard = ({ dialog, onResolve }) => {
                 <p id={bodyId} className="mt-1.5 text-[13px] leading-relaxed text-sdl-sec">
                   {message}
                 </p>
+              )}
+              {Array.isArray(links) && links.length > 0 && (
+                <div className="mt-2.5 -ml-2.5 flex flex-wrap gap-1">
+                  {links.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center h-7 px-2.5 rounded-full text-[12px] font-semibold
+                        text-sdl-aInk hover:bg-sdl-soft transition-colors duration-hover ease-sdl
+                        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sdl-accent/50"
+                    >
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
               )}
 
               {isPrompt && (

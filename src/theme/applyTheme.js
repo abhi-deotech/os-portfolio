@@ -25,6 +25,21 @@ import { roleVars, bridgeVars } from './cssVars';
 export const MIRROR_KEY = 'lumina.theme.v1';
 
 /**
+ * The 40-odd palette variables are a pure function of the colorway. Cached per id (the same
+ * pattern theme/icons.js uses) so that dragging the Brightness or Atmosphere dial — which re-runs
+ * applyTheme at pointer rate — only recomputes the two dial variables, not the whole OKLCH palette.
+ */
+const PALETTE_CACHE = new Map();
+function paletteVars(cw) {
+  let vars = PALETTE_CACHE.get(cw.id);
+  if (!vars) {
+    vars = { ...roleVars(cw), ...bridgeVars(cw), '--sdl-font-title': FONT_STACK(cw.titleFace) };
+    PALETTE_CACHE.set(cw.id, vars);
+  }
+  return vars;
+}
+
+/**
  * @param {{colorway?: string, density?: string, transparencyEffects?: boolean,
  *          brightness?: number, accentIntensity?: number, reducedMotion?: string}} state
  */
@@ -43,8 +58,7 @@ export function applyTheme(state = {}) {
   const cw = resolveColorway(colorway);
   const root = document.documentElement;
 
-  const vars = { ...roleVars(cw), ...bridgeVars(cw) };
-  vars['--sdl-font-title'] = FONT_STACK(cw.titleFace);
+  const vars = { ...paletteVars(cw) };
   // Brightness as a scrim opacity rather than a filter.
   vars['--os-dim'] = String(Math.max(0, Math.min(100, 100 - brightness)) / 100);
   // Atmosphere dial: multiplies wash alpha, motif opacity and glow alpha. This is what the

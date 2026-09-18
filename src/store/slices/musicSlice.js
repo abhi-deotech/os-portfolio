@@ -44,7 +44,6 @@ export function sanitizePersistedMusic(persisted) {
     ...p,
     currentTrack: TRACKS.get(p.currentTrack?.id) || MUSIC_DATA[0],
     isPlaying: false,
-    currentTime: 0,
     volume,
     likedSongs: Array.isArray(p.likedSongs) ? p.likedSongs : [],
     activeView: typeof p.activeView === 'string' ? p.activeView : 'Home',
@@ -73,7 +72,6 @@ export const createMusicSlice = (set) => ({
     currentTrack: DEFAULT_TRACK,
     // 0–100, the YT player's native unit — see the volume-migration note above.
     volume: 70,
-    currentTime: 0,
     likedSongs: [], // Track IDs of liked songs
     activeView: 'Home', // Current UI view (Home, Library, etc)
     shuffle: false,
@@ -90,6 +88,17 @@ export const createMusicSlice = (set) => ({
     lastFmData: EMPTY_LASTFM,
   },
 
+  /**
+   * Playback position lives OUTSIDE `music`, top-level and unpersisted.
+   *
+   * The engine polls it once a second while a track plays. When it was `music.currentTime`, every
+   * tick spread a new `music` object, which (a) re-rendered every `s.music` subscriber — including
+   * ControlCenter, mounted for the whole session — and (b) made zustand's persist middleware write
+   * the whole payload to IndexedDB once a second, to save a number that is reset to 0 on load.
+   * Only the seek bar and the fullscreen time display read it; they select this key directly.
+   */
+  musicCurrentTime: 0,
+
   setMusicIsPlaying: (isPlaying) => set((state) => ({
     music: { ...state.music, isPlaying }
   })),
@@ -98,10 +107,10 @@ export const createMusicSlice = (set) => ({
   // Play All) so Next/Prev stay inside it while the user browses other views. Omitted
   // means "follow whatever list the active view shows" — the pre-queue behaviour.
   setMusicTrack: (track, context = null) => set((state) => ({
+    musicCurrentTime: 0,
     music: {
       ...state.music,
       currentTrack: track,
-      currentTime: 0,
       isPlaying: true,
       playContext: context,
       history: [state.music.currentTrack.id, ...(state.music.history || [])].slice(0, 50)
@@ -114,9 +123,7 @@ export const createMusicSlice = (set) => ({
     music: { ...state.music, currentTrack: { ...state.music.currentTrack, ...track } }
   })),
 
-  setMusicCurrentTime: (currentTime) => set((state) => ({
-    music: { ...state.music, currentTime }
-  })),
+  setMusicCurrentTime: (musicCurrentTime) => set({ musicCurrentTime }),
 
   toggleLikeSong: (trackId) => set((state) => {
     const likedSongs = state.music.likedSongs || [];

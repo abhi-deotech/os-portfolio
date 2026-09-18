@@ -1,12 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { motion, useDragControls, AnimatePresence } from 'framer-motion';
-import { X, Minus, Maximize2, Minimize2 } from 'lucide-react';
+import { X, Minus, Maximize2, Minimize2, PictureInPicture2 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
-import { useIsMobile } from '../hooks/useMediaQuery';
+import { useIsMobile, useMediaQuery } from '../hooks/useMediaQuery';
+import useCapability from '../capabilities/useCapability.js';
+import { popoutPolicy } from '../config/popout.js';
+import { closePopout, getPopout, openPopout } from '../utils/popout.js';
+import { loadPopoutHost } from './popoutHostLoader.js';
+import { osAlert } from '../utils/dialog';
 import useSoundEffects from '../hooks/useSoundEffects';
 import WindowGlass from './WindowGlass';
 import { MENU_BAR_H } from './MenuBar';
+
+const POPOUT_MENU_ITEM =
+  'w-full text-left px-2.5 py-1.5 text-[12px] text-sdl-ink rounded-sdl-sm cursor-pointer ' +
+  'hover:bg-sdl-soft focus:bg-sdl-soft focus:outline-none transition-colors duration-hover ease-sdl';
 
 /**
  * Window container component for Lumina OS applications.
@@ -49,21 +58,32 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
   const isMaximized = maximizedWindows?.includes(id) || isMobile;
   const dragControls = useDragControls();
   const windowRef = useRef(null);
-  const [dimensions, setDimensions] = useState({ width, height });
 
-  useEffect(() => {
-    if (!windowRef.current) return;
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        setDimensions({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height
-        });
-      }
-    });
-    observer.observe(windowRef.current);
-    return () => observer.disconnect();
-  }, []);
+  /* ── Pop-out ──────────────────────────────────────────────────────────────────────────────────
+     Curated apps only (src/config/popout.js); the rest say why in the button's tooltip. The button
+     exists only for a fine pointer that can hover — an input-capability check, not browser detection. */
+  const canHover = useMediaQuery('(hover: hover) and (pointer: fine)');
+  const policy = popoutPolicy(id);
+  const documentPip = useCapability('documentPip');
+  const windowManagement = useCapability('windowManagement');
+  const popOutWindow = useOSStore((s) => s.popOutWindow);
+  const pipFloating = useOSStore((s) => Object.values(s.poppedOut || {}).some((p) => p?.mode === 'pip'));
+  const [popoutMenu, setPopoutMenu] = useState(null); // null | { screens: [...] | null, denied }
+  const popoutMenuOpen = popoutMenu !== null;
+  const popoutReasonId = useId();
+  const popoutDeniedId = useId();
+  const popoutButtonRef = useRef(null);
+  const popoutMenuRef = useRef(null);
+  // `isExtended` is only exposed with Window Management; a detached second screen needs a re-render
+  // (any hover over the window does it) before the menu appears. `supported`, not `available`: a
+  // denied permission still gets the menu, with "Pop out here" and the line saying why.
+  const screenIsExtended = typeof window !== 'undefined' && window.screen?.isExtended === true;
+  const multiScreen = policy.allowed && windowManagement.supported && screenIsExtended;
+  const popoutLabel = !documentPip.supported
+    ? `Pop out (opens as a separate window; always-on-top needs Document Picture-in-Picture, which ${documentPip.browser?.name ?? 'this browser'} lacks)`
+    : pipFloating
+      ? 'Pop out (opens as a separate window; only one window can float on top)'
+      : 'Pop out (floats above other windows)';
 
   useEffect(() => {
     if (isMobile && !maximizedWindows?.includes(id)) {
@@ -179,6 +199,122 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
     setSnapTarget(null);
   };
 
+  const closePopoutMenu = () => {
+    setPopoutMenu(null);
+    popoutButtonRef.current?.focus();
+  };
+
+  /**
+   * Pop this window out. `openPopout` must be the first thing that runs: Document PiP and
+   * window.open both need this click's user activation. Its chunk (PopoutHost) loads after the
+   * window is open and before the store flips, so WindowSlot can adopt the DOM in one commit.
+   */
+  const popOut = async (placement) => {
+    const pending = openPopout(id, { title, width, height, placement });
+    // From the menu: hand focus back to the button, so a failed pop-out (blocked, rejected) doesn't
+    // leave keyboard focus on <body> behind the warning. On success the window unmounts anyway.
+    if (popoutMenuOpen) closePopoutMenu();
+    const entry = await pending;
+    if (!entry) return;
+    try {
+      await loadPopoutHost();
+    } catch (err) {
+      closePopout(id);
+      osAlert({ tone: 'warn', title: `Couldn't open a floating window (${err?.name ?? 'Error'}). Try again.` });
+      return;
+    }
+    if (getPopout(id) !== entry || entry.win?.closed) {
+      closePopout(id);
+      return;
+    }
+    popOutWindow(id, entry.mode);
+  };
+
+  const handlePopoutClick = () => {
+    if (!policy.allowed) return; // aria-disabled: the tooltip says why
+    if (!multiScreen) {
+      popOut();
+      return;
+    }
+    if (popoutMenuOpen) {
+      closePopoutMenu();
+      return;
+    }
+    if (windowManagement.status === 'denied') {
+      // Asking again would reject without a prompt; say why other screens are missing.
+      setPopoutMenu({ screens: [], denied: true });
+      return;
+    }
+    setPopoutMenu({ screens: null, denied: false });
+    // getScreenDetails runs on this click (it may prompt). Denied → only "Pop out here" plus a line.
+    // `request` is async but calls getScreenDetails before its first await, inside this activation.
+    (windowManagement.request ? windowManagement.request() : Promise.reject(new Error('unavailable')))
+      .then(
+        (details) => {
+          const all = details?.screens ?? [];
+          const others = all.filter((s) => s !== details.currentScreen);
+          setPopoutMenu((m) => m && {
+            ...m,
+            // Unlabelled screens are numbered across ALL screens, so a number names one physical screen.
+            screens: others.map((s) => ({
+              key: `${s.availLeft},${s.availTop},${all.indexOf(s)}`,
+              label: s.label || `screen ${all.indexOf(s) + 1}`,
+              left: s.availLeft,
+              top: s.availTop,
+            })),
+          });
+        },
+        () => setPopoutMenu((m) => m && { ...m, screens: [], denied: true }),
+      );
+  };
+
+  const handlePopoutMenuKeyDown = (e) => {
+    const items = Array.from(popoutMenuRef.current?.querySelectorAll('[role="menuitem"]') ?? []);
+    if (items.length === 0) return;
+    const index = items.indexOf(e.currentTarget.ownerDocument.activeElement);
+    let next = null;
+    switch (e.key) {
+      case 'ArrowDown': next = items[(index + 1) % items.length]; break;
+      case 'ArrowUp': next = items[index <= 0 ? items.length - 1 : index - 1]; break;
+      case 'Home': next = items[0]; break;
+      case 'End': next = items[items.length - 1]; break;
+      case 'Escape':
+        e.preventDefault();
+        e.stopPropagation();
+        closePopoutMenu();
+        return;
+      case 'Tab':
+        setPopoutMenu(null);
+        return;
+      default:
+        return;
+    }
+    e.preventDefault();
+    next?.focus();
+  };
+
+  // Opening focuses the first item; a press outside closes the menu and returns focus to the button.
+  useEffect(() => {
+    if (!popoutMenuOpen) return undefined;
+    popoutMenuRef.current?.querySelector('[role="menuitem"]')?.focus();
+    const onPointerDown = (e) => {
+      if (popoutMenuRef.current?.contains(e.target) || popoutButtonRef.current?.contains(e.target)) return;
+      setPopoutMenu(null);
+      popoutButtonRef.current?.focus();
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [popoutMenuOpen]);
+
+  /**
+   * THE FRAME OWNS THE CORNER. This element is `overflow: hidden` with `rounded-sdl-panel` (the
+   * shell's panel radius, `--sdl-radius-panel`, the same token the dialog and the widgets use), so
+   * every app is clipped to the same corner and needs no radius of its own. Several apps used to
+   * add a `rounded-xl` / `rounded-2xl` / `rounded-b-2xl` on their root — a second, smaller radius
+   * inside the frame that left a sliver of window glass showing at each corner — while the rest
+   * ran square and filled the frame. That is why some apps looked rounded and some looked 90°.
+   * App roots are full-bleed now; inner cards keep their own (smaller) radii, per SDL.
+   */
   return (
     <>
       <AnimatePresence>
@@ -191,9 +327,9 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
                actually will — under the menu bar, not over it. */
             style={{ top: topInset + 16 }}
             className={`fixed z-[40] bg-os-primary/10 border-2 border-os-primary/30 backdrop-blur-sm transition-all duration-300 pointer-events-none ${
-              snapTarget === 'top' ? 'inset-4 rounded-3xl' :
-              snapTarget === 'left' ? 'inset-y-4 left-4 w-[48%] rounded-3xl' :
-              'inset-y-4 right-4 w-[48%] rounded-3xl'
+              snapTarget === 'top' ? 'inset-4 rounded-sdl-panel' :
+              snapTarget === 'left' ? 'inset-y-4 left-4 w-[48%] rounded-sdl-panel' :
+              'inset-y-4 right-4 w-[48%] rounded-sdl-panel'
             }`}
           />
         )}
@@ -237,7 +373,7 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
         }}
         className={`absolute flex flex-col transition-shadow duration-300 pointer-events-auto group/window ${
           isActive ? 'border' : 'grayscale-[0.1] border border-os-outline/10 shadow-[0_16px_32px_rgb(var(--sdl-plane-rgb)/0.3)]'
-        } ${!isMaximized && !isSnapped ? `bg-os-surfaceContainerHighest/50 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-3xl` : `bg-os-surface/95 ${transparencyEffects ? 'backdrop-blur-3xl' : ''}`}`}
+        } ${!isMaximized && !isSnapped ? `bg-os-surfaceContainerHighest/50 ${transparencyEffects ? 'backdrop-blur-2xl' : ''} rounded-sdl-panel` : `bg-os-surface/95 ${transparencyEffects ? 'backdrop-blur-3xl' : ''}`}`}
       >
       {/* Title Bar - Glassmorphic Strip */}
       <div 
@@ -293,6 +429,67 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
                   <CustomIcon icon={Maximize2} size={9} strokeWidth={4} color="text-[#004d09]" className="opacity-0 group-hover/controls:opacity-100 transition-opacity" animate={false} />
                 )}
               </button>
+              {canHover && (
+                // -my keeps the 24px hit area from pushing the 14px lights off their centre line.
+                <span className="relative inline-flex -my-[5px]">
+                  <button
+                    ref={popoutButtonRef}
+                    type="button"
+                    onClick={handlePopoutClick}
+                    aria-label={policy.allowed ? popoutLabel : 'Pop out'}
+                    title={policy.allowed ? popoutLabel : policy.reason}
+                    aria-disabled={policy.allowed ? undefined : 'true'}
+                    aria-describedby={policy.allowed ? undefined : popoutReasonId}
+                    aria-haspopup={multiScreen ? 'menu' : undefined}
+                    aria-expanded={multiScreen ? popoutMenuOpen : undefined}
+                    className={`w-6 h-6 flex items-center justify-center rounded-sdl-sm relative z-50 transition-opacity duration-hover ease-sdl focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hairline/60 ${
+                      popoutMenuOpen ? 'opacity-100 text-sdl-ink' : 'opacity-0 group-hover/window:opacity-100 text-sdl-sec'
+                    } ${policy.allowed ? 'cursor-pointer hover:text-sdl-ink' : 'cursor-default'}`}
+                  >
+                    <PictureInPicture2 size={12} aria-hidden="true" />
+                  </button>
+                  {!policy.allowed && <span id={popoutReasonId} className="sr-only">{policy.reason}</span>}
+                  {popoutMenuOpen && (
+                    // The menu holds menuitems only; the denied line is a sibling in the same panel,
+                    // described onto "Pop out here" (where focus lands) so screen readers announce it.
+                    <div
+                      ref={popoutMenuRef}
+                      onKeyDown={handlePopoutMenuKeyDown}
+                      className="glass rounded-sdl-sm shadow-lift absolute left-0 top-full mt-1 z-50 min-w-[190px] p-1"
+                    >
+                      <div role="menu" aria-label="Pop out">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          tabIndex={-1}
+                          aria-describedby={popoutMenu.denied ? popoutDeniedId : undefined}
+                          className={POPOUT_MENU_ITEM}
+                          onClick={() => popOut()}
+                        >
+                          Pop out here
+                        </button>
+                        {popoutMenu.screens?.map((s) => (
+                          <button
+                            key={s.key}
+                            type="button"
+                            role="menuitem"
+                            tabIndex={-1}
+                            className={POPOUT_MENU_ITEM}
+                            onClick={() => popOut({ left: s.left, top: s.top })}
+                          >
+                            Move to {s.label}
+                          </button>
+                        ))}
+                      </div>
+                      {popoutMenu.denied && (
+                        <p id={popoutDeniedId} className="px-2.5 py-1.5 text-[11px] text-sdl-sec">
+                          Other screens need the window management permission.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </span>
+              )}
             </>
           )}
         </div>
@@ -302,12 +499,10 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
         </div>
       </div>
 
-      {/* Real-time Glass Refraction Layer */}
-      <WindowGlass 
-        width={dimensions.width} 
-        height={dimensions.height} 
-        isActive={isActive} 
-      />
+      {/* Inner veil. No size props: a ResizeObserver used to feed width/height into React state on
+          every frame of a native resize drag, re-rendering the whole frame for values WindowGlass
+          never read. */}
+      <WindowGlass />
 
       {/* Content Area */}
       <div className="flex-grow overflow-auto text-os-onSurface relative scrollbar-os pb-10">

@@ -5,6 +5,7 @@ import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import { useColorway } from '../theme/useColorway';
 import useSoundEffects from '../hooks/useSoundEffects';
+import useMinuteClock from '../hooks/useMinuteClock';
 import { APP_BY_ID } from '../config/apps';
 import { GAME_BY_ID } from '../config/games';
 
@@ -28,6 +29,9 @@ import { GAME_BY_ID } from '../config/games';
  */
 export const MENU_BAR_H = 28;
 
+// One formatter for the module: `toLocaleTimeString` builds a fresh Intl.DateTimeFormat per call.
+const TIME_HM = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
+
 const MENU_ITEMS = [
   { id: 'about', label: 'About This Lumina', icon: Info, app: 'about' },
   { id: 'settings', label: 'Settings', icon: SettingsIcon, app: 'settings' },
@@ -40,27 +44,15 @@ const MenuBar = () => {
   const colorway = useColorway();
 
   const [open, setOpen] = useState(false);
-  const [time, setTime] = useState(() => new Date());
+  // Minute-aligned: this displays HH:MM, so a per-second tick would re-render 60x per change.
+  const time = useMinuteClock();
   const menuRef = useRef(null);
 
   const activeWindow = useOSStore((s) => s.activeWindow);
   const openWindows = useOSStore((s) => s.openWindows);
-  const minimizedWindows = useOSStore((s) => s.minimizedWindows || []);
+  const minimizedWindows = useOSStore((s) => s.minimizedWindows);
   const openWindow = useOSStore((s) => s.openWindow);
   const logout = useOSStore((s) => s.logout);
-
-  /**
-   * Minute-aligned clock: one timeout to phase-align to the next minute boundary, then a 60s
-   * interval. This displays HH:MM, so a per-second tick would re-render 60x for the same string.
-   */
-  useEffect(() => {
-    let intervalId;
-    const timeoutId = setTimeout(() => {
-      setTime(new Date());
-      intervalId = setInterval(() => setTime(new Date()), 60_000);
-    }, 60_000 - (Date.now() % 60_000));
-    return () => { clearTimeout(timeoutId); clearInterval(intervalId); };
-  }, []);
 
   // Escape closes the menu wherever focus is.
   useEffect(() => {
@@ -116,8 +108,9 @@ const MenuBar = () => {
       <div className="flex-grow" />
 
       {/* Right cluster reports only things that are actually true: the live colorway, how many
-          windows are open, and the time. No simulated CPU/RAM readout lives in permanent chrome —
-          those are modelled numbers, and the System Dashboard is where they are labelled as such. */}
+          windows are open, and the time. No CPU/RAM readout lives in permanent chrome — hardware facts
+          are whatever the browser chooses to report, and the System Dashboard, Task Manager and
+          Settings → System show them with that said, or say that the browser doesn't expose them. */}
       <span
         className="hidden lg:flex items-center gap-1.5 h-5 px-2 rounded-md text-os-onSurfaceVariant"
         title={`Colorway: ${colorway.name} · ${colorway.mode} mode`}
@@ -133,7 +126,7 @@ const MenuBar = () => {
       )}
 
       <span className="font-bold tabular-nums text-os-onSurface px-2">
-        {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        {TIME_HM.format(time)}
       </span>
 
       <AnimatePresence>

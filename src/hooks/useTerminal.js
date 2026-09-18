@@ -1,6 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import useOSStore from '../store/osStore';
 import { identity } from '../config/profile';
+import { describeBrowser } from '../capabilities/browser.js';
+import { FACT_IDS, fmt, probeAll, readNetwork, unavailableText } from '../system/facts.js';
+import { renderNeofetch } from '../system/neofetch.js';
 
 /**
  * Custom hook to manage Terminal logic, including command processing,
@@ -8,6 +11,27 @@ import { identity } from '../config/profile';
  *
  * @returns {Object} Terminal state and handlers
  */
+// Static: was rebuilt as a fresh object literal on every keystroke.
+const THEMES = {
+  default: { bg: 'bg-[#0c0c0c]/80', border: 'border-white/5', text: 'text-white', primary: 'text-os-primary', secondary: 'text-os-secondary' },
+  dracula: { bg: 'bg-[#282a36]/90', border: 'border-[#6272a4]/30', text: 'text-[#f8f8f2]', primary: 'text-[#bd93f9]', secondary: 'text-[#50fa7b]' },
+  solarized: { bg: 'bg-[#002b36]/95', border: 'border-[#586e75]/30', text: 'text-[#839496]', primary: 'text-[#268bd2]', secondary: 'text-[#859900]' },
+  monokai: { bg: 'bg-[#272822]/95', border: 'border-[#49483e]/30', text: 'text-[#f8f8f2]', primary: 'text-[#f92672]', secondary: 'text-[#a6e22e]' },
+  retro: { bg: 'bg-[#001100]/95', border: 'border-[#00ff00]/20', text: 'text-[#00ff00]', primary: 'text-[#00ff00]', secondary: 'text-[#00ff00]' },
+  cyberpunk: { bg: 'bg-[#050505]/95', border: 'border-[#f3f315]/20', text: 'text-[#f3f315]', primary: 'text-[#ff00ff]', secondary: 'text-[#00ffff]' },
+  'matrix-glow': { bg: 'bg-[#000d00]/95', border: 'border-[#00ff00]/30', text: 'text-[#00ff41]', primary: 'text-[#00ff41]', secondary: 'text-[#003b00]' },
+  ocean: { bg: 'bg-[#001b2b]/95', border: 'border-[#00bfff]/20', text: 'text-[#e0ffff]', primary: 'text-[#00bfff]', secondary: 'text-[#20b2aa]' }
+};
+
+/** A fact as one terminal value: the reported text, or "not exposed by Firefox" and friends. */
+const factText = (fact, browserName) => {
+  if (fact?.source === 'reported') return fact.text;
+  const t = unavailableText(fact, browserName);
+  return /^[A-Z]{2}/.test(t) ? t : `${t.charAt(0).toLowerCase()}${t.slice(1)}`;
+};
+
+const SNAP_LABEL = { left: 'snapped left', right: 'snapped right' };
+
 const useTerminal = () => {
   // Field-by-field rather than `useOSStore()`. A whole-store subscription re-ran this hook — and
   // re-rendered the terminal — on every state change anywhere in the OS, including the metrics
@@ -38,23 +62,20 @@ const useTerminal = () => {
   const [vimFile, setVimFile] = useState(null);
   const scrollRef = useRef(null);
 
-  // Filter history to only include user inputs for easier navigation
-  const inputHistory = terminalHistory
-    .filter(entry => entry.type === 'input')
-    .map(entry => entry.text);
+  // Filter history to only include user inputs for easier navigation. Memoised: this hook
+  // re-runs on every keystroke, and the history is capped at 500 entries.
+  const inputHistory = useMemo(
+    () => terminalHistory.filter(entry => entry.type === 'input').map(entry => entry.text),
+    [terminalHistory],
+  );
 
-  const themes = {
-    default: { bg: 'bg-[#0c0c0c]/80', border: 'border-white/5', text: 'text-white', primary: 'text-os-primary', secondary: 'text-os-secondary' },
-    dracula: { bg: 'bg-[#282a36]/90', border: 'border-[#6272a4]/30', text: 'text-[#f8f8f2]', primary: 'text-[#bd93f9]', secondary: 'text-[#50fa7b]' },
-    solarized: { bg: 'bg-[#002b36]/95', border: 'border-[#586e75]/30', text: 'text-[#839496]', primary: 'text-[#268bd2]', secondary: 'text-[#859900]' },
-    monokai: { bg: 'bg-[#272822]/95', border: 'border-[#49483e]/30', text: 'text-[#f8f8f2]', primary: 'text-[#f92672]', secondary: 'text-[#a6e22e]' },
-    retro: { bg: 'bg-[#001100]/95', border: 'border-[#00ff00]/20', text: 'text-[#00ff00]', primary: 'text-[#00ff00]', secondary: 'text-[#00ff00]' },
-    cyberpunk: { bg: 'bg-[#050505]/95', border: 'border-[#f3f315]/20', text: 'text-[#f3f315]', primary: 'text-[#ff00ff]', secondary: 'text-[#00ffff]' },
-    'matrix-glow': { bg: 'bg-[#000d00]/95', border: 'border-[#00ff00]/30', text: 'text-[#00ff41]', primary: 'text-[#00ff41]', secondary: 'text-[#003b00]' },
-    ocean: { bg: 'bg-[#001b2b]/95', border: 'border-[#00bfff]/20', text: 'text-[#e0ffff]', primary: 'text-[#00bfff]', secondary: 'text-[#20b2aa]' }
-  };
+  const theme = THEMES[terminalTheme] || THEMES.default;
 
-  const theme = themes[terminalTheme] || themes.default;
+  // The progressive-output interval (`lumina-get install`) outlives the keystroke that started
+  // it. Held here so closing the Terminal mid-animation clears it instead of leaving it writing
+  // to the store for another five seconds against an unmounted component.
+  const progressiveRef = useRef(null);
+  useEffect(() => () => clearInterval(progressiveRef.current), []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -99,7 +120,7 @@ const useTerminal = () => {
     // Lists every implemented command except `magic`, which is a discoverable easter egg —
     // printing it here would hand over the find. `node`/`npm` were missing from this string for
     // as long as they have existed, so the shell under-reported its own WebContainer support.
-    help: () => 'Available commands:\n  help, clear, ls, cd, cat, mkdir, touch, rm, ps, top, vim\n  neofetch, whoami, date, matrix, ssh, lumina-get, theme, man, lumina-ai\n  node, npm',
+    help: () => 'Available commands:\n  help, clear, ls, cd, cat, mkdir, touch, rm, ps, top, vim\n  neofetch, uname, lscpu, free, df, battery, uptime\n  whoami, date, matrix, ssh, lumina-get, theme, man, lumina-ai\n  node, npm',
     clear: () => {
       clearTerminalHistory();
       return null;
@@ -279,12 +300,54 @@ const useTerminal = () => {
       useOSStore.getState().deleteNode(target.id);
       return `Removed '${name}'.`;
     },
+    // Windows, not processes: a page cannot see PIDs or CPU time, so neither is printed.
     ps: () => {
-      const apps = useOSStore.getState().openWindows.map(id => {
-        return `guest      ${(Math.floor(Math.random() * 9000) + 1000)}  0.0  0.1  ${id}`;
-      }).join('\n');
-      return `USER       PID  %CPU %MEM COMMAND\n${apps || 'No active processes'}`;
+      const { openWindows, activeWindow, minimizedWindows, maximizedWindows, snappedWindows, poppedOut, windowOpenedAt } = useOSStore.getState();
+      const now = Date.now();
+      const rows = openWindows.map((id) => {
+        const state = [
+          activeWindow === id ? 'active' : minimizedWindows.includes(id) ? 'minimized' : 'background',
+          maximizedWindows.includes(id) ? 'maximized' : null,
+          snappedWindows?.[id] ? (SNAP_LABEL[snappedWindows[id]] ?? 'snapped') : null,
+          poppedOut?.[id] ? 'popped out' : null,
+        ].filter(Boolean).join(' · ');
+        const at = windowOpenedAt?.[id];
+        const elapsed = at ? fmt.duration(Math.max(0, now - at)) : 'restored';
+        return `${state.padEnd(24)} ${elapsed.padEnd(16)} ${id}`;
+      });
+      return `${'STATE'.padEnd(24)} ${'ELAPSED'.padEnd(16)} WINDOW\n${rows.join('\n') || 'No open windows'}`;
     },
+    uptime: () => {
+      const n = useOSStore.getState().openWindows.length;
+      // performance.now() is read here, in the command handler, never during render.
+      return `up ${fmt.duration(performance.now())} (this session, since page load) · ${n} ${n === 1 ? 'window' : 'windows'}`;
+    },
+    uname: (args) => {
+      if (!args.includes('-a')) return 'Lumina';
+      return probeAll({ ids: ['os', 'arch'] }).then((snap) => {
+        const b = describeBrowser();
+        return `Lumina 1.0.0 · ${`${b.name} ${b.version}`.trim()} (${b.engine}) · ${factText(snap.os, b.name)} · ${factText(snap.arch, b.name)}`;
+      });
+    },
+    lscpu: () => probeAll({ ids: ['cores', 'pressure', 'arch'] }).then((snap) => {
+      const b = describeBrowser().name;
+      return `Architecture:   ${factText(snap.arch, b)}\nCPU(s):         ${factText(snap.cores, b)}\nCPU pressure:   ${factText(snap.pressure, b)}`;
+    }),
+    free: () => probeAll({ ids: ['jsHeap', 'deviceMemory'] }).then((snap) => {
+      const b = describeBrowser().name;
+      return `JS heap:        ${factText(snap.jsHeap, b)}\nDevice memory:  ${factText(snap.deviceMemory, b)}\n(The browser does not expose system RAM usage.)`;
+    }),
+    df: () => probeAll({ ids: ['storage'] }).then((snap) => {
+      const b = describeBrowser().name;
+      const st = snap.storage;
+      if (st?.source !== 'reported') return `df: site storage ${factText(st, b)}`;
+      const { usage, quota } = st.value;
+      const pct = `${Math.round(st.detail.percent)}%`;
+      return `${'Filesystem'.padEnd(14)} ${'Size'.padStart(9)} ${'Used'.padStart(9)} ${'Avail'.padStart(9)} ${'Use%'.padStart(5)}  Mounted on\n`
+        + `${'site-storage'.padEnd(14)} ${fmt.bytes(quota).padStart(9)} ${fmt.bytes(usage).padStart(9)} ${fmt.bytes(Math.max(0, quota - usage)).padStart(9)} ${pct.padStart(5)}  /\n`
+        + `(This site's storage quota in ${b}, not your disk.)`;
+    }),
+    battery: () => probeAll({ ids: ['battery'] }).then((snap) => `Battery: ${factText(snap.battery, describeBrowser().name)}`),
     top: () => {
       openWindow('taskmanager');
       return 'Launching Task Manager...';
@@ -335,8 +398,8 @@ const useTerminal = () => {
     },
     theme: (args) => {
       const newTheme = args[0];
-      const themeList = Object.keys(themes).join(', ');
-      if (!newTheme || !themes[newTheme]) return `Available themes: ${themeList}`;
+      const themeList = Object.keys(THEMES).join(', ');
+      if (!newTheme || !THEMES[newTheme]) return `Available themes: ${themeList}`;
       setTerminalTheme(newTheme);
       return `Theme changed to ${newTheme}.`;
     },
@@ -348,11 +411,29 @@ const useTerminal = () => {
         'ssh': 'SSH(1) - Remote Access Tool\n\nSYNOPSIS\n  ssh <host>\n\nDESCRIPTION\n  Simulates a peer-to-peer connection for data relay.',
         'theme': 'THEME(1) - Terminal Styling\n\nMODES\n  default, dracula, solarized, monokai, retro',
         'cat': 'CAT(1) - Concatenate and print files\n\nDESCRIPTION\n  Reads file content from the virtual filesystem.',
-        'cd': 'CD(1) - Change Directory\n\nDESCRIPTION\n  Navigate the OS file structure.'
+        'cd': 'CD(1) - Change Directory\n\nDESCRIPTION\n  Navigate the OS file structure.',
+        'neofetch': 'NEOFETCH(1) - What this browser reports\n\nDESCRIPTION\n  Prints the facts the browser exposes about this device. Anything it\n  withholds is printed as "not exposed", never estimated.',
+        'ps': 'PS(1) - Open windows\n\nCOLUMNS\n  STATE, ELAPSED (since the window opened; "restored" after a reload), WINDOW',
+        'uname': 'UNAME(1) - System name\n\nSYNOPSIS\n  uname [-a]\n\nDESCRIPTION\n  -a adds the browser, OS and architecture as the browser reports them.',
+        'lscpu': 'LSCPU(1) - CPU facts\n\nDESCRIPTION\n  Logical cores, CPU pressure and architecture, where the browser exposes them.',
+        'free': 'FREE(1) - Memory facts\n\nDESCRIPTION\n  JavaScript heap size and the bucketed device memory class, where exposed.',
+        'df': "DF(1) - Site storage\n\nDESCRIPTION\n  This site's storage usage and quota. Not the disk.",
+        'battery': 'BATTERY(1) - Battery status\n\nDESCRIPTION\n  Level and charging state, where the browser exposes them.',
+        'uptime': 'UPTIME(1) - Session uptime\n\nDESCRIPTION\n  Time since this page loaded, and the number of open windows.'
       };
       return manuals[cmd] || `No manual entry for ${cmd}`;
     },
-    neofetch: () => 'OS: Lumina Desktop v1.0.0\nKernel: 6.8.0-lumina-os\nUptime: 3 years, 2 months\nPackages: 1337 (npm)\nShell: zsh 5.9\nResolution: 2560x1440\nDE: Lumina\nWM: Framer-Motion\nTerminal: Lumina-Term\nCPU: M3 Max (8) @ 4.06GHz\nMemory: 64GB',
+    // Read live from the browser each time; the persisted history must never carry invented hardware.
+    neofetch: () => {
+      // performance.now() is read here, in the command handler, never during render.
+      const uptimeMs = performance.now();
+      return probeAll({ ids: FACT_IDS }).then((snap) => renderNeofetch(snap, {
+        browser: describeBrowser(),
+        openWindows: useOSStore.getState().openWindows,
+        uptimeMs,
+        network: readNetwork(navigator),
+      }));
+    },
     matrix: () => {
       if (installedApps.includes('easteregg')) {
         openWindow('easteregg');
@@ -475,20 +556,30 @@ const useTerminal = () => {
 
     if (trimmedInput) {
       const [cmd, ...args] = trimmedInput.split(' ');
-      if (commands[cmd]) {
+      // Own properties only: `commands['__proto__']` is an object, and calling it threw.
+      if (Object.hasOwn(commands, cmd)) {
         const output = commands[cmd](args);
         
         if (output && typeof output === 'object' && output.type === 'progressive') {
           let step = 0;
-          const interval = setInterval(() => {
+          clearInterval(progressiveRef.current);
+          progressiveRef.current = setInterval(() => {
             if (step < output.steps.length) {
               addTerminalEntry({ type: 'output', text: output.steps[step] });
               step++;
             } else {
-              clearInterval(interval);
+              clearInterval(progressiveRef.current);
+              progressiveRef.current = null;
               if (output.onComplete) output.onComplete();
             }
           }, 400);
+        } else if (typeof output?.then === 'function') {
+          // Async commands (the facts). Without this arm the Promise itself was stored in the
+          // persisted history, and Terminal.jsx cannot render an object.
+          output.then(
+            (text) => addTerminalEntry({ type: 'output', text }),
+            (e) => addTerminalEntry({ type: 'output', text: `${cmd}: ${e?.message ?? e}` }),
+          );
         } else if (output !== null) {
           addTerminalEntry({ type: 'output', text: output });
         }

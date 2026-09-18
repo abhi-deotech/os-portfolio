@@ -1,7 +1,14 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Minimize2, List, Grid, Search, ChevronLeft, Film, Music, Info, Download, Share2, MoreVertical, Heart } from 'lucide-react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Maximize2, Minimize2, List, Grid, Search, ChevronLeft, Film, Music, Share2, Link2, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MEDIA_DATA, MEDIA_CATEGORIES } from '../data/mediaData';
+import useMediaSession from '../hooks/useMediaSession';
+import useWakeLock from '../hooks/useWakeLock';
+import { trackMetadata } from '../utils/mediaSessionCore.js';
+import useOSStore from '../store/osStore';
+import useCapability from '../capabilities/useCapability.js';
+import { notifyUnavailable } from '../capabilities/notify.js';
+import { osAlert } from '../utils/dialog';
 
 const MediaPlayer = ({ file: initialFile }) => {
   const [currentMedia, setCurrentMedia] = useState(initialFile || null);
@@ -16,7 +23,17 @@ const MediaPlayer = ({ file: initialFile }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const videoRef = useRef(null);
+  // The video container, held as state (a stable setter used as the ref) so the fullscreenchange
+  // subscription below follows it: under AnimatePresence mode="wait" it mounts after `view` flips.
+  const [playerEl, setPlayerEl] = useState(null);
   const controlsTimeout = useRef(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const webShare = useCapability('webShare');
+  // Copy confirmation lives on the button itself: a toast would be invisible in a popped-out window
+  // (the rail renders in the main window) and held back while Focus is on.
+  const [linkCopied, setLinkCopied] = useState(false);
+  // Popping the window out moves the player into another document; re-subscribe when that happens.
+  const poppedMode = useOSStore((s) => s.poppedOut?.media?.mode);
 
 
   // Handle external file changes via state sync
@@ -71,6 +88,112 @@ const MediaPlayer = ({ file: initialFile }) => {
     setProgress(e.target.value);
   };
 
+  // Media keys and the OS now-playing card while the player is showing. With Music also open, the
+  // most recently registered owner is shown, and leaving the player hands the session back.
+  const seekVideoTo = (seconds) => {
+    const video = videoRef.current;
+    if (!video) return;
+    const d = Number.isFinite(video.duration) ? video.duration : duration;
+    video.currentTime = Math.max(0, d > 0 ? Math.min(seconds, d) : seconds);
+  };
+  const inPlayer = view === 'player' && !!currentMedia;
+  useMediaSession('Media', {
+    enabled: inPlayer,
+    metadata: trackMetadata(currentMedia),
+    playbackState: isPlaying ? 'playing' : 'paused',
+    positionState: { duration, getPosition: () => videoRef.current?.currentTime },
+    handlers: {
+      play: () => { videoRef.current?.play()?.catch(() => {}); },
+      pause: () => { videoRef.current?.pause(); },
+      seekto: (details) => seekVideoTo(details.seekTime ?? videoRef.current?.currentTime ?? 0),
+      seekbackward: (details) => seekVideoTo((videoRef.current?.currentTime ?? 0) - (details.seekOffset ?? 10)),
+      seekforward: (details) => seekVideoTo((videoRef.current?.currentTime ?? 0) + (details.seekOffset ?? 10)),
+    },
+  });
+  useWakeLock(inPlayer && isPlaying, 'Media');
+
+  // Fullscreen state comes from the player's own document (main window or a pop-out). The main
+  // document is always watched too. Moving the player to another document exits fullscreen in the
+  // document it left, and that event can be lost when that document's listener is removed on
+  // re-subscribe (or its window closes), so every subscription also re-reads the current state.
+  useEffect(() => {
+    const sync = () => setIsFullscreen(!!playerEl && playerEl.ownerDocument.fullscreenElement === playerEl);
+    const docs = new Set([document, playerEl?.ownerDocument].filter(Boolean));
+    for (const doc of docs) doc.addEventListener('fullscreenchange', sync);
+    sync();
+    return () => { for (const doc of docs) doc.removeEventListener('fullscreenchange', sync); };
+  }, [playerEl, poppedMode]);
+
+  const toggleFullscreen = (e) => {
+    const fromEl = e.currentTarget;
+    const el = playerEl;
+    if (!el) return;
+    const doc = el.ownerDocument;
+    if (doc.fullscreenElement === el) {
+      doc.exitFullscreen?.().catch(() => {});
+      return;
+    }
+    // Document Picture-in-Picture windows never allow element fullscreen, whatever the browser
+    // supports. Dock the player again and ask from the main window: the click's activation is
+    // shared with the opener. Checked before the webkitEnterFullscreen fallback so it isn't silent.
+    if (doc !== document && (poppedMode === 'pip' || !doc.fullscreenEnabled) && document.fullscreenEnabled) {
+      const windowId = fromEl.closest?.('[data-window-id]')?.getAttribute('data-window-id') || 'media';
+      const askAgain = () => osAlert({
+        tone: 'warn',
+        kicker: 'Media',
+        title: 'Media is back in the main window. Press Fullscreen again to fill the screen.',
+      });
+      useOSStore.getState().popInWindow(windowId);
+      // The docked window re-adopts the player when React commits; ask once it has.
+      setTimeout(() => {
+        if (el.ownerDocument !== document || !el.isConnected) { askAgain(); return; }
+        el.requestFullscreen().catch(askAgain);
+      }, 0);
+      return;
+    }
+    if (doc.fullscreenEnabled && typeof el.requestFullscreen === 'function') {
+      // Called synchronously from the click: requestFullscreen needs the gesture.
+      el.requestFullscreen().catch((err) => {
+        console.warn('Media: fullscreen was refused', err);
+        notifyUnavailable('fullscreen', { kind: 'refused', fromEl, errName: err?.name });
+      });
+      return;
+    }
+    // iPhone Safari: no element fullscreen, but the video itself can go fullscreen. Chromium also
+    // has webkitEnterFullscreen, and it fails silently where fullscreen isn't allowed, so the video
+    // must also report that it can go fullscreen; otherwise the notice below explains.
+    const v = videoRef.current;
+    if (typeof v?.webkitEnterFullscreen === 'function' && v.webkitSupportsFullscreen !== false) {
+      v.webkitEnterFullscreen();
+      return;
+    }
+    notifyUnavailable('fullscreen', { fromEl });
+  };
+
+  // Share the media's public URL; without a share sheet the same button copies the link instead.
+  const shareMedia = async (e) => {
+    if (!currentMedia?.url) return;
+    const view = e.currentTarget.ownerDocument.defaultView;
+    try {
+      if (webShare.supported) {
+        await view.navigator.share({ title: currentMedia.title, url: currentMedia.url });
+      } else {
+        await view.navigator.clipboard.writeText(currentMedia.url);
+        setLinkCopied(true);
+        view.setTimeout(() => setLinkCopied(false), 2000);
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      osAlert({
+        tone: 'warn',
+        kicker: 'Media',
+        title: webShare.supported
+          ? `Couldn't share this video (${err?.name ?? 'Error'}). Try again.`
+          : `Couldn't copy the link (${err?.name ?? 'Error'}). Try again.`,
+      });
+    }
+  };
+
   const handleMouseMove = () => {
     setShowControls(true);
     if (controlsTimeout.current) clearTimeout(controlsTimeout.current);
@@ -103,7 +226,7 @@ const MediaPlayer = ({ file: initialFile }) => {
 
   return (
     <div 
-      className="flex flex-col h-full bg-[#0a0a0a] text-white overflow-hidden rounded-b-2xl relative select-none"
+      className="flex flex-col h-full bg-[#0a0a0a] text-white overflow-hidden relative select-none"
       onMouseMove={handleMouseMove}
     >
       <AnimatePresence mode="wait">
@@ -196,6 +319,9 @@ const MediaPlayer = ({ file: initialFile }) => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             className="flex flex-col h-full bg-black relative group/player"
+            // Fullscreen target: the whole player, so the top bar, controls and the exit button
+            // stay inside the fullscreen layer.
+            ref={setPlayerEl}
           >
             {/* Top Bar (Overlay) */}
             <AnimatePresence>
@@ -214,16 +340,22 @@ const MediaPlayer = ({ file: initialFile }) => {
                     Library
                   </button>
                   <div className="flex items-center gap-4">
-                    <button className="p-3 hover:bg-white/10 rounded-full transition-colors"><Info size={20} /></button>
-                    <button className="p-3 hover:bg-white/10 rounded-full transition-colors"><Share2 size={20} /></button>
-                    <button className="p-3 hover:bg-white/10 rounded-full transition-colors"><MoreVertical size={20} /></button>
+                    <button
+                      onClick={shareMedia}
+                      aria-label={webShare.supported ? 'Share' : linkCopied ? 'Link copied' : 'Copy link'}
+                      title={webShare.supported ? 'Share' : linkCopied ? 'Link copied' : 'Copy link'}
+                      className="p-3 hover:bg-white/10 rounded-full transition-colors"
+                    >
+                      {webShare.supported ? <Share2 size={20} /> : linkCopied ? <Check size={20} /> : <Link2 size={20} />}
+                    </button>
+                    <span className="sr-only" aria-live="polite">{linkCopied ? 'Link copied' : ''}</span>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {/* Video Container */}
-            <div className="flex-grow flex items-center justify-center relative cursor-none" onClick={togglePlay}>
+            <div className={`flex-grow flex items-center justify-center relative ${showControls ? '' : 'cursor-none'}`} onClick={togglePlay}>
               <video
                 key={currentMedia?.id}
                 ref={videoRef}
@@ -322,7 +454,14 @@ const MediaPlayer = ({ file: initialFile }) => {
                              <div className="absolute top-0 left-0 h-full bg-white/60" style={{ width: `${(isMuted ? 0 : volume) * 100}%` }} />
                           </div>
                        </div>
-                       <button className="text-white/60 hover:text-white transition-colors"><Maximize2 size={24} /></button>
+                       <button
+                         onClick={toggleFullscreen}
+                         aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                         title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+                         className="text-white/60 hover:text-white transition-colors"
+                       >
+                         {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
+                       </button>
                     </div>
                   </div>
                 </motion.div>
@@ -339,10 +478,6 @@ const MediaPlayer = ({ file: initialFile }) => {
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-os-primary mb-2 block">Playing Now</span>
                   <h3 className="text-2xl font-black tracking-tight mb-1">{currentMedia?.title}</h3>
                   <p className="text-os-onSurfaceVariant font-bold text-sm">{currentMedia?.artist}</p>
-                  <div className="flex items-center gap-4 mt-6 pointer-events-auto">
-                     <button className="flex items-center gap-2 text-xs font-bold text-white/60 hover:text-os-primary transition-colors"><Heart size={16} /> Save</button>
-                     <button className="flex items-center gap-2 text-xs font-bold text-white/60 hover:text-os-primary transition-colors"><Download size={16} /> Download</button>
-                  </div>
                </motion.div>
             </div>
           </motion.div>

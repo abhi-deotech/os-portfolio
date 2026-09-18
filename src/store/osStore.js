@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { get, set, del } from 'idb-keyval';
+import storage from './persistStorage';
 import { createAuthSlice } from './slices/authSlice';
 import { createFileSystemSlice } from './slices/fileSystemSlice';
 import { createMusicSlice, sanitizePersistedMusic } from './slices/musicSlice';
-import { createSystemSlice } from './slices/systemSlice';
+import { createSystemSlice, TERMINAL_SEED } from './slices/systemSlice';
 import { createWindowSlice } from './slices/windowSlice';
 import { createContainerSlice } from './slices/containerSlice';
 import { createAiSlice } from './slices/aiSlice';
@@ -40,7 +40,7 @@ const useOSStore = create(
       // theme fields change shape (P2), every existing user silently lands on defaults.
       // NOTE: this store uses a custom async `storage` object rather than createJSONStorage; verify
       // against a real IndexedDB payload that `migrate` fires before relying on it in P2.
-      version: 4,
+      version: 5,
       // Verified in-browser against a real v0 IndexedDB payload: this hook DOES fire despite the
       // custom async `storage` object (zustand's docs assume createJSONStorage).
       migrate: (persistedState, fromVersion) => {
@@ -88,6 +88,23 @@ const useOSStore = create(
           next.openWindows = next.openWindows.filter((id) => id !== 'retroarcade');
         }
 
+        // v4 → v5: the terminal seed shipped a neofetch with invented hardware ("M3 Max", "64GB"),
+        // and `terminalHistory` is persisted, so every returning visitor still carries it. Device
+        // facts are now read live; the seed is a banner (TERMINAL_SEED). Replace the untouched seed
+        // outright, and swap any later copy of that output for a note rather than silently deleting
+        // a line the visitor scrolled past.
+        if (fromVersion < 5 && Array.isArray(next.terminalHistory)) {
+          const OLD_NEOFETCH = 'OS: Lumina Desktop v1.0.0';
+          const isOld = (e) => typeof e?.text === 'string' && e.text.startsWith(OLD_NEOFETCH);
+          let history = next.terminalHistory;
+          if (history[0]?.type === 'input' && history[0]?.text === 'neofetch' && isOld(history[1])) {
+            history = [...TERMINAL_SEED, ...history.slice(2)];
+          }
+          next.terminalHistory = history.map((e) => (isOld(e)
+            ? { type: 'output', text: '(neofetch output from an older Lumina was removed: it showed invented hardware)' }
+            : e));
+        }
+
         return next;
       },
       merge: (persistedState, currentState) => {
@@ -117,11 +134,9 @@ const useOSStore = create(
         }
         return merged;
       },
-      storage: {
-        getItem: async (name) => (await get(name)) || null,
-        setItem: async (name, value) => await set(name, value),
-        removeItem: async (name) => await del(name),
-      },
+      // idb-keyval behind a write throttle. persist writes the WHOLE partialized payload on every
+      // `set()` with no diffing; see persistStorage.js for the measurement and the flush rules.
+      storage,
       partialize: (state) => ({
         activeAccent: state.activeAccent,
         wallpaper: state.wallpaper,
@@ -144,8 +159,11 @@ const useOSStore = create(
         widgets: state.widgets,
         notes: state.notes,
         // `music` carries queue / playlists / playContext / volume with it; each is
-        // validated (and volume migrated) in merge() via sanitizePersistedMusic.
-        music: state.music,
+        // validated (and volume migrated) in merge() via sanitizePersistedMusic. `lastFmData` is
+        // a remote cache refreshed by a 30 s poll — it has no business surviving a reload, and
+        // sanitizePersistedMusic re-seeds it. Playback position is `musicCurrentTime`, top-level
+        // and deliberately absent here.
+        music: { ...state.music, lastFmData: undefined },
         isAuthenticated: state.isAuthenticated,
         userRole: state.userRole,
         activeNotepadFile: state.activeNotepadFile,
@@ -159,22 +177,13 @@ const useOSStore = create(
         achievements: state.achievements,
         userGames: state.userGames,
         gameStats: state.gameStats,
-        // `systemMetrics` is DELIBERATELY not persisted.
-        //
-        // SystemMetricsWidget re-rolls it from Math.random() on a 3-second interval, and zustand's
-        // persist middleware serialises the whole partialized payload on every `set`. That measured
-        // 26,066 bytes written to IndexedDB every 3 seconds — roughly 30 MB an hour — of which the
-        // 62 bytes of systemMetrics were the only part that had changed, and they are overwritten
-        // by the next tick anyway. The remaining 26 KB is mostly `fileSystem`, so the cost grew
-        // with the user's own data.
-        //
-        // Nothing is lost by dropping it: the slice declares its own defaults and the widget's
-        // interval repopulates it within 3 seconds of load.
         lastSyncTime: state.lastSyncTime,
         syncError: state.syncError,
         puterUser: state.puterUser,
         isPuterSignedIn: state.isPuterSignedIn,
         snappedWindows: state.snappedWindows,
+        // Local only: not in the Puter prefs sync (the idle-detection permission is per browser).
+        idleDetection: state.idleDetection,
         achievementQueue: [] // Don't persist queue
       }),
     }

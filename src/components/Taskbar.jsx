@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutGrid, User, ChevronUp, ChevronDown, 
@@ -10,35 +10,58 @@ import { useIconResolver } from '../theme/useColorway';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import useSoundEffects from '../hooks/useSoundEffects';
+import useMinuteClock from '../hooks/useMinuteClock';
 import { APPS } from '../config/apps';
+import { getPopout } from '../utils/popout.js';
 
 /**
- * Dock magnification, indexed by distance from the icon under the cursor.
- *
- * Real macOS tracks cursor-X and runs a continuous falloff against every icon's centre. This steps
- * neighbours down a fixed ladder instead, keyed off the hovered icon's INDEX — it reads as smooth
- * because the transform is CSS-eased, not because the curve is continuous.
- *
- * Applied to the button, so it multiplies with the icon's own resting scale (active 1.1, minimized
- * 0.9, pressed 0.95) through nested transforms rather than overriding them.
- *
- * No reduced-motion branch is needed: grammar.css already forces transition-duration to 1ms under
- * [data-motion='reduced'], so the scale snaps rather than animating — the affordance survives, the
- * motion does not.
+ * Dock magnification is pure CSS — `.dock-item` in index.css. It used to be React state
+ * (`hoveredIndex`), which re-rendered every dock button, its AppIcon and the open launcher on each
+ * `mouseenter` while sweeping the dock. The sibling selectors give the same three-step ladder
+ * (1.18 / 1.09 / 1.03 by distance from the hovered icon) with no render at all. The rationale for
+ * the stepped ladder over a continuous falloff, and the reduced-motion note, moved with it.
  */
-const DOCK_MAGNIFICATION = [1.18, 1.09, 1.03];
+
+// Pure functions of the static registry: computed once, not on every dock render.
+const FEATURED_APPS = APPS.filter((app) => app.featured);
+const OTHER_APPS = APPS.filter((app) => !app.featured);
+
+// Module-level formatters: `toLocaleTimeString` builds a fresh Intl.DateTimeFormat per call.
+const TIME_HM = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
+const DATE_SHORT = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
+
+/**
+ * The dock clock is its own leaf so its tick cannot reach the dock. It displays HH:MM, and the old
+ * 1 s interval lived in Taskbar itself — re-rendering 9–19 buttons, their icons and two icon
+ * resolutions each, every second, for a string that changes once a minute.
+ */
+const DockClock = ({ isMobile }) => {
+  const time = useMinuteClock();
+  return (
+    <div className={`flex flex-col items-center justify-center ${isMobile ? 'min-w-[50px] ml-2' : 'min-w-[70px] pr-2'} cursor-default select-none`}>
+      <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold tabular-nums text-os-onSurface leading-none mb-0.5`}>
+        {TIME_HM.format(time)}
+      </span>
+      {!isMobile && (
+        <span className="text-[10px] text-os-onSurfaceVariant font-bold tabular-nums tracking-tight uppercase leading-none">
+          {DATE_SHORT.format(time)}
+        </span>
+      )}
+    </div>
+  );
+};
 
 const Taskbar = () => {
   const isMobile = useIsMobile();
   const { playSound } = useSoundEffects();
-  const [time, setTime] = useState(new Date());
-  const [hoveredIndex, setHoveredIndex] = useState(null);
   // One hook for the whole dock; the running-app dot is resolved per app from it.
   const resolveIcon = useIconResolver();
 
   const openWindows = useOSStore(state => state.openWindows);
-  const minimizedWindows = useOSStore(state => state.minimizedWindows || []);
-  const maximizedWindows = useOSStore(state => state.maximizedWindows || []);
+  // No `|| []` fallback: the slice declares both as arrays and merge() re-normalises them on load.
+  // A fallback here is the one shape that would mint a fresh snapshot per call and loop.
+  const minimizedWindows = useOSStore(state => state.minimizedWindows);
+  const maximizedWindows = useOSStore(state => state.maximizedWindows);
   const activeWindow = useOSStore(state => state.activeWindow);
   /**
    * The dock retracts for an immersive full-screen window — but only for the one you are LOOKING at.
@@ -63,21 +86,16 @@ const Taskbar = () => {
   const transparencyEffects = useOSStore(state => state.transparencyEffects);
   const logout = useOSStore(state => state.logout);
 
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   // Filter apps for the dock (pinned or currently open)
-  const dockApps = APPS.filter(app => app.pinned || openWindows.includes(app.id));
-  
-  const featuredApps = APPS.filter(app => app.featured);
-  const otherApps = APPS.filter(app => !app.featured);
+  const dockApps = useMemo(
+    () => APPS.filter(app => app.pinned || openWindows.includes(app.id)),
+    [openWindows],
+  );
 
   return (
     <>
       <div
-        className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-veil/5 ${transparencyEffects ? 'backdrop-blur-3xl' : ''} border-hairline/10 flex items-center px-4 justify-between z-[1000] shadow-2xl transition-all duration-500 ${immersive ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
+        className={`fixed ${isMobile ? 'bottom-safe-bottom left-0 right-0 w-full mb-1 h-20 rounded-t-3xl border-t' : 'bottom-6 left-1/2 -translate-x-1/2 h-16 rounded-3xl border min-w-[400px]'} bg-veil/5 ${transparencyEffects ? 'backdrop-blur-xl' : ''} border-hairline/10 flex items-center px-4 justify-between z-[1000] shadow-2xl transition-all duration-500 ${immersive ? 'opacity-0 pointer-events-none translate-y-20' : 'opacity-100 translate-y-0'}`}
       >
         <div className="flex items-center bg-veil/[0.06] rounded-2xl p-1 gap-1 border border-hairline/5 md:mr-4">
           <button
@@ -123,16 +141,10 @@ const Taskbar = () => {
 
         <div
           className={`flex items-center ${isMobile ? 'space-x-1 overflow-x-auto scrollbar-hide flex-grow' : 'space-x-1 flex-grow justify-center px-2'}`}
-          onMouseLeave={() => setHoveredIndex(null)}
         >
-          {dockApps.map((app, index) => {
+          {dockApps.map((app) => {
             const isOpen = openWindows.includes(app.id);
             const isActive = activeWindow === app.id;
-            // Touch has no hover, and a magnified icon under a fingertip is just a bigger tap
-            // target that moved — so the dock rests flat on mobile.
-            const magnification = isMobile || hoveredIndex === null
-              ? 1
-              : (DOCK_MAGNIFICATION[Math.abs(index - hoveredIndex)] ?? 1);
 
             return (
               <button
@@ -140,13 +152,16 @@ const Taskbar = () => {
                 type="button"
                 aria-label={app.title}
                 title={app.title}
-                onMouseEnter={() => setHoveredIndex(index)}
-                onFocus={() => setHoveredIndex(index)}
-                style={magnification === 1 ? undefined : { transform: `scale(${magnification})` }}
                 onClick={() => {
                   playSound('click');
                   if (isOpen) {
-                    if (isActive) {
+                    // A popped-out app lives in another browser window: bring that window forward
+                    // (while this click's activation lasts) instead of minimizing a frame that isn't here.
+                    const popout = useOSStore.getState().poppedOut?.[app.id] ? getPopout(app.id) : undefined;
+                    if (popout) {
+                      try { popout.win.focus(); } catch { /* closed; its pagehide docks it */ }
+                      focusWindow(app.id);
+                    } else if (isActive) {
                       toggleMinimizeWindow(app.id);
                     } else {
                       focusWindow(app.id);
@@ -155,7 +170,9 @@ const Taskbar = () => {
                     openWindow(app.id);
                   }
                 }}
-                className={`relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/10 ${isActive ? 'bg-veil/10 shadow-[inset_0_0_12px_rgb(var(--sdl-veil-rgb)/0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
+                // Touch has no hover, and a magnified icon under a fingertip is just a bigger tap
+                // target that moved — so the dock rests flat on mobile (no `dock-item`).
+                className={`${isMobile ? '' : 'dock-item'} relative p-2.5 transition-all duration-300 cursor-pointer group flex items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 focus-visible:bg-veil/10 ${isActive ? 'bg-veil/10 shadow-[inset_0_0_12px_rgb(var(--sdl-veil-rgb)/0.05)]' : 'hover:bg-os-surfaceContainerLow/50'}`}
               >
                 <div className={`transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-105 group-active:scale-95'} ${minimizedWindows.includes(app.id) ? 'opacity-60 scale-90' : 'opacity-100'}`}>
                   <AppIcon app={app} size={isMobile ? 18 : 22} animate={false} />
@@ -177,16 +194,7 @@ const Taskbar = () => {
 
         {!isMobile && <div className="h-8 w-px bg-os-outline/20 ml-4 mr-4" />}
 
-        <div className={`flex flex-col items-center justify-center ${isMobile ? 'min-w-[50px] ml-2' : 'min-w-[70px] pr-2'} cursor-default select-none`}>
-          <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-bold tabular-nums text-os-onSurface leading-none mb-0.5`}>
-            {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-          {!isMobile && (
-            <span className="text-[10px] text-os-onSurfaceVariant font-bold tabular-nums tracking-tight uppercase leading-none">
-              {time.toLocaleDateString([], { month: 'short', day: 'numeric' })}
-            </span>
-          )}
-        </div>
+        <DockClock isMobile={isMobile} />
       </div>
 
       <AnimatePresence>
@@ -215,7 +223,7 @@ const Taskbar = () => {
                       <span>Featured Apps</span>
                     </div>
                     <div className="grid grid-cols-4 gap-3">
-                      {featuredApps.map((app) => (
+                      {FEATURED_APPS.map((app) => (
                         <button
                           key={app.id}
                           type="button"
@@ -238,7 +246,7 @@ const Taskbar = () => {
                       <span>General</span>
                     </div>
                     <div className={`grid grid-cols-4 gap-3 overflow-y-auto pr-1 flex-grow pb-2 scrollbar-hide`}>
-                      {otherApps.map((app) => (
+                      {OTHER_APPS.map((app) => (
                         <button
                           key={app.id}
                           type="button"

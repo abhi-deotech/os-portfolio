@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sun, Cloud, CloudRain, CloudLightning, Wind } from 'lucide-react';
+import { Sun } from 'lucide-react';
+import useMinuteClock from '../hooks/useMinuteClock';
+
+// Module-level formatters: `toLocaleTimeString` / `toLocaleDateString` construct a new
+// Intl.DateTimeFormat on every call, and this used to make two of them per second.
+const TIME_HM = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit' });
+const DATE_LONG = new Intl.DateTimeFormat(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
 const ClockWidget = () => {
-  const [time, setTime] = useState(new Date());
-  
+  // Minute-aligned. The widget shows HH:MM, so the old 1 s interval re-rendered it 60x per change.
+  const time = useMinuteClock();
+
   const [heights] = useState(() => Array.from({ length: 12 }).map(() => Math.random() * 60 + 20));
   const [weather] = useState({
     temp: 24,
@@ -12,21 +19,8 @@ const ClockWidget = () => {
     icon: Sun
   });
 
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
-  };
-
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       /* `glass` + `lift`, not a hand-rolled bg/blur/border/shadow stack.
@@ -46,10 +40,10 @@ const ClockWidget = () => {
       <div className="flex justify-between items-start">
         <div className="space-y-1">
           <h2 className="text-5xl font-black text-sdl-ink tracking-tighter tabular-nums">
-            {formatTime(time)}
+            {TIME_HM.format(time)}
           </h2>
           <p className="text-xs font-black text-os-primary uppercase tracking-[0.3em]">
-            {formatDate(time)}
+            {DATE_LONG.format(time)}
           </p>
         </div>
         <div className="p-3 bg-os-primary/10 rounded-2xl border border-os-primary/20">
@@ -73,10 +67,10 @@ const ClockWidget = () => {
       {/* Subtle activity graph at bottom */}
       <div className="flex gap-1 h-4 items-end mt-2 px-1">
          {heights.map((h, i) => (
-           <div 
-             key={i} 
-             className="flex-1 bg-veil/10 rounded-full" 
-             style={{ height: `${h}%` }} 
+           <div
+             key={i}
+             className="flex-1 bg-veil/10 rounded-full"
+             style={{ height: `${h}%` }}
            />
          ))}
       </div>

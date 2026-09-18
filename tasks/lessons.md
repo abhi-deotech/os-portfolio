@@ -213,3 +213,82 @@ back `undefined` rather than erroring, so it read as "React never got the text."
 **How to apply:** distribute the descendant across each alternative
 (`[role=dialog] input,[role=alertdialog] input`) or keep list constants out of interpolation
 entirely. A selector that silently matches the *wrong* node is worse than one that matches nothing.
+
+## In Vite dev, `import('/src/x.js')` from the page is NOT the app's module once HMR has run
+
+While measuring the runtime pass, `await import('/src/store/osStore.js')` from the Browser pane
+returned a working store — before any edits. After edits, Vite serves the app's copy at
+`/src/store/osStore.js?t=<timestamp>`, so the bare path resolves to a SECOND, independent module
+instance with its own zustand store. `logout()` on it changed nothing on screen, `openWindows`
+disagreed with the DOM, and thirty seconds of "after" numbers were measured against a store the
+app was not using.
+
+**How to apply:** find the app's real URL first —
+`performance.getEntriesByType('resource').map(e => e.name).find(n => /osStore\.js\?t=/.test(n))`
+— and import THAT. Then prove the handle is live before measuring (an action must change the
+DOM). Same trap for any singleton module reached from the page: hooks, registries, caches.
+
+## Rank cross-browser first; "Chromium-only" means gated and explained, not "top pick"
+
+**Context:** the integration catalog (`tasks/integrations-catalog.md`, 2026-09-17) put Window
+Controls Overlay, Compute Pressure, Document PiP and Web Bluetooth apps at the top of the ranking
+because they had the biggest wow factor. The owner's correction: they like those, but prefer
+features that work in every browser, and anything narrower must show the visitor a clear warning
+saying why it is unavailable.
+
+**The rule:** tier every capability before ranking it — universal (Chrome/Edge + Firefox + Safari)
+first, two-engine second, Chromium-only last. A Chromium-only feature ships only with a complete
+fallback or an in-place notice (feature, browser, the vendor's reason with a link, what Lumina does
+instead, where it works). Detect the feature, never the browser. This is the honesty pattern the
+codebase already follows (`FileExplorer.jsx` shows an `osAlert` when `showDirectoryPicker` is
+missing; `useSystemMetrics.js` documents its fakes).
+
+**How to apply:** when a proposal's support column says "Chromium", write the fallback and the
+notice text in the same breath, or don't propose it. Prefer one shared gate (capability registry +
+`useCapability` + a Compatibility pane) over per-app `if (!window.X)` checks.
+
+## A skeptic that checks "is it in the plan?" will refute real policy violations
+
+**Context:** Browser API pass, 2026-09-17. Each phase ran implement → three reviewers → one skeptic
+per lens → fix only what the skeptic confirmed. Three times a reviewer reported a genuine silent
+no-op (a refused fullscreen that only logged to the console; a dialog raised from a popped-out
+window that opened unseen in the main window; a "Copy link" confirmation that could never be seen in
+a popup or under Focus) and the skeptic refuted it because the plan didn't spell out that case.
+
+**The rule:** the owner's policy ("never a silent no-op, never a faked result") is a higher bar than
+the plan's wording. A plan is a finite list of cases; the policy covers the ones it forgot. A finding
+refuted as "not specified by the plan" is not refuted — re-judge it against the policy yourself.
+
+**How to apply:** after every verified review, read the REFUTED list, not just the confirmed one,
+and ask of each: does the refutation rest on "the code is fine", or only on "the plan didn't ask"?
+Fix the second kind. In future skeptic prompts, name the policy as a confirmation criterion in its
+own right, above plan conformance.
+
+## Long hand-written workflow `args` can end mid-sentence without any error
+
+Twice in one session a multi-paragraph `implementPrompt` passed as JSON args was cut off in the
+middle of its last instruction ("grep the built entry chunk (" … then the next key). The workflow
+launched normally; the agent simply never saw the step. The first time it was caught by reading the
+args back, and the run was stopped before any edit (diffed against the snapshot to prove it).
+
+**How to apply:** before launching, reread the last line of every long string argument. Keep the
+final instruction short and put success criteria in the reusable script (GATES) rather than at the
+tail of a prompt, so a truncated tail loses the least.
+
+## The `?t=` store trap also applies straight after a fresh navigation
+
+Adds to the Vite HMR lesson above: once the dev server has pushed ANY HMR update, even a freshly
+loaded page imports the stamped URL (`osStore.js?t=…`). A probe that imports the bare path right
+after `navigate` still gets a second, unsubscribed store — the Control Center "opened" in the store
+and rendered nothing. Always resolve the module URL from `performance.getEntriesByType('resource')`
+preferring `?t=`, and prove the handle is live (a store action must change the DOM) before
+measuring. `scripts/shot.mjs` refuses to run in this state on purpose; start a fresh server
+(`vibe-os-dev-verify`, port 5176) for it.
+
+## Headless Chrome never delivers Compute Pressure samples
+
+Measured: `new PressureObserver(cb).observe('cpu', { sampleInterval: 1000 })` resolves, the policy
+allows it, focus emulation makes `document.hasFocus()` true — and no record arrives in 8 s. So
+"Waiting for first sample" in headless runs is the environment, not `src/system/facts.js`. Verify
+pressure only in a headed browser with the window focused; don't chase it as a bug from a headless
+probe.

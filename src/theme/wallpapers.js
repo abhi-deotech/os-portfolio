@@ -62,7 +62,18 @@ export const DEFAULT_WALLPAPER = 'linux-default';
 
 const BY_ID = new Map(WALLPAPERS.map((w) => [w.id, w]));
 
-export const isCustomWallpaper = (value) => typeof value === 'string' && value.startsWith('data:image');
+/**
+ * An uploaded wallpaper is stored as a Blob under its own idb-keyval key and the store holds only
+ * this sentinel. It used to be the whole image as a base64 data URL inside the persisted payload —
+ * a 2 MB photo became a ~2.7 MB string that zustand's persist middleware structured-cloned into
+ * IndexedDB on every store write for the rest of the user's life, and that `syncPrefsToPuter`
+ * shipped over the network on every preference change. The data-URL form is still recognised so
+ * an existing payload migrates on first load (see `loadCustomWallpaper` in systemSlice).
+ */
+export const CUSTOM_WALLPAPER = 'custom';
+export const CUSTOM_WALLPAPER_KEY = 'lumina.wallpaper.custom';
+export const isLegacyDataUrlWallpaper = (value) => typeof value === 'string' && value.startsWith('data:image');
+export const isCustomWallpaper = (value) => value === CUSTOM_WALLPAPER || isLegacyDataUrlWallpaper(value);
 
 /** Resolve an id to its entry, falling back to the default rather than to a bare colour. */
 export function resolveWallpaper(id) {

@@ -40,8 +40,14 @@ const Spotlight = () => {
   const transparencyEffects = useOSStore((s) => s.transparencyEffects);
   const [query, setQuery] = useState('');
 
+  // Once per mount, not per keystroke: this component lives for the whole session, and every
+  // character typed was a store action (and so a persist write) for an achievement already held.
+  const searchProRef = useRef(false);
   useEffect(() => {
-    if (query.length > 0) unlockAchievement('search_pro');
+    if (query.length > 0 && !searchProRef.current) {
+      searchProRef.current = true;
+      unlockAchievement('search_pro');
+    }
   }, [query, unlockAchievement]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);

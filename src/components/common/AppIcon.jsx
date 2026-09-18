@@ -109,9 +109,10 @@ const AppIcon = ({
         borderRadius: radius ?? 'var(--sdl-radius-lg)',
         background: s.tile ?? 'transparent',
         border: `1px solid ${s.tileBorder ?? 'transparent'}`,
-        // The tile sits over the user's wallpaper, so it stays glass. Outline resolves `tile` to
-        // null and therefore blurs nothing — which is the point of that theme.
-        backdropFilter: s.tile ? 'blur(24px)' : undefined,
+        // No backdrop-filter on the tile. Each desktop icon used to be its own 24px backdrop-blur
+        // layer over the wallpaper — nineteen independent blur passes, every one re-blurred when
+        // its hover scale fired. The tint + hairline carry the glass reading on their own; the
+        // Outline theme resolves `tile` to null and renders nothing here, unchanged.
       }}
       {...motionProps}
     >

@@ -1,7 +1,5 @@
 import React, { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import SocialWidget from './SocialWidget';
-import SystemMetricsWidget from './SystemMetricsWidget';
 import ClockWidget from './ClockWidget';
 import SystemDashboard from './SystemDashboard';
 import NowPlayingWidget from './widgets/NowPlayingWidget';

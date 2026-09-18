@@ -12,12 +12,13 @@ import { formatTime } from './playback';
  */
 const FullscreenPlayer = ({ onClose, onPrev, onNext, onSeek, vizAccent }) => {
   const music = useOSStore((s) => s.music);
+  const currentTime = useOSStore((s) => s.musicCurrentTime);
   const setMusicIsPlaying = useOSStore((s) => s.setMusicIsPlaying);
   const toggleShuffle = useOSStore((s) => s.toggleShuffle);
   const setRepeatMode = useOSStore((s) => s.setRepeatMode);
   const unlockAchievement = useOSStore((s) => s.unlockAchievement);
 
-  const { currentTrack, currentTime, isPlaying, shuffle, repeatMode, lastFmData } = music;
+  const { currentTrack, isPlaying, shuffle, repeatMode, lastFmData } = music;
   const progress = currentTrack.duration > 0 ? (currentTime / currentTrack.duration) * 100 : 0;
 
   const cycleRepeatMode = () => {

@@ -252,7 +252,7 @@ const Games = () => {
   const featuredFace = faceOf(FEATURED_GAME.hue);
 
   return (
-    <div className="flex h-full w-full bg-sdl-plane text-os-onSurface overflow-hidden rounded-2xl font-sans relative">
+    <div className="flex h-full w-full bg-sdl-plane text-os-onSurface overflow-hidden font-sans relative">
       {/* Background Ambience */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-os-primary/20 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[40%] h-[40%] bg-os-secondary/20 blur-[100px] rounded-full pointer-events-none" />

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import useOSStore from '../../store/osStore';
+import useWindowVisibility from '../../hooks/useWindowVisibility';
 
 /**
  * The YouTube IFrame engine, extracted from MusicApp so the component composes views
@@ -39,6 +40,8 @@ export default function useYouTubePlayer({ onEnded }) {
   const setMusicCurrentTime = useOSStore((s) => s.setMusicCurrentTime);
   const syncMusicTrack = useOSStore((s) => s.syncMusicTrack);
   const unlockAchievement = useOSStore((s) => s.unlockAchievement);
+  // The seek bar is the poll's only consumer; nobody sees it while minimised. Audio is unaffected.
+  const visible = useWindowVisibility('music');
 
   // Latest-value refs for the create-once effect and the async YT callbacks.
   const onEndedRef = useRef(onEnded);
@@ -159,10 +162,13 @@ export default function useYouTubePlayer({ onEnded }) {
     if (readyRef.current && p && typeof p.setVolume === 'function') p.setVolume(volume);
   }, [volume]);
 
-  // Poll once a second: time for the seek bar, plus the duration reconciliation
-  // described in the header. Reads the current track from the store directly so a
-  // just-switched track can never be compared against a stale closure.
+  // Poll once a second — only while playing. Time for the seek bar, plus the duration
+  // reconciliation described in the header. Reads the current track from the store directly so a
+  // just-switched track can never be compared against a stale closure. A paused player has
+  // nothing new to report, and this hook stays mounted (minimised included) for as long as the
+  // Music window exists, so an ungated interval was a permanent 1 Hz store write.
   useEffect(() => {
+    if (!isPlaying || !visible) return undefined;
     const interval = setInterval(() => {
       const p = playerRef.current;
       if (!p || typeof p.getCurrentTime !== 'function') return;
@@ -176,7 +182,7 @@ export default function useYouTubePlayer({ onEnded }) {
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [setMusicCurrentTime, syncMusicTrack]);
+  }, [isPlaying, visible, setMusicCurrentTime, syncMusicTrack]);
 
   const seekTo = (seconds) => {
     const p = playerRef.current;
@@ -193,5 +199,16 @@ export default function useYouTubePlayer({ onEnded }) {
     }
   };
 
-  return { containerRef, seekTo, restart };
+  // Media keys arrive exactly when the 1 Hz poll is paused (window minimised, tab hidden), so the
+  // store's musicCurrentTime can be stale then. Ask the player first — unless it still holds the
+  // previous video (same guard as the poll), when the store's value (0 after setMusicTrack) is right.
+  const getCurrentTime = () => {
+    const p = playerRef.current;
+    const { music, musicCurrentTime } = useOSStore.getState();
+    const loaded = p?.getVideoData?.()?.video_id;
+    if (typeof p?.getCurrentTime !== 'function' || (loaded && loaded !== music.currentTrack.youtubeId)) return musicCurrentTime;
+    return p.getCurrentTime() ?? musicCurrentTime;
+  };
+
+  return { containerRef, seekTo, restart, getCurrentTime };
 }

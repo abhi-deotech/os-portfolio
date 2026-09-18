@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Trophy, RefreshCw } from 'lucide-react';
 import GameShell from './GameShell';
 import useGameLoop from '../../hooks/useGameLoop';
+import useWindowVisibility from '../../hooks/useWindowVisibility';
 import useGameInput from '../../hooks/useGameInput';
 import useGameAudio from '../../hooks/useGameAudio';
 import useHighScore from '../../hooks/useHighScore';
@@ -185,7 +186,7 @@ const Breakout = ({ onBack }) => {
   // quietly burn all three lives and be sitting on a game-over screen when it was restored. Gating
   // the loop rather than forcing `status` to 'paused' means nothing has to be un-paused on restore,
   // and a build where this id is never minimized simply never sees the flag go true.
-  const isMinimized = useOSStore((s) => (s.minimizedWindows || []).includes('breakout'));
+  const isMinimized = !useWindowVisibility('breakout');
   const unlockAchievement = useOSStore((s) => s.unlockAchievement);
 
   const [status, setStatus] = useState('playing');

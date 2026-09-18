@@ -210,13 +210,16 @@ const DocumentationApp = () => {
     return files;
   }, [fileSystem]);
 
+  // Lowercased once per file-system change, not once per file per keystroke.
+  const searchCorpus = useMemo(
+    () => markdownFiles.map((f) => ({ file: f, name: f.name.toLowerCase(), content: (f.content || '').toLowerCase() })),
+    [markdownFiles],
+  );
   const searchResults = useMemo(() => {
     if (!searchTerm) return [];
-    return markdownFiles.filter(f => 
-      f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.content.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, markdownFiles]);
+    const q = searchTerm.toLowerCase();
+    return searchCorpus.filter((e) => e.name.includes(q) || e.content.includes(q)).map((e) => e.file);
+  }, [searchTerm, searchCorpus]);
 
   // Filter filesystem for documentation (only show paths that lead to .md files)
   const filteredDocSystem = useMemo(() => {
@@ -450,8 +453,9 @@ const DocumentationApp = () => {
                             key={idx}
                             type="button"
                             className={`w-full text-left text-xs cursor-pointer hover:text-os-primary transition-colors block truncate rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 ${item.level === 3 ? 'pl-4 text-os-onSurfaceVariant' : 'font-bold text-os-onSurface'}`}
-                            onClick={() => {
-                              const el = document.getElementById(item.id);
+                            onClick={(e) => {
+                              // The clicked button's own document: this app may be popped out.
+                              const el = e.currentTarget.ownerDocument.getElementById(item.id);
                               if (el) el.scrollIntoView({ behavior: 'smooth' });
                             }}
                           >

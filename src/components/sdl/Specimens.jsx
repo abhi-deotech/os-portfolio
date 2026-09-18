@@ -1,5 +1,6 @@
 import React from 'react';
 import ThemeScope from './ThemeScope';
+import { StatusChip } from '../common/StatusChip';
 import { accentMetrics } from '../../theme/cssVars';
 import { accentBand } from '../../theme/registry';
 
@@ -29,16 +30,7 @@ export const MiniDashboard = () => (
         Pipeline
       </span>
       {/* Law 5: dark chips take an accent-soft fill; light chips take plane bg + dot + hairline. */}
-      <span
-        className="inline-flex items-center gap-1.5"
-        style={{
-          background: 'var(--sdl-soft)', color: 'var(--sdl-aink)',
-          fontSize: 10, fontWeight: 650, padding: '3px 8px', borderRadius: 999,
-        }}
-      >
-        <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: 'var(--sdl-aink)' }} />
-        Active
-      </span>
+      <StatusChip tone="accent" label="Active" />
     </div>
 
     <div className="grid grid-cols-3 gap-2 mb-3">

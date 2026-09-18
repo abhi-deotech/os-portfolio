@@ -3,10 +3,11 @@ import useOSStore from '../../store/osStore';
 import ThemeScope from './ThemeScope';
 import { MiniDashboard, SwatchLadder, ColorwayCard, AccentMeasure } from './Specimens';
 import {
-  LAWS, GLOBAL, COLORWAYS, THEMES, colorwaysByTheme, resolveColorway,
+  LAWS, GLOBAL, COLORWAYS, THEMES, resolveColorway,
   SDL_VERSION, SDL_AUTHOR, accentBand,
 } from '../../theme/registry';
 import { DEVIATIONS } from '../../theme/overrides';
+import { useColorwayList } from '../../theme/useColorway';
 
 /* Recorded rejections. SDL's own practice is to keep these beside the locks — "passed: cobalt
    (accent too loud as chrome)" is knowledge, not clutter. Sourced from the skill's GRAMMAR.md and
@@ -117,7 +118,7 @@ const Overview = () => {
 const Colorways = () => {
   const active = useOSStore((s) => s.colorway);
   const setColorway = useOSStore((s) => s.setColorway);
-  const groups = colorwaysByTheme();
+  const groups = useColorwayList();
   const [family, setFamily] = useState('all');
   const shown = family === 'all' ? groups : groups.filter((g) => g.id === family);
 

@@ -262,3 +262,63 @@ Both this pass's apparent failures were in the *harness*, not the component (unt
 events; a selector-list precedence bug). Recorded in `tasks/lessons.md`. Restating the 2026-08-13
 lesson from the other side: measurement proves a colour is right and a picture proves it is on the
 right thing — but neither proves the thing *does* anything. That needs trusted input.
+
+## 2026-09-17 — the window frame owns the corner
+
+**Drift observed (owner):** some apps read rounded, others 90°. Cause: seven app roots
+(Terminal, Settings, Games, Browser, Media, Photos, Music) carried their own `rounded-xl` /
+`rounded-2xl` / `rounded-b-2xl` inside a frame that is already `overflow: hidden` and rounded — a
+second, smaller radius that left window glass showing at each corner — while the other apps ran
+square and filled the frame. The frame itself was a literal `rounded-3xl` (24px), not the shell's
+panel token.
+
+**Resolved:** `Window.jsx` uses `rounded-sdl-panel` (`--sdl-radius-panel` = colorway radius × 1.8,
+the 22–40px family SystemDialog and the widgets already use — see entry 3 above), and app roots are
+full-bleed with no radius of their own. Inner cards keep `rounded-sdl` / `rounded-sdl-sm`, which is
+SDL's "inner tiles = radius −6". Maximised and snapped windows stay at 0, as before. Terminal also
+lost its inner 1px theme border: the frame carries the hairline, and a bordered box clipped by a
+rounded frame reads as a cut-off rectangle.
+
+**Not swept:** inner surfaces that still use Tailwind literals (`rounded-2xl`, `rounded-[2.5rem]`)
+rather than the tokens — 24 files. They are consistent with each other today; converting them to
+tokens is a separate pass if the owner wants radius to track the colorway everywhere.
+
+## 2026-09-17 — status chips for every tone, and a notice panel
+
+**Context:** the Browser API pass (capability notices, truthful system facts) needed status chips
+in four voices — `accent` (Available, Reported), `muted` (Not in Firefox, Not exposed), `warn`
+(CPU pressure *serious*, the notice badge) and `alert` (Permission: denied, pressure *critical*).
+SDL's component spec defines the chip for the accent only.
+
+### Drift observed: Law 5 was only half-built in the specimen
+
+`sdl/Specimens.jsx:31–41` stated all of Law 5 in its comment but rendered only the dark recipe
+(soft fill, aInk dot) in both modes. It now renders `<StatusChip>`, so the specimen shows what the
+law says in light and dark.
+
+### Proposal: Law 5 generalises to any tone, keyed by one ink
+
+`src/components/common/StatusChip.jsx` + `.sdl-chip` in `src/theme/grammar.css`. Each tone names a
+single ink (`--chip-ink-rgb`: aInk | sec | warn | alert) and a soft fill (soft | sunken | tone at
+12%). The mode half is scalars on the `[data-mode]` blocks, not finished colours:
+
+- **light** — plane background, 1px hairline in the tone's ink at 50%, dot + label in the ink
+- **dark** — the tone's soft fill, no border, dot + label in the ink
+
+**Implementation note worth keeping:** a custom property that references `--chip-ink-rgb` where it
+is *defined* (on `[data-mode]`) resolves against the wrong element, because the tone is set lower in
+the tree. The fix was scalars (`--sdl-chip-fill`, `--sdl-chip-edge`) combined on `.sdl-chip` itself;
+the dark soft fill is a gradient layer sized by the scalar. Measured in the app: dark chip paints
+`#46162e` on Rose Dusk via the gradient layer; light chip on Honey is plane `rgb(255,241,217)` with a
+`rgba(40,113,103,.5)` hairline.
+
+Law 10 held without new rules: `warn` and `alert` chips always carry their word ("Serious",
+"Permission: denied"); `muted` is the neutral "not available" voice, never alert-red.
+
+### Specimen: the capability notice
+
+`src/capabilities/CapabilityGate.jsx` — `bg-sdl-surface` panel, `rounded-sdl`, hairline border, the
+SystemDialog `TONES.warn` badge, kicker / title / body in the dialog's type ramp, a muted chip
+("Not in {Browser} {v}") and quiet `aInk` pill links. Deliberately **no live region** on the static
+panel; only the compact variant raised by a user action gets `role="status"`. Its words come from
+one module (`notice.js`), shared with the dialog, the Compatibility pane and fact labels.

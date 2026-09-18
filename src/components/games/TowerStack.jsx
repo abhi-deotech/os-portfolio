@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Layers, RotateCcw } from 'lucide-react';
 import GameShell from './GameShell';
 import useGameLoop from '../../hooks/useGameLoop';
+import useWindowVisibility from '../../hooks/useWindowVisibility';
 import useGameInput from '../../hooks/useGameInput';
 import useGameAudio from '../../hooks/useGameAudio';
 import useHighScore from '../../hooks/useHighScore';
@@ -425,7 +426,9 @@ const TowerStack = ({ onBack }) => {
     }
   }, [draw]);
 
-  useGameLoop(step, STEP_MS, status === 'playing' || settling);
+  // Paused while minimised or the tab is hidden — see useWindowVisibility.
+  const visible = useWindowVisibility('towerstack');
+  useGameLoop(step, STEP_MS, (status === 'playing' || settling) && visible);
 
   const togglePause = useCallback(() => {
     if (statusRef.current === 'playing') { statusRef.current = 'paused'; setStatus('paused'); }

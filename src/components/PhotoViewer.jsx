@@ -43,7 +43,7 @@ const PhotoViewer = ({ file: initialFile }) => {
   }, [category, searchQuery]);
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0a] text-white rounded-b-2xl overflow-hidden relative select-none">
+    <div className="flex flex-col h-full bg-[#0a0a0a] text-white overflow-hidden relative select-none">
       <AnimatePresence mode="wait">
         {view === 'gallery' ? (
           <motion.div 

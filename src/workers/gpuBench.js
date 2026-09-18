@@ -10,6 +10,7 @@
  * is this GPU at arithmetic", and one whose cost is exactly known (2*N^3 FLOPs), so the reported
  * GFLOPS is measured rather than scored on an invented scale.
  */
+import { describeAdapter } from '../system/gpu.js';
 
 /** Matrix edge length. 512 keeps each buffer at 1 MiB, well inside any adapter's binding limits. */
 const N = 512;
@@ -41,31 +42,6 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
 `;
 
 /**
- * Identify the adapter without building anything on it.
- *
- * @returns {Promise<{vendor: string, architecture: string, description: string}|null>}
- *   null when WebGPU is absent or no adapter answers.
- */
-export async function probeGpuAdapter() {
-  if (typeof navigator === 'undefined' || !navigator.gpu) return null;
-  try {
-    const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
-    if (!adapter) return null;
-    // `adapter.info` is the current shape; `requestAdapterInfo()` was the earlier one. Either may
-    // return empty strings — the spec lets a UA withhold these for fingerprinting reasons, so
-    // every field here is optional and the caller must cope with "unknown".
-    const info = adapter.info ?? (await adapter.requestAdapterInfo?.()) ?? {};
-    return {
-      vendor: info.vendor || '',
-      architecture: info.architecture || '',
-      description: info.description || info.device || '',
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Build the compute pipeline and its buffers once, so a slice is pure dispatch cost.
  *
  * @returns {Promise<{info: object, runSlice: () => Promise<{flops: number, ms: number}>,
@@ -75,11 +51,12 @@ export async function createGpuBench() {
   if (typeof navigator === 'undefined' || !navigator.gpu) return null;
 
   let device;
-  let info = {};
+  let info;
   try {
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) return null;
-    info = adapter.info ?? (await adapter.requestAdapterInfo?.()) ?? {};
+    // Every field may be an empty string: a browser may withhold them for fingerprinting reasons.
+    info = await describeAdapter(adapter);
     device = await adapter.requestDevice();
   } catch {
     return null;
@@ -159,11 +136,7 @@ export async function createGpuBench() {
   };
 
   return {
-    info: {
-      vendor: info.vendor || '',
-      architecture: info.architecture || '',
-      description: info.description || info.device || '',
-    },
+    info,
     runSlice,
     destroy: () => { if (!lost) device.destroy(); },
   };

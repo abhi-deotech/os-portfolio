@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { readNetwork } from '../system/facts.js';
 
 /**
  * Custom hook for monitoring network connection status and information.
@@ -22,29 +23,14 @@ import { useState, useEffect } from 'react';
  * @returns {boolean} returns.saveData - Whether data saver is enabled
  */
 const useNetworkInfo = () => {
-  const [networkInfo, setNetworkInfo] = useState({
-    isOnline: navigator.onLine,
-    connectionType: 'unknown',
-    effectiveType: 'unknown',
-    downlink: 0,
-    downlinkMax: 0,
-    rtt: 0,
-    saveData: false,
-  });
+  // One network reader for the whole shell: facts.readNetwork (the terminal calls it directly).
+  const [networkInfo, setNetworkInfo] = useState(() => readNetwork(navigator));
 
   useEffect(() => {
     const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
 
     const updateNetworkInfo = () => {
-      setNetworkInfo({
-        isOnline: navigator.onLine,
-        connectionType: connection?.type || 'unknown',
-        effectiveType: connection?.effectiveType || 'unknown',
-        downlink: connection?.downlink || 0,
-        downlinkMax: connection?.downlinkMax || 0,
-        rtt: connection?.rtt || 0,
-        saveData: connection?.saveData || false,
-      });
+      setNetworkInfo(readNetwork(navigator));
     };
 
     // Initial update

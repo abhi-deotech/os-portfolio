@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Timer, Flame, Trophy, RotateCcw } from 'lucide-react';
 import GameShell from './GameShell';
 import useGameLoop from '../../hooks/useGameLoop';
+import useWindowVisibility from '../../hooks/useWindowVisibility';
 import useGameInput from '../../hooks/useGameInput';
 import useGameAudio from '../../hooks/useGameAudio';
 import useHighScore from '../../hooks/useHighScore';
@@ -332,7 +333,9 @@ const TriviaGame = ({ onBack }) => {
     }
   }, [advance, play, resolve]);
 
-  useGameLoop(step, 100, status === 'playing');
+  // Paused while minimised or the tab is hidden — see useWindowVisibility.
+  const visible = useWindowVisibility('trivia');
+  useGameLoop(step, 100, status === 'playing' && visible);
 
   const restart = useCallback(() => {
     setRound(makeRound());

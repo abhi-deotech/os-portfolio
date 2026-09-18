@@ -1,4 +1,6 @@
 import useOSStore from '../store/osStore';
+// Cycle-safe: popout.js imports osAlert from here, and both only call each other inside functions.
+import { focusedPopoutId } from './popout.js';
 
 /**
  * Lumina's system dialogs. This is the ONLY sanctioned way to ask the user something.
@@ -24,9 +26,17 @@ import useOSStore from '../store/osStore';
  *   kicker       tiny uppercase eyebrow naming the app that raised it ("Lumina Cloud").
  *   tone         'info' (default) | 'warn' | 'danger'. Picks the badge role and the button voice.
  *   icon         one of the keys in ICONS in SystemDialog.jsx. Defaults from `tone`.
+ *   links        [{ label, href }] quiet external links under the message (open in a new tab).
+ *                Capability notices use these for "Why" and "Support table".
  */
 
-const request = (spec) => useOSStore.getState().requestDialog(spec);
+// Dialogs render only in the main window. If the person is working in a popped-out window, dock it
+// first, so the question never opens somewhere they can't see it.
+const request = (spec) => {
+  const popped = focusedPopoutId();
+  if (popped) useOSStore.getState().popInWindow?.(popped);
+  return useOSStore.getState().requestDialog(spec);
+};
 
 /** A statement. One button. Resolves `true` when acknowledged or dismissed. */
 export const osAlert = ({ confirmLabel = 'OK', tone = 'info', ...rest }) =>

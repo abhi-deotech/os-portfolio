@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { Save, FileText, ChevronRight, Eye, Edit3 } from 'lucide-react';
+import { Save, FileText, ChevronRight, Eye, Edit3, Download, Share2 } from 'lucide-react';
 import useOSStore from '../store/osStore';
+import useCapability from '../capabilities/useCapability.js';
+import { useIsMobile } from '../hooks/useMediaQuery';
+import { osAlert } from '../utils/dialog';
+import { buildSharePayload, downloadFileName, noteMime } from '../utils/noteExport.js';
 
 import MarkdownRenderer from './common/MarkdownRenderer';
 
@@ -14,7 +18,12 @@ const Notepad = () => {
   const [isPreview, setIsPreview] = useState(false);
   const [isSaved, setIsSaved] = useState(true);
 
-  const [prevFileId, setPrevFileId] = useState(activeNotepadFile);
+  const isMobile = useIsMobile();
+  const webShare = useCapability('webShare');
+
+  // Starts at null so the first render loads the active file too (derived state, not an effect);
+  // starting at activeNotepadFile skipped the load and opened an empty, unnamed editor.
+  const [prevFileId, setPrevFileId] = useState(null);
   if (activeNotepadFile !== prevFileId) {
     setPrevFileId(activeNotepadFile);
     if (activeNotepadFile) {
@@ -43,6 +52,38 @@ const Notepad = () => {
       updateFileContent(activeNotepadFile, content);
       unlockAchievement('writer');
       setIsSaved(true);
+    }
+  };
+
+  // Gesture realm: a popped-out Notepad lives in another document, so the anchor, Blob URL and
+  // share call all come from the window the click happened in.
+  const handleDownload = (e) => {
+    const view = e.currentTarget.ownerDocument.defaultView;
+    const name = downloadFileName(fileName);
+    const url = view.URL.createObjectURL(new view.Blob([content], { type: `${noteMime(name)};charset=utf-8` }));
+    const a = view.document.createElement('a');
+    a.href = url;
+    a.download = name;
+    view.document.body.appendChild(a);
+    a.click();
+    a.remove();
+    view.setTimeout(() => view.URL.revokeObjectURL(url), 0);
+  };
+
+  const handleShare = async (e) => {
+    const view = e.currentTarget.ownerDocument.defaultView;
+    const { kind, data } = buildSharePayload({ fileName, content, nav: view.navigator, FileCtor: view.File });
+    if (kind === 'none') {
+      // Share is detected, but this window refused every payload (e.g. a frame without the
+      // web-share permission). Never a silent no-op: point at the complete fallback.
+      osAlert({ tone: 'warn', kicker: 'Notepad', title: "Couldn't share this note from here. Use Download to save it instead." });
+      return;
+    }
+    try {
+      await view.navigator.share(data);
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      osAlert({ tone: 'warn', kicker: 'Notepad', title: `Couldn't share this note (${err?.name ?? 'Error'}). Try again.` });
     }
   };
 
@@ -88,6 +129,27 @@ const Notepad = () => {
               <Save size={14} />
               Save
            </button>
+           {/* Download works everywhere, so it is the complete fallback where Share is missing. */}
+           <button
+             onClick={handleDownload}
+             aria-label={isMobile ? 'Download' : undefined}
+             title={isMobile ? 'Download' : undefined}
+             className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-hairline/5 text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 bg-veil/5 text-sdl-sec hover:text-sdl-ink"
+           >
+              <Download size={14} />
+              {!isMobile && 'Download'}
+           </button>
+           {webShare.supported && (
+             <button
+               onClick={handleShare}
+               aria-label={isMobile ? 'Share' : undefined}
+               title={isMobile ? 'Share' : undefined}
+               className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-hairline/5 text-[10px] font-bold uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50 bg-veil/5 text-sdl-sec hover:text-sdl-ink"
+             >
+                <Share2 size={14} />
+                {!isMobile && 'Share'}
+             </button>
+           )}
         </div>
       </div>
 

@@ -32,6 +32,11 @@
      In dark a veil LIFTS (white over a dark plane); the polarity flips in light below. */
   --sdl-veil-rgb:     255 255 255;
   --sdl-hairline-rgb: 255 255 255;
+
+  /* Law 5 status chips (.sdl-chip below): dark chips take the tone's soft fill and no border. */
+  --sdl-chip-bg:     transparent;
+  --sdl-chip-fill:   1;
+  --sdl-chip-edge:   0;
 }
 
 [data-mode='light'] {
@@ -57,6 +62,11 @@
      pack stays in its own register (Honey deepens warm, Periwinkle deepens violet). */
   --sdl-veil-rgb:     var(--sdl-ink-rgb);
   --sdl-hairline-rgb: var(--sdl-ink-rgb);
+
+  /* Law 5 status chips: light chips sit on the plane with a hairline in the tone's ink at 50%. */
+  --sdl-chip-bg:     var(--sdl-plane);
+  --sdl-chip-fill:   0;
+  --sdl-chip-edge:   .5;
 }
 
 /* ── State layer ──────────────────────────────────────────────────────────────
@@ -129,9 +139,46 @@
   --sdl-body: 12px; --sdl-kpi: 21px; --sdl-control-h: 30px;
 }
 
+/* ── Status chips (Law 5, every tone) ─────────────────────────────────────────────
+   src/components/common/StatusChip.jsx. The tone picks an ink; the mode (nearest [data-mode], so a
+   ThemeScope subtree gets its own) picks the recipe through the --sdl-chip-* scalars above. They are
+   scalars rather than finished colours because a custom property that referenced --chip-ink-rgb at
+   [data-mode] would resolve there, where no tone is set.
+     dark   soft fill (accent soft / muted sunken / warn|alert at 12%), transparent border
+     light  plane background, border = tone ink at 50%
+   The soft fill is a gradient layer sized by --sdl-chip-fill (1 = covers, 0 = gone). */
+.sdl-chip {
+  --chip-ink-rgb: var(--sdl-aink-rgb);
+  --chip-soft:    var(--sdl-soft);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: rgb(var(--chip-ink-rgb));
+  background:
+    linear-gradient(var(--chip-soft), var(--chip-soft)) 0 0 / calc(var(--sdl-chip-fill, 1) * 100%) 100% no-repeat,
+    var(--sdl-chip-bg, transparent);
+  border: 1px solid rgb(var(--chip-ink-rgb) / var(--sdl-chip-edge, 0));
+}
+.sdl-chip[data-tone='muted'] { --chip-ink-rgb: var(--sdl-sec-rgb);   --chip-soft: var(--sdl-sunken); }
+.sdl-chip[data-tone='warn']  { --chip-ink-rgb: var(--sdl-warn-rgb);  --chip-soft: rgb(var(--sdl-warn-rgb) / .12); }
+.sdl-chip[data-tone='alert'] { --chip-ink-rgb: var(--sdl-alert-rgb); --chip-soft: rgb(var(--sdl-alert-rgb) / .12); }
+.sdl-chip-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(var(--chip-ink-rgb));
+}
+
 /* ── Motion ───────────────────────────────────────────────────────────────────
-   CSS half of reduced motion. Framer Motion springs cannot read CSS vars, so App also wraps the
-   tree in <MotionConfig reducedMotion="user"> — two mechanisms, unavoidable. */
+   CSS half of reduced motion. Framer Motion springs cannot read CSS vars, so MotionGate (mounted at
+   the root in src/main.jsx) wraps the tree for the springs — two mechanisms, unavoidable. */
 :root[data-motion='reduced'] {
   --sdl-t-hover: 1ms; --sdl-t-press: 1ms; --sdl-t-pane: 1ms; --sdl-t-toast: 1ms;
 }

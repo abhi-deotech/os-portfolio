@@ -304,7 +304,7 @@ const Browser = () => {
     <div
       tabIndex={-1}
       onKeyDown={handleRootKeyDown}
-      className="flex flex-col h-full w-full bg-sdl-plane text-sdl-ink rounded-2xl overflow-hidden font-sans relative outline-none"
+      className="flex flex-col h-full w-full bg-sdl-plane text-sdl-ink overflow-hidden font-sans relative outline-none"
     >
       {/* Indeterminate-loader keyframes, co-located because index.css is not this app's file. */}
       <style>{'@keyframes flownet-progress { from { transform: translateX(-100%); } to { transform: translateX(350%); } }'}</style>

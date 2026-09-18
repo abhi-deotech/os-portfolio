@@ -1,3 +1,6 @@
+import { WINDOW_SESSION_RESET } from './windowSlice';
+import { closeAllPopouts } from '../../utils/popout.js';
+
 /**
  * Zustand state slice for Puter.com integration.
  * Enables keyless cloud auth, cloud file storage, and persistent database settings.
@@ -93,12 +96,14 @@ export const createPuterSlice = (set, get) => {
         set({ isPuterConnecting: true });
         await puter.auth.signOut();
         set({ 
+          ...WINDOW_SESSION_RESET,
           puterUser: null, 
           isPuterSignedIn: false,
           isAuthenticated: false,
           openWindows: [],
           activeWindow: null
         });
+        closeAllPopouts();
       } catch (err) {
         console.error("Puter Sign-Out Error:", err);
       } finally {

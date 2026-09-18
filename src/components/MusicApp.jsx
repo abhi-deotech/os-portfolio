@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useOSStore from '../store/osStore';
 import { useIsMobile } from '../hooks/useMediaQuery';
 import Visualizer from './Visualizer';
+import useWindowVisibility from '../hooks/useWindowVisibility';
 import { MUSIC_DATA } from '../data/musicData';
 import { useColorway } from '../theme/useColorway';
 import { getArtistBio, getSimilarTracks } from '../utils/musicApi';
@@ -16,6 +17,9 @@ import HistoryView from './music/HistoryView';
 import PlayerBar from './music/PlayerBar';
 import FullscreenPlayer from './music/FullscreenPlayer';
 import UpNextPanel from './music/UpNextPanel';
+import useMediaSession from '../hooks/useMediaSession';
+import useWakeLock from '../hooks/useWakeLock';
+import { trackMetadata } from '../utils/mediaSessionCore.js';
 
 /**
  * Composing entry for the Music app. The moving parts live in src/components/music/:
@@ -44,6 +48,8 @@ const MusicApp = () => {
   // it was needed here. Now that the plane is `bg-sdl-plane`, SDL already guarantees the accent
   // reads against it in both modes, and pinning would fight the theme instead of serving it.
   const vizAccent = useColorway().roles.accent;
+  // Minimised or hidden tab: the audio keeps playing, the decorative spectrum does not.
+  const visible = useWindowVisibility('music');
 
   const isMobile = useIsMobile();
   const [showSidebar, setShowSidebar] = useState(!isMobile);
@@ -116,14 +122,15 @@ const MusicApp = () => {
     }
   };
 
-  const { containerRef, seekTo, restart } = useYouTubePlayer({ onEnded: handleNext });
+  const { containerRef, seekTo, restart, getCurrentTime } = useYouTubePlayer({ onEnded: handleNext });
   useEffect(() => {
     restartRef.current = restart;
   });
 
   const handlePrev = () => {
     // More than 5s in, Prev restarts the track instead of leaving it.
-    if (music.currentTime > 5) {
+    // Read at click time, not subscribed: this component must not re-render on the 1 Hz tick.
+    if (useOSStore.getState().musicCurrentTime > 5) {
       seekTo(0);
       return;
     }
@@ -137,6 +144,30 @@ const MusicApp = () => {
     seekTo(target);
     setMusicCurrentTime(target);
   };
+
+  // Media keys and the OS now-playing card. Seeks read the player's own clock, because the store's
+  // time freezes while the window is minimised or the tab hidden — exactly when media keys get used.
+  const seekMediaTo = (seconds) => {
+    const d = music.currentTrack.duration;
+    const target = Math.max(0, d > 0 ? Math.min(seconds, d) : seconds);
+    seekTo(target);
+    setMusicCurrentTime(target);
+  };
+  useMediaSession('Music', {
+    metadata: trackMetadata(music.currentTrack),
+    playbackState: music.isPlaying ? 'playing' : 'paused',
+    positionState: { duration: music.currentTrack.duration, getPosition: getCurrentTime },
+    handlers: {
+      play: () => setMusicIsPlaying(true),
+      pause: () => setMusicIsPlaying(false),
+      previoustrack: handlePrev,
+      nexttrack: handleNext,
+      seekto: (details) => seekMediaTo(details.seekTime ?? getCurrentTime()),
+      seekbackward: (details) => seekMediaTo(getCurrentTime() - (details.seekOffset ?? 10)),
+      seekforward: (details) => seekMediaTo(getCurrentTime() + (details.seekOffset ?? 10)),
+    },
+  });
+  useWakeLock(music.isPlaying, 'Music');
 
   // Last.fm enrichment for the fullscreen view. Keyed on the identity fields it
   // actually uses — depending on the track OBJECT would refetch on every duration
@@ -177,7 +208,7 @@ const MusicApp = () => {
         : 'All Tracks');
 
   return (
-    <div className="flex h-full bg-sdl-plane text-sdl-ink overflow-hidden rounded-b-2xl relative">
+    <div className="flex h-full bg-sdl-plane text-sdl-ink overflow-hidden relative">
       {/* Background Glow */}
       <div className="absolute inset-0 bg-gradient-to-br from-os-primary/5 to-transparent pointer-events-none" />
       {/* Sidebar */}
@@ -229,7 +260,7 @@ const MusicApp = () => {
       {/* Main Content */}
       <div className="flex-grow flex flex-col relative overflow-hidden bg-veil/[0.02]">
         <div className="absolute inset-0 z-0 opacity-40">
-          <Visualizer isPlaying={music.isPlaying} accentColor={vizAccent} />
+          <Visualizer isPlaying={music.isPlaying && visible} accentColor={vizAccent} />
         </div>
         <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-os-primary/10 to-transparent pointer-events-none" />
 
