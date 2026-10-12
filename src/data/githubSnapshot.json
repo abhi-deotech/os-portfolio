@@ -7,44 +7,24 @@
   "repos": 5,
   "stars": 0,
   "contributions": {
-    "total": 2158,
+    "total": 2124,
     "commits": 209,
     "pullRequests": 64,
     "issues": 0,
     "reposContributedTo": 7,
-    "current": 0,
+    "current": 1,
     "longest": 62,
-    "activeDays": 248
+    "activeDays": 244
   },
   "calendar": {
-    "from": "2025-10-06",
-    "to": "2026-10-05",
+    "from": "2025-10-13",
+    "to": "2026-10-12",
     "thresholds": [
       3,
       7,
       12
     ],
     "active": [
-      [
-        "2025-10-06",
-        3
-      ],
-      [
-        "2025-10-07",
-        11
-      ],
-      [
-        "2025-10-09",
-        9
-      ],
-      [
-        "2025-10-10",
-        8
-      ],
-      [
-        "2025-10-11",
-        4
-      ],
       [
         "2025-10-13",
         4
@@ -1016,6 +996,10 @@
       [
         "2026-09-29",
         6
+      ],
+      [
+        "2026-10-11",
+        1
       ]
     ]
   },
@@ -1064,15 +1048,8 @@
       "language": "TypeScript"
     }
   ],
-  "recentEvents": [
-    {
-      "type": "PushEvent",
-      "repo": "os-portfolio",
-      "commits": 2,
-      "at": "2026-09-10T11:58:42Z"
-    }
-  ],
+  "recentEvents": [],
   "source": "graphql",
-  "generatedAt": "2026-10-05T14:46:56.386Z",
+  "generatedAt": "2026-10-12T15:33:10.190Z",
   "stale": false
 }
