@@ -2,8 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { ZoomIn, ZoomOut, RotateCcw, RotateCw, Download, Expand, ChevronLeft, Search, Image as ImageIcon, Heart, Share2, Info, Maximize2, Minimize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PHOTO_DATA, PHOTO_CATEGORIES } from '../data/photoData';
+import useSoundEffects from '../hooks/useSoundEffects';
 
 const PhotoViewer = ({ file: initialFile }) => {
+  const { playSound } = useSoundEffects();
   const [currentPhoto, setCurrentPhoto] = useState(initialFile || null);
   const [view, setView] = useState(initialFile ? 'viewer' : 'gallery');
   const [scale, setScale] = useState(1);
@@ -125,16 +127,19 @@ const PhotoViewer = ({ file: initialFile }) => {
                   className="absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/80 to-transparent flex items-center justify-between z-30"
                 >
                   <button 
-                    onClick={() => setView('gallery')}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/10 transition-all font-bold text-sm"
+                    type="button"
+                    aria-label="Back to Gallery"
+                    title="Back to Gallery"
+                    onClick={() => { setView('gallery'); playSound('click'); }}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-xl border border-white/10 transition-all font-bold text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"
                   >
                     <ChevronLeft size={20} />
                     Gallery
                   </button>
                   <div className="flex items-center gap-4">
-                    <button className="p-3 hover:bg-white/10 rounded-full transition-colors"><Heart size={20} /></button>
-                    <button className="p-3 hover:bg-white/10 rounded-full transition-colors"><Share2 size={20} /></button>
-                    <button className="p-3 hover:bg-white/10 rounded-full transition-colors"><Info size={20} /></button>
+                    <button type="button" aria-label="Favorite" title="Favorite" onClick={() => playSound('click')} className="p-3 hover:bg-white/10 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><Heart size={20} /></button>
+                    <button type="button" aria-label="Share" title="Share" onClick={() => playSound('click')} className="p-3 hover:bg-white/10 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><Share2 size={20} /></button>
+                    <button type="button" aria-label="Info" title="Info" onClick={() => playSound('click')} className="p-3 hover:bg-white/10 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><Info size={20} /></button>
                   </div>
                 </motion.div>
               )}
@@ -177,17 +182,17 @@ const PhotoViewer = ({ file: initialFile }) => {
 
                   <div className="flex items-center gap-6">
                     <div className="flex items-center bg-white/10 backdrop-blur-md rounded-2xl p-1 border border-white/10">
-                      <button onClick={handleZoomOut} className="p-3 hover:bg-white/10 rounded-xl transition-colors"><ZoomOut size={20} /></button>
+                      <button type="button" aria-label="Zoom Out" title="Zoom Out" onClick={() => { handleZoomOut(); playSound('click'); }} className="p-3 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><ZoomOut size={20} /></button>
                       <div className="px-4 text-xs font-black min-w-[60px] text-center">{Math.round(scale * 100)}%</div>
-                      <button onClick={handleZoomIn} className="p-3 hover:bg-white/10 rounded-xl transition-colors"><ZoomIn size={20} /></button>
+                      <button type="button" aria-label="Zoom In" title="Zoom In" onClick={() => { handleZoomIn(); playSound('click'); }} className="p-3 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><ZoomIn size={20} /></button>
                     </div>
 
                     <div className="flex items-center bg-white/10 backdrop-blur-md rounded-2xl p-1 border border-white/10">
-                      <button onClick={() => handleRotate(-1)} className="p-3 hover:bg-white/10 rounded-xl transition-colors"><RotateCcw size={20} /></button>
-                      <button onClick={() => handleRotate(1)} className="p-3 hover:bg-white/10 rounded-xl transition-colors"><RotateCw size={20} /></button>
+                      <button type="button" aria-label="Rotate Counter-Clockwise" title="Rotate Counter-Clockwise" onClick={() => { handleRotate(-1); playSound('click'); }} className="p-3 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><RotateCcw size={20} /></button>
+                      <button type="button" aria-label="Rotate Clockwise" title="Rotate Clockwise" onClick={() => { handleRotate(1); playSound('click'); }} className="p-3 hover:bg-white/10 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50"><RotateCw size={20} /></button>
                     </div>
 
-                    <button className="p-4 bg-os-primary text-black rounded-2xl font-black hover:scale-105 active:scale-95 transition-all flex items-center gap-2">
+                    <button type="button" aria-label="Save Image" title="Save Image" onClick={() => playSound('click')} className="p-4 bg-os-primary text-black rounded-2xl font-black hover:scale-105 active:scale-95 transition-all flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-primary/50">
                        <Download size={20} />
                        Save
                     </button>
