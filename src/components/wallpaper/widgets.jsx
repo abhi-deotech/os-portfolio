@@ -1,5 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Music, MapPin } from 'lucide-react';
+import { Music, MapPin, Search, Plus, X, Globe, Check } from 'lucide-react';
+import AppIcon from '../common/AppIcon';
+import { APP_BY_ID } from '../../config/apps';
+import { openLuminaApp } from '../../hooks/useWallpaperMode';
+import { MAC_APPS, WEB_LINKS, MAX_TILES, SEARCH_ENGINES, isKnownTile } from '../../wallpaper/launchers';
+import { SIZE_PX } from '../../wallpaper/config';
 import useVisiblePoll from '../../hooks/useVisiblePoll';
 import { getNowPlaying } from '../../utils/musicApi';
 import { fetchWeather, describeCode } from '../../wallpaper/weather';
@@ -10,8 +15,10 @@ import {
 } from '../../wallpaper/time';
 
 /**
- * Wallpaper widgets, after Apple's desktop widgets: two sizes, one glance each, no chrome, no
- * controls. They never take a click — inside Plash the page does not receive one.
+ * Wallpaper widgets, after Apple's desktop widgets: Apple's three sizes plus a slim search bar, one
+ * job each, no chrome. The glance widgets never need a click. The working ones (search, apps, to-do,
+ * notes) take clicks in a browser, and in Plash while its Browsing Mode is on; `interactive` says
+ * which, so they never show an input that cannot be reached.
  *
  * Colour goes through four variables set by the dashboard root (see WallpaperMode.jsx), so the
  * tinted and full-colour styles are one switch rather than a branch in every widget:
@@ -21,18 +28,18 @@ import {
  *   --wp-track    the empty part of a ring
  */
 
-const SIZES = { small: { width: 164, height: 164 }, medium: { width: 340, height: 164 } };
+const SIZES = SIZE_PX;
 
 /** SF Rounded where it exists (macOS, i.e. Plash), the colorway's own face elsewhere. */
 const ROUNDED = 'ui-rounded, var(--sdl-font-title), system-ui, sans-serif';
 
-const Shell = ({ size, label, children }) => (
+const Shell = ({ size, label, children, pad = 16 }) => (
   <section
     aria-label={label}
     // glass-2 rather than glass: over a photo wallpaper the 5% glass fill disappears, and these
     // cards have nothing behind them but the wallpaper.
     className="glass-2 lift flex flex-col overflow-hidden"
-    style={{ ...SIZES[size], borderRadius: 22, padding: 16, color: 'var(--sdl-ink)' }}
+    style={{ ...SIZES[size], borderRadius: size === 'bar' ? 18 : 22, padding: pad, color: 'var(--sdl-ink)' }}
   >
     {children}
   </section>
@@ -56,16 +63,19 @@ export const ClockWidget = ({ now, prefs }) => {
   const { digits, period } = timeParts(now, prefs.hour);
   const weekday = formatter('wday', { weekday: 'long' }).format(now);
   const date = formatter('mdl', { month: 'long', day: 'numeric' }).format(now);
+  // Small, beside the weather: the menu bar already carries the time, so this one is for reading
+  // across the room, not for being the biggest thing on the desktop.
   return (
-    <Shell size="medium" label="Clock">
+    <Shell size="small" label="Clock">
       <Label>{weekday}</Label>
-      <div className="flex items-baseline gap-2 flex-1 min-h-0" style={{ fontFamily: ROUNDED }}>
-        <span className="tabular-nums" style={{ fontSize: 68, fontWeight: 600, lineHeight: 1.05, letterSpacing: '-0.03em' }}>
+      <div className="flex items-baseline gap-1 flex-1 min-h-0 mt-1" style={{ fontFamily: ROUNDED }}>
+        <span className="tabular-nums" style={{ fontSize: period ? 38 : 46, fontWeight: 600, lineHeight: 1.1, letterSpacing: '-0.03em' }}>
           {digits}
         </span>
-        {period && <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--sdl-sec)' }}>{period}</span>}
+        {period && <span style={{ fontSize: 13, fontWeight: 650, color: 'var(--sdl-sec)' }}>{period}</span>}
       </div>
-      <Sub>{date} · Week {isoWeek(now)}</Sub>
+      <Sub>{date}</Sub>
+      <Sub style={{ fontSize: 11 }}>Week {isoWeek(now)}</Sub>
     </Shell>
   );
 };
@@ -275,6 +285,234 @@ export const ProgressWidget = ({ now }) => {
         <Ring value={dayFraction(now)} caption="Today" />
         <Ring value={(doy - 1 + dayFraction(now)) / total} caption={String(now.getFullYear())} />
       </div>
+    </Shell>
+  );
+};
+
+/* ── Local state for the working widgets ───────────────────────────────────── */
+
+/**
+ * localStorage, not the OS store: inside Plash this is Plash's own storage, so a list kept on the
+ * wallpaper stays on the wallpaper, and nothing here leaks into the visitor's desktop settings.
+ * Reads and writes are guarded — storage can be absent or full, and the widget must still render.
+ */
+function useLocalState(key, initial) {
+  const [value, setValue] = useState(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw == null ? initial : JSON.parse(raw);
+    } catch {
+      return initial;
+    }
+  });
+  const set = (next) => {
+    setValue(next);
+    try { localStorage.setItem(key, JSON.stringify(next)); } catch { /* still works for this session */ }
+  };
+  return [value, set];
+}
+
+const field = {
+  background: 'var(--sdl-sunken)',
+  color: 'var(--sdl-ink)',
+  border: '1px solid var(--sdl-glass-border)',
+};
+const ring = 'focus-visible:outline-none focus-visible:ring-2';
+
+/* ── Search ────────────────────────────────────────────────────────────────── */
+
+export const SearchWidget = ({ prefs, interactive }) => {
+  const engine = SEARCH_ENGINES[prefs.engine] ?? SEARCH_ENGINES.google;
+  return (
+    <Shell size="bar" label="Search" pad={8}>
+      <form action={engine.action} method="get" target="_blank" rel="noreferrer" className="flex items-center gap-2 h-full px-2">
+        <Search size={18} style={{ color: 'var(--wp-label)', flexShrink: 0 }} aria-hidden="true" />
+        <input
+          name={engine.param}
+          type="search"
+          required
+          disabled={!interactive}
+          placeholder={`Search ${engine.name}`}
+          aria-label={`Search ${engine.name}`}
+          autoComplete="off"
+          className={`flex-1 min-w-0 bg-transparent text-[15px] ${ring} rounded-md px-1 disabled:cursor-default`}
+          style={{ color: 'var(--sdl-ink)', fontWeight: 550 }}
+        />
+      </form>
+    </Shell>
+  );
+};
+
+/* ── Apps ──────────────────────────────────────────────────────────────────── */
+
+const favicon = (host) => `https://icons.duckduckgo.com/ip3/${host}.ico`;
+
+/** A favicon, or the fallback glyph once it fails to load. */
+const SiteIcon = ({ host, Fallback = Globe }) => {
+  const [failed, setFailed] = useState(false);
+  if (failed || !host) return <Fallback size={24} style={{ color: 'var(--wp-label)' }} aria-hidden="true" />;
+  return <img src={favicon(host)} alt="" width={28} height={28} className="rounded-md" onError={() => setFailed(true)} />;
+};
+
+function resolveTiles(prefs) {
+  const tiles = prefs.tiles.filter(isKnownTile).map((id) => {
+    const [kind, key] = id.split(':');
+    if (kind === 'mac') {
+      const a = MAC_APPS[key];
+      return { id, name: a.name, href: a.href, icon: <SiteIcon host={a.site} Fallback={a.Icon} /> };
+    }
+    if (kind === 'web') {
+      const w = WEB_LINKS[key];
+      return { id, name: w.name, href: w.href, external: true, icon: <SiteIcon host={new URL(w.href).host} /> };
+    }
+    const app = APP_BY_ID[key];
+    return app && { id, name: app.title, lumina: key, icon: <AppIcon app={app} size={20} pad={5} tile animate={false} /> };
+  });
+  const links = prefs.links.map((l) => ({
+    id: `link:${l.href}`, name: l.name, href: l.href, external: true, icon: <SiteIcon host={new URL(l.href).host} />,
+  }));
+  return [...tiles, ...links].filter(Boolean).slice(0, MAX_TILES);
+}
+
+export const AppsWidget = ({ prefs, interactive }) => {
+  const tiles = useMemo(() => resolveTiles(prefs), [prefs]);
+  const tile = `flex flex-col items-center justify-center gap-1 rounded-xl min-w-0 transition-colors duration-hover ease-sdl ${interactive ? 'hover:bg-veil/10' : ''} ${ring}`;
+  const label = (name) => (
+    <span className="block w-full truncate text-center" style={{ fontSize: 11, fontWeight: 600, color: 'var(--sdl-ink)' }}>{name}</span>
+  );
+  return (
+    <Shell size="medium" label="Apps" pad={10}>
+      {tiles.length === 0 ? (
+        <Sub style={{ whiteSpace: 'normal', padding: 6 }}>Pick apps and links in Settings → Wallpaper mode.</Sub>
+      ) : (
+        <div className="grid h-full" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gridTemplateRows: 'repeat(2, 1fr)', gap: 4 }}>
+          {tiles.map((t) => (t.lumina ? (
+            <button key={t.id} type="button" tabIndex={interactive ? 0 : -1} title={`Open ${t.name} in Lumina`} onClick={() => openLuminaApp(t.lumina)} className={tile}>
+              {t.icon}{label(t.name)}
+            </button>
+          ) : (
+            <a
+              key={t.id}
+              href={t.href}
+              tabIndex={interactive ? 0 : -1}
+              title={t.name}
+              {...(t.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              className={tile}
+            >
+              {t.icon}{label(t.name)}
+            </a>
+          )))}
+        </div>
+      )}
+    </Shell>
+  );
+};
+
+/* ── To-do ─────────────────────────────────────────────────────────────────── */
+
+export const TodoWidget = ({ interactive }) => {
+  const [items, setItems] = useLocalState('lumina.wallpaper.todo', []);
+  const [draft, setDraft] = useState('');
+  const open = items.filter((i) => !i.done);
+  const done = items.filter((i) => i.done);
+
+  const add = (e) => {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+    setItems([...items, { id: Date.now(), text: text.slice(0, 140), done: false }]);
+    setDraft('');
+  };
+  const toggle = (id) => setItems(items.map((i) => (i.id === id ? { ...i, done: !i.done } : i)));
+  const remove = (id) => setItems(items.filter((i) => i.id !== id));
+
+  return (
+    <Shell size="large" label="To-do">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label>To-do</Label>
+        <Sub style={{ fontSize: 11 }}>{open.length ? `${open.length} left` : items.length ? 'All done' : ''}</Sub>
+      </div>
+      {interactive && (
+        <form onSubmit={add} className="flex gap-2 mt-2">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Add a task"
+            aria-label="New task"
+            className={`flex-1 min-w-0 h-8 px-3 rounded-full text-[13px] ${ring}`}
+            style={field}
+          />
+          <button type="submit" aria-label="Add task" className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${ring}`} style={{ background: 'var(--wp-mark)', color: 'var(--wp-on-mark)' }}>
+            <Plus size={16} />
+          </button>
+        </form>
+      )}
+      <ul className="mt-2 flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-0.5">
+        {items.length === 0 && (
+          <li><Sub style={{ whiteSpace: 'normal' }}>{interactive ? 'Nothing yet.' : 'Nothing yet. Turn on Browsing Mode in Plash to add tasks.'}</Sub></li>
+        )}
+        {[...open, ...done].map((i) => (
+          <li key={i.id} className="group flex items-center gap-2 min-h-[28px]">
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={i.done}
+              aria-label={i.text}
+              tabIndex={interactive ? 0 : -1}
+              onClick={() => toggle(i.id)}
+              className={`w-[18px] h-[18px] rounded-full shrink-0 flex items-center justify-center ${ring}`}
+              style={{
+                border: `2px solid ${i.done ? 'var(--wp-mark)' : 'var(--sdl-sec)'}`,
+                background: i.done ? 'var(--wp-mark)' : 'transparent',
+              }}
+            >
+              {i.done && <Check size={11} strokeWidth={3} style={{ color: 'var(--wp-on-mark)' }} aria-hidden="true" />}
+            </button>
+            <span
+              className="flex-1 min-w-0 truncate text-[13px]"
+              style={{ color: i.done ? 'var(--sdl-sec)' : 'var(--sdl-ink)', fontWeight: 550, textDecoration: i.done ? 'line-through' : 'none' }}
+            >
+              {i.text}
+            </span>
+            {interactive && (
+              <button
+                type="button"
+                aria-label={`Delete ${i.text}`}
+                onClick={() => remove(i.id)}
+                className={`w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 focus-visible:opacity-100 ${ring}`}
+                style={{ color: 'var(--sdl-sec)' }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Shell>
+  );
+};
+
+/* ── Notes ─────────────────────────────────────────────────────────────────── */
+
+export const NotesWidget = ({ interactive }) => {
+  const [text, setText] = useLocalState('lumina.wallpaper.notes', '');
+  return (
+    <Shell size="medium" label="Notes">
+      <Label>Notes</Label>
+      {interactive ? (
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value.slice(0, 2000))}
+          placeholder="Jot something down"
+          aria-label="Notes"
+          className={`flex-1 mt-1 resize-none bg-transparent text-[13px] leading-snug rounded-md ${ring}`}
+          style={{ color: 'var(--sdl-ink)', fontWeight: 500 }}
+        />
+      ) : (
+        <p className="flex-1 mt-1 text-[13px] leading-snug overflow-hidden whitespace-pre-wrap" style={{ color: text ? 'var(--sdl-ink)' : 'var(--sdl-sec)', fontWeight: 500 }}>
+          {text || 'Nothing yet. Turn on Browsing Mode in Plash to write here.'}
+        </p>
+      )}
     </Shell>
   );
 };

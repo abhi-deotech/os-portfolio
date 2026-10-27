@@ -159,6 +159,42 @@ Open-Meteo weather only once a place is chosen.
 
 ---
 
+## Wallpaper mode v2 — owner feedback, 2026-10-28
+
+Owner notes after using v1: no way back to normal mode; the left edge shows Stage Manager's running
+apps; the Dock is on the right; "almost nothing useful or app access". Owner choices: a right column
+around the Dock; toggling Plash's Browsing Mode to click is fine; app access = Mac apps + websites +
+Lumina apps; add to-do, notes and a search box.
+
+- [x] Way back: a Desktop / Settings (/ Plash URL in a browser) control at the head of the column,
+      shown whenever the page can take a click (any browser; Plash while `plash-is-browsing-mode` is
+      on). Right-click menu: Back to Desktop. Inside Plash, Desktop goes to `?mode=desktop`; Esc only
+      exits in a browser, so a stray Esc while typing a task can't leave.
+- [x] Layout: four corners → one column on a chosen side (default right), packed from known heights
+      in `wallpaper/pack.js`; overflow starts a second column further in. Insets from `screenInsets`:
+      Dock on any edge (default right, 96px), Stage Manager reserves 220px on the left (default on).
+- [x] New widgets: Search (bar, Google/DuckDuckGo/Bing/Perplexity), Apps (8 tiles: `mac:` URL-scheme
+      launchers, `web:` sites, `app:` Lumina apps, plus up to 4 custom http(s) links), To-do (large) and
+      Notes (medium), both in localStorage so Plash keeps its own list.
+- [x] Clock is now small (the menu bar already has the time); defaults are search, clock + weather,
+      apps, to-do, which fits one column at 982pt tall. Calendar, world clocks, progress, music opt-in.
+- [x] Opening a Lumina app signs in as guest if needed and skips the boot log.
+- [x] Old `layout` prefs migrate in `merge` (personal choices kept, layout reset); `dock=shown` → bottom.
+
+**Measured.** `npx eslint src` 0; token-lint no regressions; cap 962 / facts 148 / interaction 144 PASS;
+`npx vite build` OK. Entry 77,452 B br (+109 B vs v1); WallpaperMode chunk 5.70 KB br. Preview at
+1512×982: one column x 1076–1416 (Dock inset 96), y 84–840, nothing on the left, no overflow. To-do
+added two tasks, ticked one (sorted last, stored in localStorage). `is-plash-app` → controls, task input
+hidden, search disabled; + `plash-is-browsing-mode` → Desktop and Settings back, no copy button.
+Desktop → `?mode=desktop`, desktop with no boot log. Terminal tile → Terminal window open. Settings pane
+renders with Dock = Right from the migrated defaults.
+
+**Not validated (owner, on the Mac).** Whether Plash hands `spotify:` / `vscode:` style links to macOS
+(Safari and Chrome do; WKWebView hosts may not), where `target="_blank"` links and searches open from
+Plash, and how the Browsing Mode class behaves live. All of it was simulated here by toggling the class.
+
+---
+
 # Browser API interaction pass — 2026-09-17
 
 Owner request: *"go ahead with all the changes we discussed for Browser API Interaction"*, under the

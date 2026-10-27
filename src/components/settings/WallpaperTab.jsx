@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, ArrowUp, ArrowDown } from 'lucide-react';
 import useOSStore from '../../store/osStore';
-import { Card, Segmented, Row, Slider } from './primitives';
+import { Card, Segmented, Row, Slider, Switch } from './primitives';
 import { enterWallpaperMode } from '../../hooks/useWallpaperMode';
 import {
-  CORNERS, CORNER_NAMES, WIDGETS, MAX_PER_CORNER, MAX_ZONES, fitsCorner, sanitizeLayout, buildWallpaperUrl,
+  WIDGETS, MAX_ZONES, MAX_LINKS, sanitizeWidgets, safeHttpUrl, buildWallpaperUrl,
 } from '../../wallpaper/config';
+import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES } from '../../wallpaper/launchers';
+import { APP_BY_ID } from '../../config/apps';
 import { cityOf } from '../../wallpaper/time';
 import { searchPlaces } from '../../wallpaper/weather';
 import { isCustomWallpaper } from '../../theme/wallpapers';
@@ -56,7 +58,7 @@ const WallpaperTab = () => {
     enterWallpaperMode(prefs, appearance);
   };
   const url = buildWallpaperUrl(prefs, appearance);
-  const layout = useMemo(() => sanitizeLayout(prefs.layout), [prefs.layout]);
+  const widgets = sanitizeWidgets(prefs.widgets);
 
   const [copied, setCopied] = useState(null);
   // Any change makes a previously copied URL stale, so the "Copied" note goes with it.
@@ -70,19 +72,35 @@ const WallpaperTab = () => {
     }
   };
 
-  /* Layout: each widget lives in at most one corner; moving it appends it to the new one. */
-  const cornerOf = (id) => CORNERS.find((c) => layout[c].includes(id)) ?? 'off';
-  const placeWidget = (id, target) => {
-    const next = Object.fromEntries(CORNERS.map((c) => [c, layout[c].filter((w) => w !== id)]));
-    if (target !== 'off') next[target] = [...next[target], id];
-    set({ layout: next });
+  /* Layout: shown widgets in column order first, then the hidden ones in catalogue order. */
+  const ordered = [...widgets, ...Object.keys(WIDGETS).filter((id) => !widgets.includes(id))];
+  const toggleWidget = (id, on) => set({ widgets: on ? [...widgets, id] : widgets.filter((w) => w !== id) });
+  const moveWidget = (id, delta) => {
+    const i = widgets.indexOf(id);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= widgets.length) return;
+    const next = [...widgets];
+    [next[i], next[j]] = [next[j], next[i]];
+    set({ widgets: next });
   };
-  const cornerOptions = (id) => [
-    { id: 'off', name: 'Off' },
-    ...CORNERS
-      .filter((c) => fitsCorner(id, c) && (layout[c].length < MAX_PER_CORNER || layout[c].includes(id)))
-      .map((c) => ({ id: c, name: CORNER_NAMES[c] })),
-  ];
+
+  /* Apps: one list of `kind:id` tiles, plus the visitor's own links, capped together. */
+  const tileCount = prefs.tiles.length + prefs.links.length;
+  const toggleTile = (id) => {
+    if (prefs.tiles.includes(id)) set({ tiles: prefs.tiles.filter((t) => t !== id) });
+    else if (tileCount < MAX_TILES) set({ tiles: [...prefs.tiles, id] });
+  };
+  const [linkName, setLinkName] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const linkHref = safeHttpUrl(linkUrl.trim()) ?? safeHttpUrl(`https://${linkUrl.trim()}`);
+  const canAddLink = linkName.trim() && linkHref && prefs.links.length < MAX_LINKS && tileCount < MAX_TILES;
+  const addLink = (e) => {
+    e.preventDefault();
+    if (!canAddLink) return;
+    set({ links: [...prefs.links, { name: linkName.trim().slice(0, 24), href: linkHref }] });
+    setLinkName('');
+    setLinkUrl('');
+  };
 
   /* World clocks */
   const [zoneInput, setZoneInput] = useState('');
@@ -121,7 +139,7 @@ const WallpaperTab = () => {
         Wallpaper mode
       </h2>
       <p className="text-[13px] mb-6" style={{ color: 'var(--sdl-sec)' }}>
-        A quiet dashboard for your Mac&apos;s desktop. No dock, menu bar or icons, just widgets in the corners.
+        A quiet dashboard for your Mac&apos;s desktop: one column of widgets beside your Dock, with search, your apps and a to-do list.
         Made for <a href="https://sindresorhus.com/plash" target="_blank" rel="noreferrer" style={{ color: 'var(--sdl-aink)', fontWeight: 600 }}>Plash</a>.
       </p>
 
@@ -147,21 +165,105 @@ const WallpaperTab = () => {
       </Card>
 
       <Card
-        title="Layout"
-        sub={`Corners stay visible around your windows. Up to ${MAX_PER_CORNER} widgets per corner; the top right takes small widgets only, to leave room for desktop icons.`}
+        title="Your Mac"
+        sub="Tell it what macOS already puts on screen, so the widgets stay out of its way."
       >
-        <div>
-          {Object.entries(WIDGETS).map(([id, w]) => (
-            <Row key={id} title={w.name} sub={w.size === 'medium' ? 'Medium' : 'Small'}>
-              <Segmented label={`${w.name} corner`} value={cornerOf(id)} options={cornerOptions(id)} onChange={(c) => placeWidget(id, c)} />
-            </Row>
-          ))}
-        </div>
+        <Row title="Dock" sub="Where your Dock lives. Hidden leaves the edge free.">
+          <Segmented label="Dock position" value={prefs.dock} options={[{ id: 'right', name: 'Right' }, { id: 'bottom', name: 'Bottom' }, { id: 'left', name: 'Left' }, { id: 'hidden', name: 'Hidden' }]} onChange={(v) => set({ dock: v })} />
+        </Row>
+        <Row title="Stage Manager" sub="Keeps the left edge free for its strip of running apps.">
+          <Switch label="Stage Manager" checked={prefs.stage === 'on'} onChange={(on) => set({ stage: on ? 'on' : 'off' })} />
+        </Row>
+        <Row title="Widget column" sub="The edge the widgets hug. Extra widgets start a second column further in.">
+          <Segmented label="Widget column side" value={prefs.side} options={[{ id: 'right', name: 'Right' }, { id: 'left', name: 'Left' }]} onChange={(v) => set({ side: v })} />
+        </Row>
       </Card>
 
-      <Card title="Your Mac" sub="Match these to your screen so nothing sits under the menu bar or the Dock.">
-        <Row title="Dock" sub="Hidden leaves less room at the bottom.">
-          <Segmented label="Dock" value={prefs.dock} options={[{ id: 'shown', name: 'Shown' }, { id: 'hidden', name: 'Hidden' }]} onChange={(v) => set({ dock: v })} />
+      <Card title="Widgets" sub="Switch widgets on, and order them top to bottom. Two small widgets share a row.">
+        {ordered.map((id) => {
+          const on = widgets.includes(id);
+          const i = widgets.indexOf(id);
+          const { name, size } = WIDGETS[id];
+          const arrow = 'w-8 h-8 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 disabled:opacity-30';
+          return (
+            <Row key={id} title={name} sub={size[0].toUpperCase() + size.slice(1)}>
+              <div className="flex items-center gap-1">
+                {on && (
+                  <>
+                    <button type="button" aria-label={`Move ${name} up`} disabled={i === 0} onClick={() => moveWidget(id, -1)} className={arrow} style={{ color: 'var(--sdl-sec)', background: 'var(--sdl-sunken)' }}>
+                      <ArrowUp size={14} />
+                    </button>
+                    <button type="button" aria-label={`Move ${name} down`} disabled={i === widgets.length - 1} onClick={() => moveWidget(id, 1)} className={arrow} style={{ color: 'var(--sdl-sec)', background: 'var(--sdl-sunken)' }}>
+                      <ArrowDown size={14} />
+                    </button>
+                  </>
+                )}
+                <span className="ml-2"><Switch label={`Show ${name}`} checked={on} onChange={(v) => toggleWidget(id, v)} /></span>
+              </div>
+            </Row>
+          );
+        })}
+      </Card>
+
+      <Card title="Apps" sub={`Up to ${MAX_TILES} tiles. In Plash, turn on Browsing Mode to click them.`} right={<span className="text-[12px] tabular-nums" style={{ color: 'var(--sdl-sec)' }}>{tileCount} / {MAX_TILES}</span>}>
+        {[
+          ['Mac apps', Object.entries(MAC_APPS).map(([k, a]) => [`mac:${k}`, a.name])],
+          ['Websites', Object.entries(WEB_LINKS).map(([k, w]) => [`web:${k}`, w.name])],
+          ['Lumina apps', LUMINA_APPS.map((k) => [`app:${k}`, APP_BY_ID[k]?.title ?? k])],
+        ].map(([group, items]) => (
+          <div key={group} className="mb-4">
+            <h4 className="text-[11px] uppercase tracking-wider mb-2" style={{ color: 'var(--sdl-sec)', fontWeight: 650 }}>{group}</h4>
+            <div className="flex flex-wrap gap-2">
+              {items.map(([id, name]) => {
+                const on = prefs.tiles.includes(id);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    aria-pressed={on}
+                    disabled={!on && tileCount >= MAX_TILES}
+                    onClick={() => toggleTile(id)}
+                    className="h-8 px-3 rounded-full text-[12px] transition-colors duration-hover ease-sdl focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40"
+                    style={{
+                      background: on ? 'var(--sdl-soft)' : 'var(--sdl-sunken)',
+                      color: on ? 'var(--sdl-aink)' : 'var(--sdl-sec)',
+                      boxShadow: on ? 'var(--sdl-hairline)' : 'none',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+        <h4 className="text-[11px] uppercase tracking-wider mb-2" style={{ color: 'var(--sdl-sec)', fontWeight: 650 }}>Your links</h4>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {prefs.links.map((l) => (
+            <span key={l.href} className="inline-flex items-center gap-1 pl-3 pr-1 h-8 rounded-full text-[12px]" style={{ background: 'var(--sdl-soft)', color: 'var(--sdl-aink)', fontWeight: 600 }}>
+              {l.name}
+              <button type="button" aria-label={`Remove ${l.name}`} onClick={() => set({ links: prefs.links.filter((x) => x.href !== l.href) })} className="w-6 h-6 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2">
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+        {prefs.links.length < MAX_LINKS && (
+          <form onSubmit={addLink} className="flex flex-wrap gap-2">
+            <input value={linkName} onChange={(e) => setLinkName(e.target.value)} placeholder="Jira" aria-label="Link name" className="w-32 px-3 rounded-sdl-sm text-[13px] focus-visible:outline-none focus-visible:ring-2" style={fieldStyle} />
+            <input value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} placeholder="example.atlassian.net" aria-label="Link address" className="flex-1 min-w-[180px] px-3 rounded-sdl-sm text-[13px] focus-visible:outline-none focus-visible:ring-2" style={fieldStyle} />
+            <Btn type="submit" disabled={!canAddLink}>Add link</Btn>
+          </form>
+        )}
+        <p className="text-[11px] mt-3" style={{ color: 'var(--sdl-sec)' }}>
+          Mac apps open through the link each app registers, so they need the app installed. Lumina apps open the full desktop.
+        </p>
+      </Card>
+
+      <Card title="Look and format">
+        <Row title="Search with">
+          <Segmented label="Search engine" value={prefs.engine} options={Object.entries(SEARCH_ENGINES).map(([id, e]) => ({ id, name: e.name }))} onChange={(v) => set({ engine: v })} />
         </Row>
         <Row title="Clock">
           <Segmented label="Clock format" value={prefs.hour} options={[{ id: 'auto', name: 'Auto' }, { id: '12', name: '12-hour' }, { id: '24', name: '24-hour' }]} onChange={(v) => set({ hour: v })} />
@@ -266,7 +368,7 @@ const WallpaperTab = () => {
         <ol className="list-decimal pl-5 space-y-1.5 text-[13px]" style={{ color: 'var(--sdl-ink)' }}>
           <li>Install <a href="https://sindresorhus.com/plash" target="_blank" rel="noreferrer" style={{ color: 'var(--sdl-aink)', fontWeight: 600 }}>Plash</a> from the Mac App Store.</li>
           <li>Copy the Plash URL above and add it as a website in Plash.</li>
-          <li>Leave Browsing Mode off, so clicks go to your desktop.</li>
+          <li>Bind a shortcut to Plash&apos;s &ldquo;Toggle Browsing Mode&rdquo;. While it&apos;s on you can search, open apps, tick off tasks and get back to the desktop; while it&apos;s off, clicks go to your Mac.</li>
           <li>Optional: turn on &ldquo;Deactivate while on battery&rdquo;, and reload every few hours.</li>
           <li>Skip Plash&apos;s &ldquo;Invert colors&rdquo;. Pick a dark colorway in Appearance instead.</li>
         </ol>

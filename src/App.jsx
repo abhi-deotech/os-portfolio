@@ -97,6 +97,8 @@ function App() {
   const [isIdle, setIsIdle] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
   const idleTimer = useRef(null);
+  // Leaving wallpaper mode goes straight to the desktop: the boot log is an arrival, not a way back.
+  if (wallpaperMode.active && !bootComplete) setBootComplete(true);
 
   // A `hasInteracted` flag and its three global listeners used to live here. Nothing ever read the
   // flag — not this file, not any other — so the effect registered and tore down three window

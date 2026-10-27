@@ -292,3 +292,16 @@ allows it, focus emulation makes `document.hasFocus()` true — and no record ar
 "Waiting for first sample" in headless runs is the environment, not `src/system/facts.js`. Verify
 pressure only in a headed browser with the window focused; don't chase it as a bug from a headless
 probe.
+
+## Design for the owner's actual screen, not the OS defaults
+
+**Context:** wallpaper mode v1 put widgets in all four corners and reserved the bottom for the Dock —
+macOS defaults. The owner runs Stage Manager (running apps fill the left edge) and keeps the Dock on the
+right, so v1 put widgets exactly where their screen was busiest. v1 also had no way out inside Plash: the
+exit controls only rendered in a browser, and Plash's passive mode was treated as "never interactive",
+ignoring Browsing Mode.
+
+**The rule:** when a feature is for one person's physical setup, ask for that setup (Dock edge, Stage
+Manager, notch, screen size) before laying anything out, and make each assumption a setting. And every
+mode needs a reachable way back in every host state it can run in — list the states (browser, Plash
+passive, Plash browsing) and check each one has a control that a click can reach.

@@ -14,41 +14,60 @@
 import { isKnownColorway } from '../theme/registry';
 import { resolveWallpaper, isCustomWallpaper } from '../theme/wallpapers';
 
-/** Plash stamps this class on <html>. Added after load, so it is watched, not just read once. */
+/** Plash stamps these classes on <html>, after load, so they are watched rather than read once. */
 export const PLASH_CLASS = 'is-plash-app';
-
-export const CORNERS = ['tl', 'tr', 'bl', 'br'];
-export const CORNER_NAMES = { tl: 'Top left', tr: 'Top right', bl: 'Bottom left', br: 'Bottom right' };
+export const PLASH_BROWSING_CLASS = 'plash-is-browsing-mode';
 
 /**
- * The catalogue. Sizes follow Apple's widget families: small is one 164px square, medium is two of
- * them side by side. Every source here is local or a plain cross-origin fetch, so all of them work in
- * WebKit — nothing in this list depends on a Chromium-only API.
+ * The catalogue. Sizes follow Apple's widget families — small is one 164px square, medium two side
+ * by side, large a 2×2 square — plus `bar`, a slim full-width strip for the search box. Every source
+ * here is local, localStorage or a plain cross-origin fetch, so all of it works in WebKit; nothing in
+ * this list depends on a Chromium-only API.
  */
 export const WIDGETS = {
-  clock:      { name: 'Clock',             size: 'medium' },
-  worldclock: { name: 'World clocks',      size: 'small' },
+  search:     { name: 'Search',            size: 'bar' },
+  clock:      { name: 'Clock',             size: 'small' },
+  apps:       { name: 'Apps',              size: 'medium' },
+  todo:       { name: 'To-do',             size: 'large' },
+  notes:      { name: 'Notes',             size: 'medium' },
   calendar:   { name: 'Calendar',          size: 'small' },
-  music:      { name: 'Now playing',       size: 'medium' },
   weather:    { name: 'Weather',           size: 'small' },
+  worldclock: { name: 'World clocks',      size: 'small' },
   progress:   { name: 'Day and year',      size: 'small' },
+  music:      { name: 'Now playing',       size: 'medium' },
 };
 
-/** Finder's desktop icons live in the top-right column, so that corner only takes small widgets. */
-export const fitsCorner = (widget, corner) => corner !== 'tr' || WIDGETS[widget]?.size === 'small';
+/** Pixel boxes for each size; the dashboard packs columns from these heights. */
+export const SIZE_PX = {
+  bar: { width: 340, height: 52 },
+  small: { width: 164, height: 164 },
+  medium: { width: 340, height: 164 },
+  large: { width: 340, height: 340 },
+};
 
-export const MAX_PER_CORNER = 3;
 export const MAX_ZONES = 3;
+export const MAX_LINKS = 4;
 
+/**
+ * Defaults describe the owner's Mac: Stage Manager's strip of running apps on the left, the Dock on
+ * the right. So the left is left alone and the widgets form one column hugging the Dock.
+ */
 export const DEFAULT_PREFS = {
-  layout: { tl: ['clock', 'worldclock'], tr: ['calendar'], bl: ['music'], br: ['weather', 'progress'] },
-  dock: 'shown',        // 'shown' | 'hidden' — how much bottom inset to leave for the macOS Dock
+  // Sized to fit one column on a 14" MacBook (982pt tall): bar + two rows + the large to-do. The
+  // menu bar already shows the date, so the month calendar is optional rather than a default.
+  widgets: ['search', 'clock', 'weather', 'apps', 'todo'],
+  side: 'right',        // 'right' | 'left' — which edge the widget column hugs
+  dock: 'right',        // 'bottom' | 'left' | 'right' | 'hidden' — where the macOS Dock sits
+  stage: 'on',          // 'on' | 'off' — Stage Manager's strip of running apps on the left
   hour: 'auto',         // 'auto' | '12' | '24'
   style: 'tinted',      // 'tinted' | 'color'
   unit: 'auto',         // 'auto' | 'c' | 'f'
   bright: 85,           // law 6: a wallpaper is looked past all day, so it starts dimmer than the shell
   zones: ['Europe/London', 'America/New_York'],
   place: null,          // { name, lat, lon } — chosen in Settings, never guessed
+  tiles: ['mac:vscode', 'mac:spotify', 'web:gmail', 'web:github', 'web:chatgpt', 'app:terminal', 'app:notepad', 'app:music'],
+  links: [],            // [{ name, href }] — the visitor's own web links, http(s) only
+  engine: 'google',
 };
 
 const isZone = (z) => {
@@ -61,31 +80,49 @@ const clampInt = (v, lo, hi, fallback) => {
 const oneOf = (v, options, fallback) => (options.includes(v) ? v : fallback);
 const list = (v) => (v ? v.split(',').filter(Boolean) : []);
 
-/** Drop unknown ids, repeats, and anything that does not fit its corner; cap each corner. */
-export function sanitizeLayout(layout) {
-  const seen = new Set();
-  const out = {};
-  for (const corner of CORNERS) {
-    out[corner] = (layout?.[corner] || [])
-      .filter((w) => WIDGETS[w] && !seen.has(w) && fitsCorner(w, corner) && seen.add(w))
-      .slice(0, MAX_PER_CORNER);
+/** Known widget ids, each once, in the given order. */
+export const sanitizeWidgets = (ids) => [...new Set((ids || []).filter((w) => WIDGETS[w]))];
+
+/** A link must be plain http(s): never a `javascript:` or data URL smuggled in through the query. */
+export function safeHttpUrl(value) {
+  try {
+    const u = new URL(value);
+    return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : null;
+  } catch {
+    return null;
   }
-  return out;
+}
+
+/**
+ * Safe areas, in px, for what macOS already draws: the menu bar (37pt on a notched MacBook, so 40
+ * clears it), the Dock on whichever edge it lives, and Stage Manager's strip on the left.
+ */
+export function screenInsets({ dock, stage }) {
+  return {
+    top: 40,
+    bottom: dock === 'bottom' ? 92 : 20,
+    left: Math.max(dock === 'left' ? 96 : 20, stage === 'on' ? 220 : 20),
+    right: dock === 'right' ? 96 : 20,
+  };
 }
 
 /** Store prefs + the live appearance → the query string Plash is given. */
 export function buildWallpaperSearch(prefs, { colorway, wallpaper } = {}) {
   const p = { ...DEFAULT_PREFS, ...prefs };
-  const layout = sanitizeLayout(p.layout);
   const q = new URLSearchParams({ mode: 'wallpaper' });
-  for (const corner of CORNERS) q.set(corner, layout[corner].join(','));
+  q.set('w', sanitizeWidgets(p.widgets).join(','));
+  q.set('side', p.side);
   q.set('dock', p.dock);
+  q.set('stage', p.stage);
   q.set('h', p.hour);
   q.set('style', p.style);
   q.set('unit', p.unit);
   q.set('bright', String(p.bright));
   q.set('tz', p.zones.join(','));
   if (p.place) q.set('wx', `${p.place.name}~${p.place.lat.toFixed(3)}~${p.place.lon.toFixed(3)}`);
+  q.set('apps', p.tiles.join(','));
+  for (const l of p.links.slice(0, MAX_LINKS)) q.append('link', `${l.name}~${l.href}`);
+  q.set('se', p.engine);
   if (colorway) q.set('cw', colorway);
   // An uploaded wallpaper is a Blob in THIS browser's IndexedDB; Plash can never load it, so the
   // colorway plane stands in rather than a URL that paints nothing.
@@ -110,21 +147,17 @@ export const buildWallpaperUrl = (prefs, appearance) =>
   `${window.location.origin}${window.location.pathname}${buildWallpaperSearch(prefs, appearance)}`;
 
 /**
- * Query string (+ whether Plash was detected) → the mode. `?mode=desktop` is an explicit opt-out that
+ * Query string (+ whether Plash was detected, and whether its Browsing Mode is on) → the mode. `?mode=desktop` is an explicit opt-out that
  * beats Plash detection, so "Exit wallpaper mode" can work inside Plash's browsing mode too.
  */
-export function readWallpaperMode(search, isPlash) {
+export function readWallpaperMode(search, isPlash, browsing = false) {
   const q = new URLSearchParams(search);
   const mode = q.get('mode');
   const active = mode === 'wallpaper' || (isPlash && mode !== 'desktop');
   if (!active) return { active: false, plash: isPlash };
 
   // Plash with no parameters at all gets the defaults rather than an empty screen.
-  const hasLayout = CORNERS.some((c) => q.has(c));
-  const layout = hasLayout
-    ? sanitizeLayout(Object.fromEntries(CORNERS.map((c) => [c, list(q.get(c))])))
-    : sanitizeLayout(DEFAULT_PREFS.layout);
-
+  const widgets = q.has('w') ? sanitizeWidgets(list(q.get('w'))) : DEFAULT_PREFS.widgets;
   const zones = q.has('tz') ? list(q.get('tz')).filter(isZone).slice(0, MAX_ZONES) : DEFAULT_PREFS.zones;
 
   let place = null;
@@ -136,20 +169,36 @@ export function readWallpaperMode(search, isPlash) {
     if (name && Math.abs(la) <= 90 && Math.abs(lo) <= 180) place = { name, lat: la, lon: lo };
   }
 
+  const links = q.getAll('link').slice(0, MAX_LINKS).map((raw) => {
+    const cut = raw.indexOf('~');
+    const href = cut > 0 ? safeHttpUrl(raw.slice(cut + 1)) : null;
+    return href ? { name: raw.slice(0, cut).slice(0, 24), href } : null;
+  }).filter(Boolean);
+
   const cw = q.get('cw');
   const wp = q.get('wp');
   return {
     active: true,
     plash: isPlash,
+    // Clicks reach the page in a normal browser, and in Plash only while Browsing Mode is on.
+    interactive: !isPlash || browsing,
     prefs: {
-      layout,
-      dock: oneOf(q.get('dock'), ['shown', 'hidden'], DEFAULT_PREFS.dock),
+      widgets,
+      side: oneOf(q.get('side'), ['right', 'left'], DEFAULT_PREFS.side),
+      // 'shown' is the first release's value for a bottom Dock.
+      dock: q.get('dock') === 'shown' ? 'bottom' : oneOf(q.get('dock'), ['bottom', 'left', 'right', 'hidden'], DEFAULT_PREFS.dock),
+      stage: oneOf(q.get('stage'), ['on', 'off'], DEFAULT_PREFS.stage),
       hour: oneOf(q.get('h'), ['auto', '12', '24'], DEFAULT_PREFS.hour),
       style: oneOf(q.get('style'), ['tinted', 'color'], DEFAULT_PREFS.style),
       unit: oneOf(q.get('unit'), ['auto', 'c', 'f'], DEFAULT_PREFS.unit),
       bright: clampInt(q.get('bright'), 30, 100, DEFAULT_PREFS.bright),
       zones,
       place,
+      // Raw `kind:id` strings; the Apps widget drops any it does not know (see launchers.js, which
+      // stays out of this module so its icons stay out of the entry chunk).
+      tiles: q.has('apps') ? list(q.get('apps')).slice(0, 12) : DEFAULT_PREFS.tiles,
+      links,
+      engine: oneOf(q.get('se'), ['google', 'duckduckgo', 'bing', 'perplexity'], DEFAULT_PREFS.engine),
     },
     // Only overrides the theme when the URL names a real value; otherwise the store's own wins.
     theme: {

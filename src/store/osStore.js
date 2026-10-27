@@ -132,8 +132,15 @@ const useOSStore = create(
           // the old scale). Rationale for each rule is on the function itself.
           merged.music = sanitizePersistedMusic(merged.music);
         }
-        // New keys added to the prefs later still get their defaults on an older payload.
-        merged.wallpaperPrefs = { ...currentState.wallpaperPrefs, ...merged.wallpaperPrefs };
+        // New keys added to the prefs later still get their defaults on an older payload. The first
+        // release's four-corner shape (`layout`, `dock: 'shown'`) keeps only its personal choices.
+        const savedWp = merged.wallpaperPrefs || {};
+        if (savedWp.layout) {
+          const { place, zones, hour, unit, style, bright } = savedWp;
+          merged.wallpaperPrefs = { ...currentState.wallpaperPrefs, place, zones, hour, unit, style, bright };
+        } else {
+          merged.wallpaperPrefs = { ...currentState.wallpaperPrefs, ...savedWp };
+        }
         return merged;
       },
       // idb-keyval behind a write throttle. persist writes the WHOLE partialized payload on every
