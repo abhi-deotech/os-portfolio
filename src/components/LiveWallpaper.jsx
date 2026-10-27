@@ -13,9 +13,13 @@ import { resolveWallpaper, isCustomWallpaper, isLegacyDataUrlWallpaper } from '.
  * loaded, an object URL. The first render after boot has the sentinel and no URL, so this layer
  * asks the store to load it (which also migrates a legacy data-URL payload) and paints nothing
  * until it arrives. A legacy data URL still paints directly in the meantime.
+ *
+ * `override` paints a given id instead of the stored one — wallpaper mode takes its wallpaper from
+ * the URL, since Plash has no saved one.
  */
-const Wallpaper = () => {
-  const wallpaper = useOSStore((state) => state.wallpaper);
+const Wallpaper = ({ override }) => {
+  const stored = useOSStore((state) => state.wallpaper);
+  const wallpaper = override ?? stored;
   const customUrl = useOSStore((state) => state.customWallpaperUrl);
   const loadCustomWallpaper = useOSStore((state) => state.loadCustomWallpaper);
 

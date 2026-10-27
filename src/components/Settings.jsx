@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Appearance from './settings/Appearance';
 import Compatibility from './settings/Compatibility';
 import SystemTab from './settings/SystemTab';
+import WallpaperTab from './settings/WallpaperTab';
 import DesignLanguage from './sdl/DesignLanguage';
 import DL_SECTIONS from './sdl/sections';
 import { SDL_VERSION, SDL_AUTHOR } from '../theme/registry';
@@ -16,7 +17,8 @@ import {
   Download,
   Upload,
   Cloud,
-  ShieldCheck
+  ShieldCheck,
+  LayoutDashboard
 } from 'lucide-react';
 import CustomIcon from './common/CustomIcon';
 import useOSStore from '../store/osStore';
@@ -26,6 +28,21 @@ const Settings = () => {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('appearance');
   const [showSidebar, setShowSidebar] = useState(true);
+
+  // A pane asked for from elsewhere (wallpaper mode's "Wallpaper Settings…"). Applied during render,
+  // once per request, so it works whether Settings is already open or mounts because of it. The
+  // request is cleared when this window CLOSES, so a later plain open lands on Appearance again —
+  // but not when wallpaper mode merely unmounts the desktop, so leaving it returns to this pane.
+  const tabRequest = useOSStore((s) => s.settingsTab);
+  const [seenRequest, setSeenRequest] = useState(null);
+  if (tabRequest && tabRequest !== seenRequest) {
+    setSeenRequest(tabRequest);
+    setActiveTab(tabRequest.tab);
+    if (isMobile) setShowSidebar(false);
+  }
+  useEffect(() => () => {
+    if (!useOSStore.getState().openWindows.includes('settings')) useOSStore.setState({ settingsTab: null });
+  }, []);
   // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
   // every state change anywhere in the OS, not just the fields it reads.
   const isPuterSignedIn = useOSStore((s) => s.isPuterSignedIn);
@@ -50,6 +67,7 @@ const Settings = () => {
     {
       id: 'system', label: 'System', items: [
         { id: 'appearance', icon: Palette, label: 'Appearance' },
+        { id: 'wallpaper', icon: LayoutDashboard, label: 'Wallpaper mode' },
         { id: 'system', icon: Cpu, label: 'System' },
         { id: 'compat', icon: ShieldCheck, label: 'Compatibility' },
         { id: 'user', icon: User, label: 'Account & Sync' },
@@ -143,6 +161,7 @@ const Settings = () => {
 
         <div className="h-full">
             {activeTab === 'appearance' && <Appearance />}
+            {activeTab === 'wallpaper' && <WallpaperTab />}
             {DL_SECTIONS.some((sec) => sec.id === activeTab) && (
               <div className="max-w-4xl mx-auto"><DesignLanguage section={activeTab} /></div>
             )}

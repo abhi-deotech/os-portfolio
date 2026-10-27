@@ -5,6 +5,7 @@ import { randomAppearance } from '../../theme/randomize';
 import { isKnownAchievement } from '../../config/achievements';
 import { get as idbGet, set as idbSet } from 'idb-keyval';
 import { CUSTOM_WALLPAPER, CUSTOM_WALLPAPER_KEY, DEFAULT_WALLPAPER, isLegacyDataUrlWallpaper } from '../../theme/wallpapers';
+import { DEFAULT_PREFS as DEFAULT_WALLPAPER_PREFS } from '../../wallpaper/config';
 
 // Toasts (achievements + one-off "Surprise Me" style messages) share one queue with no manual
 // dismiss until now — capping it stops rapid-fire triggers (e.g. mashing "Surprise Me") from
@@ -93,6 +94,19 @@ export const createSystemSlice = (set, get) => ({
   // behind it belongs to one browser; and not part of resetSettingsToDefault, which covers appearance.
   idleDetection: 'off',
   setIdleDetection: (value) => set({ idleDetection: value === 'on' ? 'on' : 'off' }),
+
+  // Wallpaper mode (Settings → Wallpaper mode). Persisted locally only to BUILD the Plash URL — the
+  // dashboard itself reads the URL, never this; see src/wallpaper/config.js.
+  wallpaperPrefs: DEFAULT_WALLPAPER_PREFS,
+  setWallpaperPrefs: (patch) => set((state) => ({ wallpaperPrefs: { ...state.wallpaperPrefs, ...patch } })),
+
+  // A request for Settings to show one pane, as `{ tab }`. A fresh object per call, so asking for the
+  // same pane twice still registers. Session-only; Settings clears it when its window closes.
+  settingsTab: null,
+  openSettingsTab: (tab) => {
+    set({ settingsTab: { tab } });
+    get().openWindow('settings');
+  },
 
   // Sticky Notes
   notes: 'Welcome to Lumina OS!\n- Explore the apps\n- Check the terminal\n- Have fun!',

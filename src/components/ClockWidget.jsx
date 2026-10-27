@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sun } from 'lucide-react';
 import useMinuteClock from '../hooks/useMinuteClock';
+import useVisiblePoll from '../hooks/useVisiblePoll';
+import useOSStore from '../store/osStore';
+import { resolveUnit } from '../wallpaper/config';
 
 // Module-level formatters: `toLocaleTimeString` / `toLocaleDateString` construct a new
 // Intl.DateTimeFormat on every call, and this used to make two of them per second.
@@ -12,12 +14,26 @@ const ClockWidget = () => {
   // Minute-aligned. The widget shows HH:MM, so the old 1 s interval re-rendered it 60x per change.
   const time = useMinuteClock();
 
-  const [heights] = useState(() => Array.from({ length: 12 }).map(() => Math.random() * 60 + 20));
-  const [weather] = useState({
-    temp: 24,
-    condition: 'Clear',
-    icon: Sun
-  });
+  // Real weather or none. This widget used to show a fixed "24°C, Clear" and a bar graph of
+  // Math.random() heights labelled as activity — invented data on a surface that otherwise reports
+  // only facts. It now shows Open-Meteo for the place chosen in Settings → Wallpaper mode, and
+  // nothing at all until a place is chosen. The weather module is imported on demand: this widget
+  // is in the entry chunk, and most visitors never choose a place.
+  const place = useOSStore((s) => s.wallpaperPrefs.place);
+  const unitPref = useOSStore((s) => s.wallpaperPrefs.unit);
+  const unit = resolveUnit(unitPref);
+  const [weather, setWeather] = useState(null);
+  useVisiblePoll(async () => {
+    try {
+      const { fetchWeather, describeCode } = await import('../wallpaper/weather');
+      const data = await fetchWeather(place, unit);
+      setWeather({ ...data, ...describeCode(data.code, data.isDay) });
+    } catch {
+      setWeather(null);
+    }
+  }, 30 * 60_000, Boolean(place), place ? `${place.lat},${place.lon},${unit}` : '');
+  const shown = place && weather;
+  const { label, Icon } = shown ? weather : {};
 
   return (
     <motion.div
@@ -46,34 +62,29 @@ const ClockWidget = () => {
             {DATE_LONG.format(time)}
           </p>
         </div>
-        <div className="p-3 bg-os-primary/10 rounded-2xl border border-os-primary/20">
-           <weather.icon className="text-os-primary" size={24} />
-        </div>
+        {shown && (
+          <div className="p-3 bg-os-primary/10 rounded-2xl border border-os-primary/20" title={label}>
+             <Icon className="text-os-primary" size={24} aria-hidden="true" />
+          </div>
+        )}
       </div>
 
-      <div className="h-px bg-veil/5 w-full my-2" />
+      {shown && (
+        <>
+          <div className="h-px bg-veil/5 w-full my-2" />
 
-      <div className="flex justify-between items-center px-1">
-         <div className="flex flex-col">
-            <span className="text-[10px] font-black text-sdl-sec uppercase tracking-widest">Temperature</span>
-            <span className="text-lg font-black text-sdl-ink">{weather.temp}°C</span>
-         </div>
-         <div className="flex flex-col items-end">
-            <span className="text-[10px] font-black text-sdl-sec uppercase tracking-widest">Condition</span>
-            <span className="text-sm font-bold text-os-secondary uppercase tracking-wider">{weather.condition}</span>
-         </div>
-      </div>
-
-      {/* Subtle activity graph at bottom */}
-      <div className="flex gap-1 h-4 items-end mt-2 px-1">
-         {heights.map((h, i) => (
-           <div
-             key={i}
-             className="flex-1 bg-veil/10 rounded-full"
-             style={{ height: `${h}%` }}
-           />
-         ))}
-      </div>
+          <div className="flex justify-between items-center px-1">
+             <div className="flex flex-col">
+                <span className="text-[10px] font-black text-sdl-sec uppercase tracking-widest">{place.name}</span>
+                <span className="text-lg font-black text-sdl-ink tabular-nums">{weather.temp}°{unit.toUpperCase()}</span>
+             </div>
+             <div className="flex flex-col items-end">
+                <span className="text-[10px] font-black text-sdl-sec uppercase tracking-widest">Condition</span>
+                <span className="text-sm font-bold text-os-secondary uppercase tracking-wider">{label}</span>
+             </div>
+          </div>
+        </>
+      )}
     </motion.div>
   );
 };

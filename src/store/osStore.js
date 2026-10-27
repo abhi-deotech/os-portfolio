@@ -132,6 +132,8 @@ const useOSStore = create(
           // the old scale). Rationale for each rule is on the function itself.
           merged.music = sanitizePersistedMusic(merged.music);
         }
+        // New keys added to the prefs later still get their defaults on an older payload.
+        merged.wallpaperPrefs = { ...currentState.wallpaperPrefs, ...merged.wallpaperPrefs };
         return merged;
       },
       // idb-keyval behind a write throttle. persist writes the WHOLE partialized payload on every
@@ -184,6 +186,8 @@ const useOSStore = create(
         snappedWindows: state.snappedWindows,
         // Local only: not in the Puter prefs sync (the idle-detection permission is per browser).
         idleDetection: state.idleDetection,
+        // Local only, like idleDetection: it describes this Mac's screen and Dock, not the visitor.
+        wallpaperPrefs: state.wallpaperPrefs,
         achievementQueue: [] // Don't persist queue
       }),
     }

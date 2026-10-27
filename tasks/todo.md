@@ -1,3 +1,164 @@
+# Wallpaper mode (Plash desktop dashboard) — PROPOSAL, 2026-10-27
+
+Owner request: a "dashboard / desktop wallpaper" mode, reachable from the right-click menu and
+Settings, that strips the OS chrome and works as an always-on background for a Mac via
+[Plash](https://sindresorhus.com/plash). Owner's starting list: no boot or screensaver; no GitHub or
+LinkedIn widget; no dock (it clashes with the macOS Dock); widgets pushed into the corners, since
+corners are what stays visible around normal-size windows; Apple widget styling.
+
+**Status: built 2026-10-27** with the owner's decisions: top-right small only, Open-Meteo weather, tinted default, auto-on in Plash. `[-]` marks a proposal item dropped on purpose; the Review below says why.
+
+## What Plash changes about the design (facts that drive the rest)
+
+- **It's WebKit (WKWebView), not Chrome.** Every Chromium-only capability is missing: Battery,
+  Compute Pressure, Network Information, Device Memory and Idle Detection. On a wallpaper, a
+  "not supported" notice is clutter, so a widget whose data is missing doesn't render at all.
+  Settings explains what's hidden and why, per the honest-notices policy.
+- **It has its own storage.** Plash's webview doesn't share IndexedDB with your browser, so a toggle
+  flipped in Chrome never reaches Plash. **The URL has to be the source of truth**
+  (`/?mode=wallpaper&…`). The Settings pane builds that URL so you can paste it into Plash.
+- **It's non-interactive by default.** Clicks pass through to the macOS desktop, so there's no
+  hover, drag, tabs or buttons. Every widget has to work as a glance.
+- **Plash can be detected.** It adds `is-plash-app` to `<html>`, and `plash-is-browsing-mode` while
+  browsing mode is on. Use these as an automatic trigger (watch them with a MutationObserver, since
+  they're added after load). Browsing mode is when layout editing turns on.
+- **It's always running on a laptop.** It can deactivate on battery, but the budget is still "near
+  zero when nothing changes": no rAF loops, no three.js, minute-aligned ticks, and polling paused
+  while `document.hidden`.
+- **macOS already owns some of the screen.** Menu bar plus notch at the top (~24–37pt, notch centred),
+  the Dock at the bottom (~70–80pt unless hidden), and Finder's desktop icons in the top-right column.
+
+## Proposed changes
+
+### A. Entry, exit and persistence
+- [x] `src/hooks/useWallpaperMode.js` sets `{ active, interactive }`. It turns on from
+      `?mode=wallpaper`, from `html.is-plash-app`, or from a session-only store flag set by the menu.
+      `interactive` is true in a normal browser and in Plash browsing mode.
+- [x] `App.jsx`: branch **before** BSOD, Boot and Login. Wallpaper mode lazy-loads
+      `<WallpaperDashboard/>`, so the entry chunk only gains the URL check. The `applyTheme` effect
+      stays above the branch so colorways still apply.
+- [x] Skipped in this mode: BootSequence, LoginScreen (no auth state is written), Screensaver plus
+      the idle timer and IdleDetection, BSOD, achievement toasts, sounds, Spotlight, AI chat, window
+      layer, Desktop icons, MenuBar, Taskbar (Dock), ControlCenter, QuantumWidget, SocialWidget
+      (GitHub/LinkedIn), SystemDashboard tabs.
+- [x] Desktop right-click menu gets a **"Wallpaper mode"** row under "Personalize…". In wallpaper
+      mode the menu shrinks to **Edit layout / Copy Plash URL / Exit wallpaper mode** (it only shows
+      when the page is interactive).
+- [x] Exit in a normal browser with Esc, the menu, or a small "Exit" pill that appears on pointer
+      movement and fades after 3 s.
+- [x] Wallpaper mode never writes `openWindows` or icon positions, so your normal desktop is
+      untouched afterwards.
+
+### B. Layout: four corners, empty centre
+- [x] `WallpaperDashboard` is a full-viewport grid with four corner **stacks** (TL, TR, BL, BR). The
+      centre stays empty.
+- [x] Safe-area insets as CSS variables: `--wp-top` (default 40px, clears a notched menu bar),
+      `--wp-bottom` (default 88px for the Dock; 16px when "Dock hidden" is set), `--wp-side` 20px.
+- [x] Top-right defaults to small widgets only and has a "Keep clear for desktop icons" option (open
+      decision 1).
+- [x] Stacks grow toward the centre: top stacks downward, bottom stacks upward. A widget never covers
+      the middle third of the screen.
+- [-] In interactive mode, "Edit layout" lets you drag widgets between corners and snap them there
+      (no free positioning). Order and corner go into the URL, and Copy Plash URL hands it over.
+
+### C. Widget design (Apple-inspired, inside SDL)
+- [x] One `WidgetShell` with Apple's three sizes: **small** (1×1 ≈ 164px), **medium** (2×1 ≈ 344×164)
+      and **large** (2×2). Continuous ~22px radius, 16px padding, one fact per widget, no chrome,
+      no tabs, no buttons.
+- [x] Surface: the existing `glass` role (24px blur), falling back to opaque when transparency is off.
+      Wells stay demarcated (Law 4). Chrome text is quiet and the one data value is sharp (Law 2).
+- [x] **Tinted style** (default, like macOS Sonoma desktop widgets): monochrome ink with accent only on
+      the key value. **Full colour** is an option. Both obey the brightness ceiling (Law 6). A
+      wallpaper is looked past all day, so it should default dimmer than the desktop shell.
+- [x] Big numerals: tabular, rounded weight, no ALL-CAPS tracking walls (the current ClockWidget's
+      `tracking-[0.3em]` labels go).
+- [-] Follows the macOS appearance: `prefers-color-scheme` picks the colorway's light or dark variant.
+      Tell people **not** to use Plash's "Invert colors".
+- [-] Entrance animation once on load, then static. `prefers-reduced-motion` gets none.
+
+### D. Widget catalogue (real data only)
+| Widget | Size | Data source | Works in Plash |
+|---|---|---|---|
+| Clock + date | medium / large | local, minute tick | yes |
+| World clocks (2–4 cities) | small / medium | `Intl` time zones | yes |
+| Calendar month | small | local | yes |
+| Now playing | medium | existing Last.fm `getNowPlaying`, 60 s poll | yes |
+| Weather | small / medium | Open-Meteo (no API key), location set in Settings, 30 min poll | yes (if decision 2 = yes) |
+| Day / year progress ring | small | local | yes |
+| Battery | small | Battery API | **no** (Chromium only), hidden |
+
+- [x] Remove the **fake weather (24°C "Clear") and `Math.random` bars** in `ClockWidget.jsx`. They're
+      invented data, which the Phase 2 "truthful facts" rule forbids, and they'd be the most visible
+      thing on a wallpaper. Fixing it helps the normal desktop too.
+- [x] Default layout: TL = clock (medium) + world clocks; TR = calendar (small); BL = now playing;
+      BR = weather + day progress.
+
+### E. Settings
+- [x] New **Settings → Wallpaper mode** pane: live preview thumbnail; corner and widget pickers;
+      Dock-hidden toggle; 12/24 h; tinted or full colour; weather location; **Copy Plash URL**; a
+      four-step Plash setup guide (paste URL, leave browsing mode off, optionally "Deactivate while
+      on battery", optionally reload every 6 h for memory hygiene); and a "Hidden in Plash" list for
+      capability-gated widgets.
+
+### F. Verify (before calling it done)
+- [x] Preview `?mode=wallpaper` at 1512×982 (MBP 14"), 1470×956 (Air 15") and 1440×900. Check the
+      corners clear the safe areas and nothing enters the middle third.
+- [x] Simulate Plash with `document.documentElement.classList.add('is-plash-app')` and confirm the
+      chrome-free render, with no boot or login flash.
+- [x] Idle cost: 0 rAF callbacks per second at steady state, one render per minute (React profiler),
+      and no requests while hidden.
+- [x] `npx eslint src`, `npm run token-lint`, `npx vite build`; entry chunk growth under 1 KB br.
+- [-] **Not verifiable here:** real Plash/WKWebView on macOS (this machine is Linux). That needs a
+      manual check by the owner.
+
+## Owner decisions (2026-10-27)
+1. Top-right corner: small widgets only.
+2. Weather: yes, Open-Meteo, place chosen in Settings.
+3. Default style: tinted.
+4. Plash detection turns the mode on automatically (`?mode=desktop` opts out).
+
+## Review — wallpaper mode, 2026-10-27
+
+**Shipped.** `src/wallpaper/config.js` (URL contract: parse, build, sanitize), `hooks/useWallpaperMode.js`
+(URL + `is-plash-app` via useSyncExternalStore and a MutationObserver), lazy `components/wallpaper/WallpaperMode.jsx`
++ `widgets.jsx` (clock, world clocks, calendar, now playing, weather, day/year), `wallpaper/time.js`,
+`wallpaper/weather.js`, `hooks/useVisiblePoll.js`, Settings → Wallpaper mode (`settings/WallpaperTab.jsx`),
+desktop menu row, `applyTheme(…, { mirror: false })`, `LiveWallpaper` `override`, `MenuRow` moved to
+`components/common`. ClockWidget's fixed "24°C Clear" and `Math.random` bars are gone; it shows real
+Open-Meteo weather only once a place is chosen.
+
+**Departures from the proposal, on purpose.**
+- No in-place "Edit layout". Plash reloads the URL it stored, so edits made inside Plash would be lost on
+  the next reload. Layout lives in Settings as per-widget corner pickers, and Copy Plash URL hands it over.
+- No "follow macOS appearance". Mode is derived from the colorway (SDL law 7), and colorways have no
+  light/dark twins. The URL carries the colorway instead; the Plash steps say to skip Plash's "Invert colors".
+- No entrance animation. The dashboard is static, so idle cost is zero animations (measured below).
+- No battery widget, so there is no "hidden in Plash" list: every widget uses data WebKit provides.
+
+**Measured.**
+- `npx eslint src` 0 problems; token-lint no regressions; cap 962, facts 148, interaction 144, profile 76
+  all PASS; sdl:check in sync; `npx vite build` OK.
+- Entry chunk 77,343 B br vs 75,672 baseline (HEAD built in a worktree): **+1.67 KB, over the <1 KB target.**
+  The weather module was in the entry via ClockWidget (+2.1 KB); it is now a dynamic import. The rest is
+  the URL contract and hook, which have to decide before boot. WallpaperMode is its own 3.97 KB br chunk.
+- Preview at 1512×982: six widgets inside the insets (top 40, sides 20, bottom 92 → last bottom edge 890),
+  nothing in the middle third (left stacks end at 360, right start at 1152), no widget overflowing.
+  At 1280×800 with `dock=hidden` and `h=24`: bottom edge 780, two smalls paired in one row, 24-hour clock.
+- `is-plash-app` added to <html> on the plain URL → dashboard with defaults, no exit pill, no boot.
+  Esc → clean URL, login. Desktop menu → full Plash URL with colorway. Wallpaper Settings… → Settings on
+  the Wallpaper pane. Preview → Exit → back on the same pane.
+- Live Open-Meteo: London 56°F and Bengaluru 67°F Overcast rendered; geocoding search returned
+  "Bengaluru, Karnataka, India"; production CSP `connect-src https:` allows both hosts.
+- 0 running animations in wallpaper mode. The theme mirror kept `bright: 100` after an 85% preview.
+
+**Not validated.**
+- Real Plash / WKWebView on macOS (this machine is Linux), including when Plash adds its class and how
+  SF Rounded (`ui-rounded`) renders. Owner check on the Mac.
+- Now playing with a real Last.fm key: none locally, so only the "Nothing playing right now" state was seen.
+- Hidden-page polling pause: logic only; the pane reported `visible` throughout.
+
+---
+
 # Browser API interaction pass — 2026-09-17
 
 Owner request: *"go ahead with all the changes we discussed for Browser API Interaction"*, under the

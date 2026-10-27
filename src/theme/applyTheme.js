@@ -42,8 +42,11 @@ function paletteVars(cw) {
 /**
  * @param {{colorway?: string, density?: string, transparencyEffects?: boolean,
  *          brightness?: number, accentIntensity?: number, reducedMotion?: string}} state
+ * @param {{mirror?: boolean}} [options] `mirror: false` paints without updating the pre-paint mirror.
+ *   Wallpaper mode passes it: its colorway comes from the URL, and mirroring it would flash that
+ *   colorway on the visitor's next normal load before their own saved one arrives.
  */
-export function applyTheme(state = {}) {
+export function applyTheme(state = {}, { mirror = true } = {}) {
   if (typeof document === 'undefined') return null;
 
   const {
@@ -82,12 +85,14 @@ export function applyTheme(state = {}) {
         : (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'reduced' : 'full'),
   );
 
-  try {
-    localStorage.setItem(MIRROR_KEY, JSON.stringify({
-      cw: cw.id, th: cw.theme, mode: cw.mode, grammar: cw.grammar,
-      den: density, glass: transparencyEffects ? 1 : 0, bright: brightness, v: vars,
-    }));
-  } catch { /* private mode — the app still works, it just flashes on reload */ }
+  if (mirror) {
+    try {
+      localStorage.setItem(MIRROR_KEY, JSON.stringify({
+        cw: cw.id, th: cw.theme, mode: cw.mode, grammar: cw.grammar,
+        den: density, glass: transparencyEffects ? 1 : 0, bright: brightness, v: vars,
+      }));
+    } catch { /* private mode — the app still works, it just flashes on reload */ }
+  }
 
   return cw;
 }

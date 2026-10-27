@@ -322,3 +322,17 @@ SystemDialog `TONES.warn` badge, kicker / title / body in the dialog's type ramp
 ("Not in {Browser} {v}") and quiet `aInk` pill links. Deliberately **no live region** on the static
 panel; only the compact variant raised by a user action gets `role="status"`. Its words come from
 one module (`notice.js`), shared with the dialog, the Compatibility pane and fact labels.
+
+## 2026-10-27 — Wallpaper mode (Plash): two observations
+
+1. **Law 7 vs. the host OS's appearance.** A wallpaper for macOS would naturally follow the Mac's
+   light/dark setting, but SDL derives mode from the colorway and colorways have no light/dark twins.
+   Resolved by having the Plash URL carry the colorway, so the owner picks the mode by picking a
+   colorway. *Proposal:* if SDL ever ships paired colorways (one register, both modes), wallpaper
+   mode is the first consumer: follow `prefers-color-scheme` across the pair.
+2. **Law 2 as one switch.** The widgets read four variables (`--wp-label`, `--wp-mark`,
+   `--wp-on-mark`, `--wp-track`). "Tinted" maps them to `sec` / `aInk` / `plane` / ink at 12%, so the
+   only colour is one accent touch per widget. "Full colour" maps them to `aInk` / `accent` / `onAccent`
+   / `soft`. This is a reusable pattern for any ambient surface where the USER owns the plane: the
+   quiet register is the default, and colour is opt-in. Owner's eye still needed on whether tinted's
+   `aInk` mark is quiet enough on the warm packs.

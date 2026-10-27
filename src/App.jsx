@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import {
   MousePointer2, FolderPlus, RefreshCw, Cpu, X, RotateCcw, Hash,
-  User, Image as Wallpaper, Shuffle, SquareTerminal as TerminalSquare, FolderOpen
+  User, Image as Wallpaper, Shuffle, SquareTerminal as TerminalSquare, FolderOpen, LayoutDashboard
 } from 'lucide-react';
-import CustomIcon from './components/common/CustomIcon';
+import MenuRow from './components/common/MenuRow';
 import {
   Menu,
-  Item,
   Separator,
   useContextMenu,
 } from 'react-contexify';
@@ -35,6 +34,7 @@ import './theme/grammar.css';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { useIdleDetection } from './hooks/useIdleDetection';
 import { useImmersiveSync } from './hooks/useImmersive';
+import useWallpaperMode, { enterWallpaperMode } from './hooks/useWallpaperMode';
 import { IDLE_MS } from './utils/idle.js';
 import { onPopoutActivity } from './utils/popout.js';
 import './index.css';
@@ -44,22 +44,10 @@ const DESKTOP_MENU_ID = 'desktop-context-menu';
 const ICON_MENU_ID = 'icon-context-menu';
 
 /**
- * One row of a right-click menu.
- *
- * Every row used to inline its own `<CustomIcon size={13} className="mr-2" />`, and Open Terminal
- * used a `>_` text glyph instead — so the icons set two different label origins and the column read
- * as ragged. Routing them through one component means the icon slot is defined once; the fixed
- * 16px column that aligns it lives in the `.os-context-menu` block in index.css.
- *
- * `danger` tags the destructive rows so they can carry the alert role, the same way the Reset
- * button in the Appearance pane does.
+ * Wallpaper mode is its own lazy chunk: the entry only carries the URL check that decides whether to
+ * render it (src/wallpaper/config.js), never the dashboard.
  */
-const MenuRow = ({ icon, label, onClick, danger = false }) => (
-  <Item onClick={onClick} className={danger ? 'os-menu-danger' : undefined}>
-    <CustomIcon icon={icon} size={14} color="currentColor" animate={false} />
-    <span>{label}</span>
-  </Item>
-);
+const WallpaperMode = React.lazy(() => import('./components/wallpaper/WallpaperMode'));
 
 // The accent map now lives in src/theme/applyTheme.js — it was previously duplicated in five places
 // with three different encodings (here, Settings.jsx, Window.jsx, QuantumWidget.jsx, puterSlice.js).
@@ -100,6 +88,11 @@ function App() {
   const randomizeAppearance = useOSStore(state => state.randomizeAppearance);
   const isBSOD = useOSStore(state => state.isBSOD);
   const idleDetection = useOSStore(state => state.idleDetection);
+  const wallpaper = useOSStore(state => state.wallpaper);
+  const wallpaperPrefs = useOSStore(state => state.wallpaperPrefs);
+
+  // Wallpaper mode (Plash) is decided by the URL and Plash's own <html> class, before boot or login.
+  const wallpaperMode = useWallpaperMode();
 
   const [isIdle, setIsIdle] = useState(false);
   const [bootComplete, setBootComplete] = useState(false);
@@ -141,7 +134,7 @@ function App() {
       lastArm = now;
       if (idleTimer.current) clearTimeout(idleTimer.current);
       idleTimer.current = setTimeout(() => {
-        if (isAuthenticated) setIsIdle(true);
+        if (isAuthenticated && !wallpaperMode.active) setIsIdle(true);
       }, IDLE_MS);
     };
 
@@ -156,12 +149,12 @@ function App() {
       offPopoutActivity();
       if (idleTimer.current) clearTimeout(idleTimer.current);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, wallpaperMode.active]);
 
   // System idle detection adds transitions on top of the timer above; the timer stays in charge.
   // Only runs once the visitor switched it on in Settings → System (which asked for permission).
   useIdleDetection({
-    enabled: isAuthenticated && idleDetection === 'on',
+    enabled: isAuthenticated && idleDetection === 'on' && !wallpaperMode.active,
     onTransition: (transition) => setIsIdle(transition === 'show'),
   });
 
@@ -170,9 +163,17 @@ function App() {
 
   // Theme goes onto documentElement, not onto the JSX below. This hook sits ABOVE the early
   // returns at the end of this component, so boot, login and portaled context menus are themed too.
+  //
+  // Wallpaper mode paints the URL's colorway and brightness over the store's, without mirroring them
+  // (see applyTheme): Plash's webview has no saved theme of its own to fall back on.
+  const wpColorway = wallpaperMode.active ? (wallpaperMode.theme.colorway ?? colorway) : colorway;
+  const wpBrightness = wallpaperMode.active ? wallpaperMode.prefs.bright : brightness;
   useEffect(() => {
-    applyTheme({ colorway, density, transparencyEffects, brightness, accentIntensity, reducedMotion });
-  }, [colorway, density, transparencyEffects, brightness, accentIntensity, reducedMotion]);
+    applyTheme(
+      { colorway: wpColorway, density, transparencyEffects, brightness: wpBrightness, accentIntensity, reducedMotion },
+      { mirror: !wallpaperMode.active },
+    );
+  }, [wpColorway, density, transparencyEffects, wpBrightness, accentIntensity, reducedMotion, wallpaperMode.active]);
 
   const handleDesktopContextMenu = (e) => {
     // Popped-out content is still portaled from this tree, so its right-clicks bubble here. Leave
@@ -189,6 +190,14 @@ function App() {
     contextMenuIconRef.current = iconId;
     showIconMenu({ event: e });
   };
+
+  if (wallpaperMode.active) {
+    return (
+      <Suspense fallback={null}>
+        <WallpaperMode mode={wallpaperMode} fallbackWallpaper={wallpaper} />
+      </Suspense>
+    );
+  }
 
   if (isBSOD) {
     return <BSOD />;
@@ -224,6 +233,11 @@ function App() {
             <MenuRow icon={User} label="About Me" onClick={() => openWindow('about')} />
             <Separator />
             <MenuRow icon={Wallpaper} label="Personalize…" onClick={() => openWindow('settings')} />
+            <MenuRow
+              icon={LayoutDashboard}
+              label="Wallpaper Mode"
+              onClick={() => enterWallpaperMode(wallpaperPrefs, { colorway, wallpaper })}
+            />
             <MenuRow icon={FolderPlus} label="New Folder" onClick={() => createFolder(`New Folder`)} />
             <Separator />
             {/* Above the Resets, not beside them: this rolls a look, it does not discard one. */}
