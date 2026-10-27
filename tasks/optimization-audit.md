@@ -258,3 +258,276 @@ Plan: `~/.claude/plans/splendid-stirring-flute.md`; checklist and measured resul
 - Maximize/snap animate `top/left/width/height` via spring (layout per frame).
 - Persisted `fileSystem` is 33 KB of `?raw` docs that never change; a diff would be smaller.
 - Puter `syncFilesToPuter` pretty-prints and uploads the whole tree per file op.
+
+
+---
+
+## 2026-10-15 — all-axis audit, weighted for the real-world case: a visitor chats
+
+Scope: bundle/critical path, runtime rendering, memory/background work, persistence, network,
+and — as the primary real-world scenario — a visitor opening **AI Chat** (and the terminal's
+`lumina-ai`) on a laptop or a phone. The 09-03 and 09-17 fixes all still hold and are not
+re-reported. Every finding below was re-read at the cited line on this checkout; sizes marked
+**M** were measured here (fresh `vite build` into a scratch dir, `ls`, `curl`), **E** are estimates.
+Nothing was profiled in a browser; see "Verification status".
+
+### Fresh build, eager set (M, brotli)
+
+| chunk | br | raw |
+|---|---:|---:|
+| index | 71,316 | 269,045 |
+| vendor-react | 50,750 | 189,646 |
+| vendor-ui | 47,684 | 166,352 |
+| vendor-utils + browser + registry + runtime | ~4,400 | ~12,200 |
+| index.css + vendor-ui.css | 14,726 | 119,258 |
+| **app total on first paint** | **~189 KB** | |
+| `js.puter.com/v2` (not ours, parser-blocking, before all of the above) | **132–143 KB** | 521,418 |
+
+Lazy chunks of note: QuantumWidget 192 KB br (three.js), aiWorker 121 KB br + a 23.5 MB wasm,
+MarkdownRenderer 55 KB br, AIChat **8.4 KB br with the Gemini SDK** (2.2 KB when built without a
+key — see C1).
+
+---
+
+### Part 1 — the chat path (ranked)
+
+**C1. The Gemini key ships in the public bundle, and without one the chat is compiled out.**
+`src/components/AIChat.jsx:78-90` reads `import.meta.env.VITE_GEMINI_API_KEY` and hands it to the
+SDK in the browser. M: building with a key puts the literal key string in `assets/AIChat-*.js`.
+Anyone can lift it, burn the quota, and every real visitor then sees 429s. M: building *without*
+a key (this checkout has no `.env`), oxc proves the `throw` always runs and dead-code-eliminates
+the whole request path — the chunk contains **zero `fetch` calls** and the chat can only ever
+answer "VITE_GEMINI_API_KEY is missing". So the deployed app is either exposing the key or has
+no working chat; there is no third state.
+Fix: a serverless proxy (`netlify/functions/chat` or `api/chat` on Vercel) that holds the key,
+rate-limits by IP, caps history, and streams. This single change also unlocks C2–C4.
+
+**C2. No streaming.** `aiHandler.js:66-68` awaits the full `sendMessage` response. The SDK has
+`sendMessageStream`. For a 150–300-token answer the visitor stares at three bouncing dots for
+E 2–5 s instead of seeing the first token at E 0.5–1 s. Time-to-first-token is *the* chat metric.
+Fix: stream and append chunks to the last assistant message; keep the dots only until the first
+chunk.
+
+**C3. The fallback chain is dead, and it makes failures slower, not rarer.**
+`aiHandler.js:9-13`: `gemini-2.0-flash-exp`, `gemini-1.5-flash`, `gemini-1.5-flash-8b`. Google
+retired the 1.5 Flash family and the `gemini-1.5-flash` alias in September 2025; `2.0-flash-exp`
+was an experimental id. On a 429/503 from the primary the visitor waits 1 s + 2 s of backoff
+(`:78-82`), then three more requests to models that 404, then the error. And a 429 caused by the
+shared key's quota (C1) is hit identically by every "fallback" because they share the key.
+`:76` detects retryability with `errorMsg.includes("503")` — the SDK throws
+`GoogleGenerativeAIFetchError` with a numeric `status`. Also `@google/generative-ai` is
+deprecated since 2025-11-30 (replacement: `@google/genai`).
+Fix: one current primary + one current fallback (confirm ids on the Gemini models page at deploy
+time), `error.status` checks, jittered backoff capped at ~6 s total, and a visible "retrying…"
+state. Treat the SDK swap as part of the proxy move (C1) — the client then needs no SDK at all.
+
+**C4. Context grows without bound and the system prompt is resent every turn.**
+`AIChat.jsx:84-90` passes the full `messages` array each send; the system prompt is 4,114 chars
+(M, ≈1,000 tokens). Turn *n* costs ≈ 1,000 + Σ(all previous turns) input tokens; a 20-turn chat
+is E 40–60k input tokens, and latency rises with it. No cap on input length either (a pasted
+50 KB message goes straight through).
+Fix: send the last ~12 messages (or a rolling summary), cap input at ~2,000 chars, and let the
+proxy own the system prompt so it never leaves the server.
+
+**C5. The conversation dies when the window closes.** `AIChat.jsx:47` keeps messages in component
+`useState`; closing (not minimising) the window unmounts it. Visitors close windows. There is also
+no abort: `aiHandler`'s retry chain keeps running for up to ~15 s after unmount and sets state on
+a dead component (bounded, but wasted).
+Fix: a small unpersisted (or session-persisted, capped at ~50 messages) `chat` slice; an
+`AbortController` in a ref, aborted on unmount and threaded into the request.
+
+**C6. Rendering: every keystroke re-renders every message, and markdown shows raw.**
+`AIChat.jsx:50,131-149`: `input` state lives beside `messages`, so each keystroke re-renders the
+whole list — each row a `motion.div` keyed by index. Invisible at 10 messages; on a low-end phone
+at 100+ it is typing lag. Gemini answers in markdown and `{msg.text}` renders the asterisks.
+Fix: lift the composer into its own component, `React.memo` the row (key by a stable id), render
+assistant text through the existing lazy `MarkdownRenderer` (55 KB br, loads once, only when the
+first assistant reply arrives).
+
+**C7. Mobile (suspected — not device-tested).** The input is `text-xs` (`AIChat.jsx:174`;
+LuminaChat is `text-sm`): iOS Safari zooms the page on focus for any input under 16 px. Windows
+are sized with `calc(100vh - 80px)` (`Window.jsx:119`) and nothing in `src/` uses `dvh` or
+`visualViewport`, so with the keyboard up the composer is likely under it. No `enterkeyhint="send"`.
+Fix: 16 px input font on mobile, `100dvh` (with a `visualViewport` resize fallback), `enterkeyhint`.
+
+**C8. `lumina-ai` downloads ~47 MB to answer with keyword matching.**
+`useTerminal.js:444-451` boots the worker; `aiSlice.js:14-29` spawns it; `aiWorker.js` builds a
+MiniLM feature-extraction pipeline. M: the quantized model is 22,972,370 B from huggingface.co,
+plus `ort-wasm-simd-threaded.asyncify-*.wasm` 23,567,050 B from our own origin — **with no
+`.br`/`.gz` sibling**, because `vite-plugin-compression`'s default filter is `js|mjs|json|css|html`
+(`vite.config.js:34-43`), and the asyncify variant was chosen although `numThreads` is forced to 1
+(`aiWorker.js:40-43`); the plain `ort-wasm-simd-threaded.wasm` is 12.9 MB. Then `:456-470` answers
+with `q.includes('stack')`. **`getEmbedding` has zero callers.** The worker is never terminated, so
+the runtime and weights stay resident for the session. The progress text says "~20MB".
+Fix: either delete the worker path and the `@huggingface/transformers` dependency (removes
+517 KB JS + 23.5 MB wasm from `dist/`), or make it real: nearest-neighbour over a small canned
+FAQ, `dtype: 'q8'` on WebGPU too, `wasmPaths` pointed at the jsdelivr CDN (already in
+`script-src`), a size warning before the first download, and `terminate()` on terminal unmount.
+
+**C9. Guestbook (LuminaChat).** `LuminaChat.jsx:40-43` adds a 1.5 s fake "connecting" delay on
+every open; `:75-79` appends to `localStorage` with no cap and re-parses the whole array on every
+cross-tab event. Fix: drop the delay (or 300 ms), `slice(-200)` on write.
+
+---
+
+### Part 2 — critical path and loading
+
+**L1. Puter SDK: a 521 KB parser-blocking third-party script in `<head>`.** `index.html:42`
+`<script src="https://js.puter.com/v2/">` with no `defer`/`async`, before `#root` and before our
+module script. M: 521,418 B raw, 143,424 B gzip, served `cache-control: max-age=0` → revalidated
+on every repeat visit. It is ~43% of first-visit wire bytes and nearly as large as our entire
+eager set. Its only consumer is optional cloud sign-in; `puterSlice.js:10-15` already null-guards.
+Fix: `defer` today; inject on first "Sign in with Puter" click (and when a persisted
+`isPuterSignedIn` is true) tomorrow, with `checkPuterAuth` awaiting the load.
+
+**L2. Google Fonts are requested and then blocked by our own CSP.** `src/index.css:6` `@import`s
+Inter + Manrope (lands at the head of the built CSS, M) and `index.html:6-7` preconnects to both
+origins, but `style-src 'self' 'unsafe-inline'` / `font-src 'self' data:` block them in dev and
+prod. Net: two wasted connections, a render-blocking CSS→googleapis chain that fails, and every
+SDL micro-weight the file's comment describes renders in the system fallback.
+Fix: self-host Inter variable latin woff2 (~48 KB) under `public/fonts/`, one `@font-face` with
+`font-display: swap`, `<link rel=preload as=font>`; delete the `@import` and preconnects.
+
+**L3. No `Cache-Control` for hashed assets.** `netlify.toml`/`vercel.json`/`render.yaml` set only
+CSP/CORP/nosniff/referrer. Netlify defaults to `max-age=0, must-revalidate`, so every repeat visit
+is 8–10 conditional requests (E). Fix: `/assets/*` → `public, max-age=31536000, immutable` in all
+three; keep `/index.html` at `max-age=0`.
+
+**L4. Boot animation runs on every load, serialised after the JS download.** `App.jsx:105` keeps
+`bootComplete` in unpersisted state while `isAuthenticated` *is* persisted; `BootSequence.jsx:39-46`
+is 24 lines × 10–30 ms + 300 ms ≈ 0.55–1.0 s that starts only after ~189 KB has executed.
+Fix: skip or cap at ~300 ms when `sessionStorage` says we booted already.
+
+**L5. QuantumWidget (192 KB br + WebGL) downloads the instant the desktop mounts.**
+`Widgets.jsx:18` lazy-imports it unconditionally; `QuantumWidget.jsx:74` returns null in
+low-performance mode *after* the chunk has loaded. Fix: check `lowPerformance` before the
+`import()`, and defer it behind `requestIdleCallback`/~2 s post-login.
+
+**L6. Broken and dead assets.** `src/data/fileSystem.js:61,77-79` point four Pictures/Downloads
+entries at `/src/assets/hero.png`, a dev-server path that does not exist in `dist/` (M) → broken
+images in PhotoViewer in production. `public/assets/games/doom.png` is 1,218,972 B (M), 64% of
+`public/`, referenced by nothing (DOOM disabled). Fix: import `hero.png` through Vite; delete
+`doom.png` until DOOM returns.
+
+**L7. Eager data.** Four `?raw` markdown docs (35 KB), `musicData.js`, `githubSnapshot.json` and
+the FS seed sit in the entry chunk (E 15–20 KB br of the 71 KB). Low priority; the markdown is the
+odd one (already flagged 09-17 as 33 KB of persisted payload).
+
+---
+
+### Part 3 — runtime rendering (what the 09-17 pass left)
+
+**R1. Desktop icon drag fights a CSS transition.** `Desktop.jsx:106` — the dragged `motion.div`
+carries `transition-all`. Framer writes `transform` per pointer frame; CSS turns each write into a
+150 ms interpolation (smear + per-frame style/paint). Fix: remove `transition-all` from that
+element.
+
+**R2. Appearance dials fan out per pointer event.** `Appearance.jsx:270-272` →
+`systemSlice.js:145-152` (`set` + `syncPrefsToPuter()` when signed in → one `puter.keyval.set`
+network call per slider tick) → `App.jsx:173-175` → `applyTheme.js:68-89`: ~45 `setProperty`
+calls, 7 `setAttribute`s with unchanged values, and a synchronous `localStorage.setItem` of a
+~3 KB JSON every call. Fix: diff vars/attributes before writing; debounce the mirror write and the
+Puter sync (trailing, ~250 ms / ~1 s).
+
+**R3. Every open window re-renders on any window-state change.** `Window.jsx:49-53` subscribes to
+`activeWindow`, `maximizedWindows`, `snappedWindows`; `windowSlice.js:223` `focusWindow` runs a
+full `set` on every `mousedown` in any frame even when already active; `toggleMaximizeWindow` /
+`closeWindow` / `snapWindow` re-allocate the snapped map unconditionally; `WindowSlot` is not
+memoised, so App's own re-renders cascade into every frame. Fix: boolean selectors
+(`s.activeWindow === id`, `.includes(id)`), `React.memo(WindowSlot)`, early-return in
+`focusWindow`, keep map identity when the id is absent.
+
+**R4. Window frame paint cost.** `Window.jsx:376` `backdrop-blur-2xl` (40 px) floating /
+`3xl` (64 px) maximised — the only shell surfaces still above the 24 px `--sdl-glass-blur`
+standard, re-sampled every drag frame; `:510` a per-window `blur-3xl` glow layer 1.4× the window;
+`:375` `grayscale-[0.1]` puts a `filter` on every inactive frame, so a terminal cursor blink in a
+background window repaints through a filter pass. Maximise/snap springs still animate
+`top/left/width/height` (known from 09-17). Fix: 24 px blur both states, radial-gradient instead
+of the blurred glow (the trick App.jsx already uses), drop the grayscale.
+
+**R5. ControlCenter subscribes to the whole `music` object** (`ControlCenter.jsx:211`) — see M1:
+it re-renders every 30 s for the Last.fm tick. Fix: three narrow selectors.
+
+**R6. `::-webkit-scrollbar-thumb { backdrop-filter: blur(4px) }`** (`index.css:164-167`) on every
+scrollable container. Remove the filter.
+
+**R7. Residual `transition-all`** on the dock root (`Taskbar.jsx:98`, has backdrop blur), every
+dock button (`:106,118,129,175`), the window title bar (`Window.jsx:380`). Replace with
+`transition-colors` / `transition-[transform,opacity]`.
+
+**R8. fileSystem tree writers re-allocate every node** (`fileSystemSlice.js:108-110` and the
+sibling mappers) so FileExplorer/Spotlight/Notepad/Docs/Terminal lose all node identity on any
+write. User-paced, low frequency. Fix: structural sharing (return `n` when children unchanged).
+
+Timer inventory on an idle desktop: minute clocks (clean), 30 s Last.fm (M1), 2 s heap/storage
+fact poll (identity-stable, no re-render), QuantumWidget rAF (visibility-gated). Clean otherwise.
+
+---
+
+### Part 4 — memory, background work, persistence
+
+**M1. The Last.fm poll writes the whole persisted store every 30 s, forever, with no key.**
+`NowPlayingWidget.jsx:12-24` polls; `musicApi.js:6-9` returns `null` without a key, `:48-55`
+then returns a *fresh mock object*; `musicSlice.js:236` spreads a new `music` → every `s.music`
+subscriber re-renders and persist runs `partialize` + a throttled IDB write. E 120 writes × 30–45
+KB/hour idle, plus 120 console warnings. Fix: return early from the effect when the key is unset;
+gate on document visibility; skip `set` when unchanged.
+
+**M2. Mounting a real folder persists its entire recursive listing, handles included.**
+`fileSystemSlice.js:236-273` writes `{ id: mounted-<random>, handle }` nodes into `fileSystem`,
+which is in `partialize`. Every later `set()` structured-clones the whole mounted tree into IDB;
+a second mount of the same folder adds a second copy. Unbounded in folder size, survives reloads.
+Fix: `partialize` filters `isMounted` nodes; keep handles only in the unpersisted
+`mountedHandles` map (it already exists, `:19`).
+
+**M3. Terminal history is capped by count, not bytes.** `systemSlice.js:189-196` keeps 500
+entries; `cat ARCHITECTURE.md` stores 15.6 KB verbatim. Ten of those = +156 KB cloned on every
+persist write for the rest of this and every later session. Fix: truncate outputs over ~4 KB and
+enforce a total byte budget.
+
+**M4. Sandboxed game iframes run at full rate while minimised.** `SandboxedGame.jsx:234` renders
+the iframe unconditionally and nothing there reads `useWindowVisibility`; the shipped example game
+runs a 16 ms `setInterval`. Fix: unmount while hidden with a "paused" overlay, or document it.
+
+**M5. Smaller, confirmed.** `FullscreenPlayer.jsx:44` passes `isPlaying` without `visible`, so
+the fullscreen Visualizer's rAF loop runs while Music is minimised. `useYouTubePlayer.js:118-122`
+wraps `onYouTubeIframeAPIReady` once per Music mount and, since the CSP blocks the API script,
+the chain is never consumed (+1 closure per open, permanent). Flow-Net keeps up to 8 cross-origin
+iframes mounted (`hidden`, by design). `Screensaver.jsx` re-subscribes three window listeners on
+every App render because `onDismiss` is an inline arrow (`App.jsx:294`). No module-scope
+`useOSStore.subscribe`; popouts, wake lock, media session, idle detection, benchmark workers,
+game loops and object URLs all clean up correctly.
+
+---
+
+### Prioritised plan (effort: S < 1 h, M half a day, L a day+)
+
+| # | change | axis | effort | why first |
+|---|---|---|---|---|
+| 1 | Proxy the chat through a serverless function: key server-side, streaming, history cap, rate limit; drop the client SDK | C1–C4 | L | the only way the chat is both working and not leaking the key |
+| 2 | `defer` the Puter script now; lazy-inject on sign-in next | L1 | S / M | 143 KB + a blocking third-party off every first paint |
+| 3 | Self-host Inter, delete the font `@import` + preconnects | L2 | S | the intended typography has never rendered in prod |
+| 4 | `immutable` cache headers for `/assets/*` in all three host configs | L3 | S | repeat visits stop revalidating |
+| 5 | Delete or finish the `lumina-ai` embedding path; compress/CDN the wasm either way | C8 | S (delete) / M | 47 MB for a keyword match |
+| 6 | Chat slice + abort + memoised rows + markdown + 16 px mobile input + `dvh` | C5–C7 | M | the visible chat UX |
+| 7 | Last.fm effect: bail without a key, visibility-gate, no-op set | M1, R5 | S | 120 pointless store writes an hour |
+| 8 | `Window.jsx` boolean selectors, `memo(WindowSlot)`, `focusWindow` early return | R3 | S | every click re-renders every frame today |
+| 9 | Window frame: 24 px blur, gradient glow, no grayscale; icon `transition-all` | R1, R4 | S | drag smoothness |
+| 10 | `applyTheme` diff + debounced mirror/Puter sync | R2 | S | slider jank, and a network call per tick when signed in |
+| 11 | `partialize` drops mounted nodes; byte-cap terminal history | M2, M3 | S | unbounded persisted payload |
+| 12 | Fix `hero.png` path, delete `doom.png`, skip boot on repeat, idle-defer QuantumWidget | L4–L6 | S | broken images in prod; faster return visits |
+
+### Not findings
+`modulepreload` list equals the eager set exactly; wallpapers are CSS gradients by default and
+images load only on selection; the 23.5 MB wasm is referenced only by the lazy worker chunk;
+`WindowContentRenderer` memo and the lazy boundaries are correct; `useSystemFact` keeps snapshot
+identity so the 2 s heap poll does not re-render the dashboard; all CSS `animate-pulse` dots sit
+inside their own blur surfaces; `facts.js` observers are ref-counted and visibility-gated.
+
+### Verification status
+Measured: fresh build chunk sizes (with and without a Gemini key), the key literal in the chat
+chunk and the DCE'd request path without one, Puter script size/headers, HF model sizes, wasm
+sizes and the missing `.br` siblings, system prompt length, every cited line. Read, not run:
+re-render cascades, paint costs, the mobile keyboard behaviour, the host cache defaults, and the
+Gemini model-id status (from Google's retirement notice as quoted on its developer forum — confirm
+on the models page before changing ids). No browser profiling was done in this pass.
