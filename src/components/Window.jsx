@@ -12,6 +12,7 @@ import { osAlert } from '../utils/dialog';
 import useSoundEffects from '../hooks/useSoundEffects';
 import WindowGlass from './WindowGlass';
 import { MENU_BAR_H } from './MenuBar';
+import { useWorkArea } from './workArea';
 
 const POPOUT_MENU_ITEM =
   'w-full text-left px-2.5 py-1.5 text-[12px] text-sdl-ink rounded-sdl-sm cursor-pointer ' +
@@ -38,7 +39,11 @@ const POPOUT_MENU_ITEM =
  * @param {number} [props.minWidth=400] - Minimum resize width
  * @param {number} [props.minHeight=300] - Minimum resize height
  */
-const Window = ({ id, title, children, isMinimized, width = 900, height = 650, minWidth = 400, minHeight = 300 }) => {
+const Window = ({ id, title, children, isMinimized, width: baseWidth = 900, height: baseHeight = 650, minWidth = 400, minHeight = 300 }) => {
+  // A smaller work area (wallpaper mode) shrinks a window that would not fit inside it.
+  const area = useWorkArea();
+  const width = area ? Math.max(Math.min(baseWidth, area.width - 32), Math.min(minWidth, area.width)) : baseWidth;
+  const height = area ? Math.max(Math.min(baseHeight, area.height - 32), Math.min(minHeight, area.height)) : baseHeight;
   // Selectors, not `useOSStore()`. A whole-store subscription re-renders this component on
   // every state change anywhere in the OS, not just the fields it reads.
   const closeWindow = useOSStore((s) => s.closeWindow);
@@ -107,7 +112,7 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
    *
    * 0 on mobile: MenuBar returns null there, so there is nothing to clear.
    */
-  const topInset = isMobile ? 0 : MENU_BAR_H;
+  const topInset = isMobile ? 0 : (area?.top ?? MENU_BAR_H);
 
   /**
    * One height for both the Framer `animate` target and the inline `style`. They previously
@@ -117,7 +122,26 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
    */
   const fillHeight = isMobile
     ? 'calc(100vh - 80px)'
-    : `calc(100vh - ${topInset}px)`;
+    : `calc(100vh - ${topInset + (area?.bottom ?? 0)}px)`;
+
+  /**
+   * Horizontal geometry of a maximized or snapped window. On the desktop that is the whole viewport
+   * and its halves; inside a work area, the area and its halves.
+   */
+  const fill = area && !isMobile
+    ? (() => {
+      const half = `calc((100vw - ${area.left + area.right}px) / 2)`;
+      return {
+        left: area.left,
+        right: area.right,
+        bottom: area.bottom,
+        width: `calc(100vw - ${area.left + area.right}px)`,
+        half,
+        rightHalfLeft: `calc(${area.left}px + ${half})`,
+        leftHalfRight: `calc(${area.right}px + ${half})`,
+      };
+    })()
+    : { left: 0, right: 0, bottom: 0, width: '100%', half: '50vw', rightHalfLeft: '50vw', leftHalfRight: '50vw' };
 
   useEffect(() => {
     if (!isActive || isMobile) return;
@@ -162,11 +186,11 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
     animate: { 
       scale: 1, 
       opacity: 1, 
-      ...(isMaximized ? { top: topInset, left: 0, right: 0, bottom: 0, width: '100%', height: fillHeight, borderRadius: 0, x: 0, y: 0 } : {}),
+      ...(isMaximized ? { top: topInset, left: fill.left, right: fill.right, bottom: fill.bottom, width: fill.width, height: fillHeight, borderRadius: 0, x: 0, y: 0 } : {}),
       ...(isSnapped ? {
         top: topInset,
-        left: isSnapped === 'right' ? '50vw' : 0,
-        width: '50vw',
+        left: isSnapped === 'right' ? fill.rightHalfLeft : fill.left,
+        width: fill.half,
         height: fillHeight,
         borderRadius: 0,
         x: 0,
@@ -181,9 +205,12 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
   const handleDrag = (e, info) => {
     const { x, y } = info.point;
     const threshold = 50;
-    if (y < threshold) setSnapTarget('top');
-    else if (x < threshold) setSnapTarget('left');
-    else if (window.innerWidth - x < threshold) setSnapTarget('right');
+    // Edges of the work area, not of the viewport: in wallpaper mode those are the Stage Manager
+    // strip and the widget column.
+    const edge = area && !isMobile ? area : { top: 0, left: 0, right: 0 };
+    if (y < edge.top + threshold) setSnapTarget('top');
+    else if (x < edge.left + threshold) setSnapTarget('left');
+    else if (window.innerWidth - x < edge.right + threshold) setSnapTarget('right');
     else setSnapTarget(null);
   };
 
@@ -325,7 +352,13 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
             exit={{ opacity: 0 }}
             /* Inline top wins over the inset-* class, so the preview lands where the window
                actually will — under the menu bar, not over it. */
-            style={{ top: topInset + 16 }}
+            style={area && !isMobile ? {
+              top: topInset + 16,
+              bottom: area.bottom + 16,
+              left: snapTarget === 'right' ? `calc(${fill.rightHalfLeft} + 8px)` : area.left + 16,
+              right: snapTarget === 'left' ? `calc(${fill.leftHalfRight} + 8px)` : area.right + 16,
+              width: 'auto',
+            } : { top: topInset + 16 }}
             className={`fixed z-[40] bg-os-primary/10 border-2 border-os-primary/30 backdrop-blur-sm transition-all duration-300 pointer-events-none ${
               snapTarget === 'top' ? 'inset-4 rounded-sdl-panel' :
               snapTarget === 'left' ? 'inset-y-4 left-4 w-[48%] rounded-sdl-panel' :
@@ -357,10 +390,10 @@ const Window = ({ id, title, children, isMinimized, width = 900, height = 650, m
           ...(!isMaximized && !isSnapped ? { width, height, minWidth, minHeight, top: '50%', left: '50%' } : { 
             position: 'fixed',
             top: topInset,
-            left: isSnapped === 'right' ? '50vw' : 0,
-            right: isSnapped === 'left' ? '50vw' : 0,
-            bottom: isMobile ? '80px' : 0,
-            width: isSnapped ? '50vw' : '100vw',
+            left: isSnapped === 'right' ? fill.rightHalfLeft : fill.left,
+            right: isSnapped === 'left' ? fill.leftHalfRight : fill.right,
+            bottom: isMobile ? '80px' : fill.bottom,
+            width: isSnapped ? fill.half : (area && !isMobile ? fill.width : '100vw'),
             height: fillHeight,
             x: 0,
             y: 0

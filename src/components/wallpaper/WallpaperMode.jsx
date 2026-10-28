@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Menu, Separator, useContextMenu } from 'react-contexify';
-import { Copy, Settings as SettingsIcon, Monitor } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { Copy, Settings as SettingsIcon, Monitor, LayoutGrid } from 'lucide-react';
 import LiveWallpaper from '../LiveWallpaper';
+import WindowSlot from '../WindowSlot';
+import { WorkAreaContext } from '../workArea';
 import MenuRow from '../common/MenuRow';
+import AppLauncher from './AppLauncher';
 import useMinuteClock from '../../hooks/useMinuteClock';
 import useOSStore from '../../store/osStore';
-import { exitWallpaperMode } from '../../hooks/useWallpaperMode';
-import { screenInsets } from '../../wallpaper/config';
+import { exitWallpaperMode, openWallpaperSettings, replaceWallpaperSearch } from '../../hooks/useWallpaperMode';
+import { screenInsets, buildWallpaperSearch, SIZE_PX } from '../../wallpaper/config';
 import { packColumns, GAP } from '../../wallpaper/pack';
 import {
   ClockWidget, WorldClockWidget, CalendarWidget, MusicWidget, WeatherWidget, ProgressWidget,
@@ -16,13 +20,15 @@ import {
 /**
  * Wallpaper mode: the desktop as a background dashboard for Plash.
  *
- * Everything that makes the OS an OS is absent — boot, login, dock, menu bar, icons, windows,
- * screensaver, toasts, sound. What is left is the wallpaper and one column of widgets hugging the edge
- * the visitor picked (by default the right, beside a right-hand Dock), clear of the menu bar, the
- * Dock and Stage Manager's strip of running apps on the left. The rest of the screen stays empty.
+ * The OS chrome is absent — boot, login, dock, menu bar, icons, screensaver, toasts, sound. What is
+ * left is the wallpaper and one column of widgets hugging the edge the visitor picked (by default the
+ * right, beside a right-hand Dock), clear of the menu bar, the Dock and Stage Manager's strip of
+ * running apps on the left. The empty middle is the work area: Lumina's apps open there as windows,
+ * so using one never means leaving the wallpaper.
  *
  * Inside Plash the page only receives clicks while Plash's Browsing Mode is on (`interactive`). Then,
- * and always in a normal browser, a control at the head of the column leads back to the desktop.
+ * and always in a normal browser, controls at the head of the column open any app, Settings, or lead
+ * back to the desktop.
  */
 
 const MENU_ID = 'wallpaper-context-menu';
@@ -59,24 +65,38 @@ const STYLE_VARS = {
 /** Height of the control row above the column, when it shows. */
 const CONTROL_H = 32;
 
-function useViewportHeight() {
-  const [h, setH] = useState(() => window.innerHeight);
+/** Room left between the widget column and the work area. */
+const WORK_GAP = 24;
+
+function useViewport() {
+  const [size, setSize] = useState(() => ({ w: window.innerWidth, h: window.innerHeight }));
   useEffect(() => {
-    const onResize = () => setH(window.innerHeight);
+    const onResize = () => setSize({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener('resize', onResize, { passive: true });
     return () => window.removeEventListener('resize', onResize);
   }, []);
-  return h;
+  return size;
 }
 
-const Controls = ({ plash, copied, onCopy, onSettings, alignEnd }) => {
+const Controls = ({ plash, copied, onCopy, launcherOpen, onLauncher, alignEnd }) => {
   const button = 'glass-2 h-8 px-3 rounded-full text-[12px] flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2';
   return (
     <div className={`flex items-center gap-1.5 ${alignEnd ? 'justify-end' : ''}`} style={{ height: CONTROL_H }}>
       <button type="button" onClick={exitWallpaperMode} className={button} style={{ color: 'var(--sdl-ink)', fontWeight: 650 }}>
         <Monitor size={14} aria-hidden="true" /> Desktop
       </button>
-      <button type="button" onClick={onSettings} className={button} style={{ color: 'var(--sdl-ink)' }} aria-label="Wallpaper settings">
+      <button
+        type="button"
+        data-launcher-toggle
+        onClick={onLauncher}
+        aria-expanded={launcherOpen}
+        aria-controls="wallpaper-launcher"
+        className={button}
+        style={{ color: 'var(--sdl-ink)', fontWeight: 650, ...(launcherOpen ? { background: 'var(--wp-mark)', color: 'var(--wp-on-mark)' } : {}) }}
+      >
+        <LayoutGrid size={14} aria-hidden="true" /> Apps
+      </button>
+      <button type="button" onClick={openWallpaperSettings} className={button} style={{ color: 'var(--sdl-ink)' }} aria-label="Wallpaper settings">
         <SettingsIcon size={14} aria-hidden="true" />
       </button>
       {/* The address bar is the Plash URL only in a browser; inside Plash there is nothing to copy. */}
@@ -92,14 +112,43 @@ const Controls = ({ plash, copied, onCopy, onSettings, alignEnd }) => {
   );
 };
 
+/**
+ * Keeps the store's `wallpaperPrefs` and the URL in step while the wallpaper shows, so Settings opened
+ * over it edits what is on screen. URL → store when the page loads or the URL changes (in Plash the
+ * store starts out with its own, unrelated values); store → URL when Settings changes something.
+ */
+function usePrefsSync(prefs, theme) {
+  const search = buildWallpaperSearch(prefs, theme);
+  const latest = useRef({ prefs, theme });
+  // Declared first, so it runs before the effects below read it.
+  useEffect(() => { latest.current = { prefs, theme }; });
+
+  useEffect(() => {
+    const s = useOSStore.getState();
+    if (buildWallpaperSearch(s.wallpaperPrefs, latest.current.theme) !== search) s.setWallpaperPrefs(latest.current.prefs);
+  }, [search]);
+
+  useEffect(() => useOSStore.subscribe((state, prev) => {
+    if (state.wallpaperPrefs !== prev.wallpaperPrefs) {
+      replaceWallpaperSearch(buildWallpaperSearch(state.wallpaperPrefs, latest.current.theme));
+    }
+  }), []);
+}
+
 const WallpaperMode = ({ mode, fallbackWallpaper }) => {
   const { prefs, theme, plash, interactive } = mode;
   // One minute tick for every widget, rather than a timer per widget.
   const now = useMinuteClock();
-  const vh = useViewportHeight();
+  const { w: vw, h: vh } = useViewport();
   const inset = screenInsets(prefs);
   const { show } = useContextMenu({ id: MENU_ID });
   const [copied, setCopied] = useState(null); // null | 'ok' | 'failed'
+  const [launcherOpen, setLauncherOpen] = useState(false);
+  const closeLauncher = useCallback(() => setLauncherOpen(false), []);
+  const openWindows = useOSStore((s) => s.openWindows);
+  const minimizedWindows = useOSStore((s) => s.minimizedWindows);
+  const windowsRef = useRef(null);
+  usePrefsSync(prefs, theme);
 
   // In the browser the address bar IS the Plash URL: entering the mode navigated to it.
   const copy = async () => {
@@ -111,37 +160,70 @@ const WallpaperMode = ({ mode, fallbackWallpaper }) => {
     }
     setTimeout(() => setCopied(null), 2500);
   };
-  const openSettings = () => {
-    exitWallpaperMode();
-    useOSStore.getState().openSettingsTab('wallpaper');
-  };
-
-  // Esc leaves, in a browser. Inside Plash the Desktop control does it, so a stray Esc while typing a
-  // task in Browsing Mode cannot throw the wallpaper away.
+  // Esc leaves, in a browser, when nothing else could want it: no window showing and nothing focused.
+  // Inside Plash the Desktop control does it, so a stray Esc in Browsing Mode cannot throw the
+  // wallpaper away.
+  const windowShowing = openWindows.some((id) => !minimizedWindows.includes(id));
   useEffect(() => {
-    if (plash) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') exitWallpaperMode(); };
+    if (plash || windowShowing) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape' && !e.defaultPrevented && document.activeElement === document.body) exitWallpaperMode();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [plash]);
+  }, [plash, windowShowing]);
 
   const right = prefs.side === 'right';
   const edge = right ? 'right' : 'left';
   const top = inset.top + (interactive ? CONTROL_H + GAP : 0);
   const columns = packColumns(prefs.widgets, vh - top - inset.bottom);
 
+  // The work area: everything between the Mac's own chrome and the widget columns.
+  const columnsWidth = columns.length * SIZE_PX.medium.width + (columns.length - 1) * GAP;
+  const reserved = inset[edge] + columnsWidth + WORK_GAP;
+  const area = {
+    top: inset.top,
+    bottom: inset.bottom,
+    left: right ? inset.left : reserved,
+    right: right ? reserved : inset.right,
+  };
+  area.width = Math.max(0, vw - area.left - area.right);
+  area.height = Math.max(0, vh - area.top - area.bottom);
+
+  // Right-click is ours only in a browser, and only on the wallpaper itself. Inside a window the app's
+  // own menu (or the native one) applies; inside Plash its native menu stays, since that is where
+  // "Update Website to Current" saves settings changed here.
+  const onContextMenu = interactive && !plash ? (e) => {
+    if (windowsRef.current?.contains(e.target) || e.target.closest?.('#wallpaper-launcher')) return;
+    e.preventDefault();
+    show({ event: e });
+  } : undefined;
+
   return (
     <div
       className="h-screen w-screen overflow-hidden relative select-none font-sans"
       style={STYLE_VARS[prefs.style]}
-      onContextMenu={interactive ? (e) => { e.preventDefault(); show({ event: e }); } : undefined}
+      onContextMenu={onContextMenu}
     >
       <h1 className="sr-only">Lumina wallpaper</h1>
       <LiveWallpaper override={theme.wallpaper ?? fallbackWallpaper} />
 
       {interactive && (
         <div className="absolute" style={{ top: inset.top, [edge]: inset[edge] }}>
-          <Controls plash={plash} copied={copied} onCopy={copy} onSettings={openSettings} alignEnd={right} />
+          <Controls
+            plash={plash}
+            copied={copied}
+            onCopy={copy}
+            launcherOpen={launcherOpen}
+            onLauncher={() => setLauncherOpen((o) => !o)}
+            alignEnd={right}
+          />
+        </div>
+      )}
+
+      {interactive && launcherOpen && (
+        <div className="absolute z-20" style={{ top, [edge]: inset[edge] }}>
+          <AppLauncher prefs={prefs} openWindows={openWindows} maxHeight={vh - top - inset.bottom} onClose={closeLauncher} />
         </div>
       )}
 
@@ -164,16 +246,32 @@ const WallpaperMode = ({ mode, fallbackWallpaper }) => {
         ))}
       </div>
 
-      {interactive && (
+      {/* Windows: Lumina's apps, centred in the work area and maximizing or snapping within it. */}
+      <WorkAreaContext.Provider value={area}>
+        <div
+          ref={windowsRef}
+          className="absolute z-10 pointer-events-none"
+          style={{ top: area.top, bottom: area.bottom, left: area.left, right: area.right }}
+        >
+          <div className="relative w-full h-full pointer-events-none">
+            <Suspense fallback={null}>
+              <AnimatePresence>
+                {openWindows.map((id) => (
+                  <WindowSlot key={id} id={id} isMinimized={minimizedWindows.includes(id)} />
+                ))}
+              </AnimatePresence>
+            </Suspense>
+          </div>
+        </div>
+      </WorkAreaContext.Provider>
+
+      {interactive && !plash && (
         <Menu id={MENU_ID} animation="fade" className="os-context-menu">
+          <MenuRow icon={LayoutGrid} label="All Apps…" onClick={() => setLauncherOpen(true)} />
+          <MenuRow icon={SettingsIcon} label="Wallpaper Settings…" onClick={openWallpaperSettings} />
+          <Separator />
           <MenuRow icon={Monitor} label="Back to Desktop" onClick={exitWallpaperMode} />
-          <MenuRow icon={SettingsIcon} label="Wallpaper Settings…" onClick={openSettings} />
-          {!plash && (
-            <>
-              <Separator />
-              <MenuRow icon={Copy} label="Copy Plash URL" onClick={copy} />
-            </>
-          )}
+          <MenuRow icon={Copy} label="Copy Plash URL" onClick={copy} />
         </Menu>
       )}
     </div>

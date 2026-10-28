@@ -3,7 +3,7 @@ import { Music, MapPin, Search, Plus, X, Globe, Check } from 'lucide-react';
 import AppIcon from '../common/AppIcon';
 import { APP_BY_ID } from '../../config/apps';
 import { openLuminaApp } from '../../hooks/useWallpaperMode';
-import { MAC_APPS, WEB_LINKS, MAX_TILES, SEARCH_ENGINES, isKnownTile } from '../../wallpaper/launchers';
+import { MAC_APPS, WEB_LINKS, MAX_TILES, SEARCH_ENGINES, isKnownTile, macAppHref } from '../../wallpaper/launchers';
 import { SIZE_PX } from '../../wallpaper/config';
 import useVisiblePoll from '../../hooks/useVisiblePoll';
 import { getNowPlaying } from '../../utils/musicApi';
@@ -321,11 +321,28 @@ const ring = 'focus-visible:outline-none focus-visible:ring-2';
 
 /* ── Search ────────────────────────────────────────────────────────────────── */
 
+/**
+ * The search goes out as a clicked link, not a form submission. Plash hands clicked links to another
+ * host to the default browser (with "Open external links in default browser" on), but opens a form
+ * submission in a window of its own.
+ */
+function openSearch(e, engine) {
+  e.preventDefault();
+  const q = new FormData(e.currentTarget).get(engine.param)?.toString().trim();
+  if (!q) return;
+  const a = document.createElement('a');
+  a.href = `${engine.action}?${new URLSearchParams({ [engine.param]: q })}`;
+  a.target = '_blank';
+  a.rel = 'noreferrer';
+  a.click();
+  e.currentTarget.reset();
+}
+
 export const SearchWidget = ({ prefs, interactive }) => {
   const engine = SEARCH_ENGINES[prefs.engine] ?? SEARCH_ENGINES.google;
   return (
     <Shell size="bar" label="Search" pad={8}>
-      <form action={engine.action} method="get" target="_blank" rel="noreferrer" className="flex items-center gap-2 h-full px-2">
+      <form onSubmit={(e) => openSearch(e, engine)} className="flex items-center gap-2 h-full px-2">
         <Search size={18} style={{ color: 'var(--wp-label)', flexShrink: 0 }} aria-hidden="true" />
         <input
           name={engine.param}
@@ -348,11 +365,22 @@ export const SearchWidget = ({ prefs, interactive }) => {
 const favicon = (host) => `https://icons.duckduckgo.com/ip3/${host}.ico`;
 
 /** A favicon, or the fallback glyph once it fails to load. */
-const SiteIcon = ({ host, Fallback = Globe }) => {
+export const SiteIcon = ({ host, Fallback = Globe }) => {
   const [failed, setFailed] = useState(false);
   if (failed || !host) return <Fallback size={24} style={{ color: 'var(--wp-label)' }} aria-hidden="true" />;
   return <img src={favicon(host)} alt="" width={28} height={28} className="rounded-md" onError={() => setFailed(true)} />;
 };
+
+/** A Mac app known only by name has no icon a page can fetch; its initial stands in. */
+export const Monogram = ({ name }) => (
+  <span
+    aria-hidden="true"
+    className="w-7 h-7 rounded-md flex items-center justify-center"
+    style={{ background: 'var(--wp-track)', color: 'var(--sdl-ink)', fontSize: 14, fontWeight: 700 }}
+  >
+    {name.slice(0, 1).toUpperCase()}
+  </span>
+);
 
 function resolveTiles(prefs) {
   const tiles = prefs.tiles.filter(isKnownTile).map((id) => {
@@ -371,7 +399,10 @@ function resolveTiles(prefs) {
   const links = prefs.links.map((l) => ({
     id: `link:${l.href}`, name: l.name, href: l.href, external: true, icon: <SiteIcon host={new URL(l.href).host} />,
   }));
-  return [...tiles, ...links].filter(Boolean).slice(0, MAX_TILES);
+  const macApps = prefs.macApps.map((name) => ({
+    id: `mac-any:${name}`, name, href: macAppHref(name), icon: <Monogram name={name} />,
+  }));
+  return [...tiles, ...macApps, ...links].filter(Boolean).slice(0, MAX_TILES);
 }
 
 export const AppsWidget = ({ prefs, interactive }) => {
@@ -387,7 +418,7 @@ export const AppsWidget = ({ prefs, interactive }) => {
       ) : (
         <div className="grid h-full" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gridTemplateRows: 'repeat(2, 1fr)', gap: 4 }}>
           {tiles.map((t) => (t.lumina ? (
-            <button key={t.id} type="button" tabIndex={interactive ? 0 : -1} title={`Open ${t.name} in Lumina`} onClick={() => openLuminaApp(t.lumina)} className={tile}>
+            <button key={t.id} type="button" tabIndex={interactive ? 0 : -1} title={`Open ${t.name}`} onClick={() => openLuminaApp(t.lumina)} className={tile}>
               {t.icon}{label(t.name)}
             </button>
           ) : (

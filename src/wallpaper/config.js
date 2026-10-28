@@ -6,7 +6,8 @@
  * visitor's browser — colorway, layout, weather location — ever reaches it. So the URL is the only
  * source of truth for the mode. The store keeps the visitor's choices (`wallpaperPrefs`) purely to
  * BUILD that URL; the dashboard itself reads the URL and nothing else, so what the browser previews
- * is exactly what Plash will show.
+ * is exactly what Plash will show. Settings opened over the wallpaper writes its edits back into the
+ * URL (WallpaperMode.jsx), so that rule holds there too.
  *
  * Pure module, no React: App.jsx needs `readWallpaperMode` in the entry chunk to decide whether to
  * boot at all, and that decision must not pull the dashboard in with it.
@@ -47,6 +48,16 @@ export const SIZE_PX = {
 
 export const MAX_ZONES = 3;
 export const MAX_LINKS = 4;
+export const MAX_MAC_APPS = 4;
+
+/**
+ * A Mac app's name as Finder shows it ("Microsoft Teams", "Final Cut Pro"). It is handed to a
+ * Shortcuts shortcut that runs `open -a`, so only the characters app names use get through.
+ */
+export const sanitizeMacApp = (name) => {
+  const clean = String(name ?? '').replace(/[^\p{L}\p{N} .&+'()-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+  return clean || null;
+};
 
 /**
  * Defaults describe the owner's Mac: Stage Manager's strip of running apps on the left, the Dock on
@@ -67,6 +78,7 @@ export const DEFAULT_PREFS = {
   place: null,          // { name, lat, lon } — chosen in Settings, never guessed
   tiles: ['mac:vscode', 'mac:spotify', 'web:gmail', 'web:github', 'web:chatgpt', 'app:terminal', 'app:notepad', 'app:music'],
   links: [],            // [{ name, href }] — the visitor's own web links, http(s) only
+  macApps: [],          // ['Finder', …] — any Mac app by name, opened through a Shortcuts shortcut
   engine: 'google',
 };
 
@@ -122,6 +134,7 @@ export function buildWallpaperSearch(prefs, { colorway, wallpaper } = {}) {
   if (p.place) q.set('wx', `${p.place.name}~${p.place.lat.toFixed(3)}~${p.place.lon.toFixed(3)}`);
   q.set('apps', p.tiles.join(','));
   for (const l of p.links.slice(0, MAX_LINKS)) q.append('link', `${l.name}~${l.href}`);
+  for (const name of p.macApps.slice(0, MAX_MAC_APPS)) q.append('mac', name);
   q.set('se', p.engine);
   if (colorway) q.set('cw', colorway);
   // An uploaded wallpaper is a Blob in THIS browser's IndexedDB; Plash can never load it, so the
@@ -198,6 +211,7 @@ export function readWallpaperMode(search, isPlash, browsing = false) {
       // stays out of this module so its icons stay out of the entry chunk).
       tiles: q.has('apps') ? list(q.get('apps')).slice(0, 12) : DEFAULT_PREFS.tiles,
       links,
+      macApps: [...new Set(q.getAll('mac').map(sanitizeMacApp).filter(Boolean))].slice(0, MAX_MAC_APPS),
       engine: oneOf(q.get('se'), ['google', 'duckduckgo', 'bing', 'perplexity'], DEFAULT_PREFS.engine),
     },
     // Only overrides the theme when the URL names a real value; otherwise the store's own wins.

@@ -4,9 +4,9 @@ import useOSStore from '../../store/osStore';
 import { Card, Segmented, Row, Slider, Switch } from './primitives';
 import { enterWallpaperMode } from '../../hooks/useWallpaperMode';
 import {
-  WIDGETS, MAX_ZONES, MAX_LINKS, sanitizeWidgets, safeHttpUrl, buildWallpaperUrl,
+  WIDGETS, MAX_ZONES, MAX_LINKS, MAX_MAC_APPS, sanitizeWidgets, safeHttpUrl, sanitizeMacApp, buildWallpaperUrl,
 } from '../../wallpaper/config';
-import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES } from '../../wallpaper/launchers';
+import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES, OPEN_SHORTCUT } from '../../wallpaper/launchers';
 import { APP_BY_ID } from '../../config/apps';
 import { cityOf } from '../../wallpaper/time';
 import { searchPlaces } from '../../wallpaper/weather';
@@ -14,7 +14,9 @@ import { isCustomWallpaper } from '../../theme/wallpapers';
 
 /**
  * Settings → Wallpaper mode. Everything chosen here is written into the Plash URL; Plash keeps the
- * URL it was given, so a change only reaches it once the URL is copied across again.
+ * URL it was given, so a change only reaches it once the URL is copied across again. Opened over the
+ * wallpaper itself, changes show at once (WallpaperMode writes them into the page's URL), and Plash's
+ * "Update Website to Current" keeps them.
  */
 
 const Btn = ({ children, onClick, primary = false, disabled = false, type = 'button' }) => (
@@ -84,8 +86,8 @@ const WallpaperTab = () => {
     set({ widgets: next });
   };
 
-  /* Apps: one list of `kind:id` tiles, plus the visitor's own links, capped together. */
-  const tileCount = prefs.tiles.length + prefs.links.length;
+  /* Apps: one list of `kind:id` tiles, plus the visitor's own links and Mac apps, capped together. */
+  const tileCount = prefs.tiles.length + prefs.links.length + prefs.macApps.length;
   const toggleTile = (id) => {
     if (prefs.tiles.includes(id)) set({ tiles: prefs.tiles.filter((t) => t !== id) });
     else if (tileCount < MAX_TILES) set({ tiles: [...prefs.tiles, id] });
@@ -100,6 +102,16 @@ const WallpaperTab = () => {
     set({ links: [...prefs.links, { name: linkName.trim().slice(0, 24), href: linkHref }] });
     setLinkName('');
     setLinkUrl('');
+  };
+
+  const [macName, setMacName] = useState('');
+  const macApp = sanitizeMacApp(macName);
+  const canAddMac = macApp && !prefs.macApps.includes(macApp) && prefs.macApps.length < MAX_MAC_APPS && tileCount < MAX_TILES;
+  const addMac = (e) => {
+    e.preventDefault();
+    if (!canAddMac) return;
+    set({ macApps: [...prefs.macApps, macApp] });
+    setMacName('');
   };
 
   /* World clocks */
@@ -256,8 +268,28 @@ const WallpaperTab = () => {
             <Btn type="submit" disabled={!canAddLink}>Add link</Btn>
           </form>
         )}
+        <h4 className="text-[11px] uppercase tracking-wider mt-4 mb-2" style={{ color: 'var(--sdl-sec)', fontWeight: 650 }}>Any Mac app</h4>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {prefs.macApps.map((name) => (
+            <span key={name} className="inline-flex items-center gap-1 pl-3 pr-1 h-8 rounded-full text-[12px]" style={{ background: 'var(--sdl-soft)', color: 'var(--sdl-aink)', fontWeight: 600 }}>
+              {name}
+              <button type="button" aria-label={`Remove ${name}`} onClick={() => set({ macApps: prefs.macApps.filter((x) => x !== name) })} className="w-6 h-6 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2">
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+        {prefs.macApps.length < MAX_MAC_APPS && (
+          <form onSubmit={addMac} className="flex flex-wrap gap-2">
+            <input value={macName} onChange={(e) => setMacName(e.target.value)} placeholder="Finder" aria-label="Mac app name" className="flex-1 min-w-[180px] px-3 rounded-sdl-sm text-[13px] focus-visible:outline-none focus-visible:ring-2" style={fieldStyle} />
+            <Btn type="submit" disabled={!canAddMac}>Add app</Btn>
+          </form>
+        )}
+        <p className="text-[11px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
+          For apps with no link of their own, like Finder, Safari, Notes or Calendar. Type the name as it appears in your Applications folder, and set up the &ldquo;{OPEN_SHORTCUT}&rdquo; shortcut once (see Set up Plash below).
+        </p>
         <p className="text-[11px] mt-3" style={{ color: 'var(--sdl-sec)' }}>
-          Mac apps open through the link each app registers, so they need the app installed. Lumina apps open the full desktop.
+          Mac apps open through the link each app registers, so they need the app installed. Lumina apps open as windows over the wallpaper. The Apps button above the widgets lists every app.
         </p>
       </Card>
 
@@ -369,6 +401,12 @@ const WallpaperTab = () => {
           <li>Install <a href="https://sindresorhus.com/plash" target="_blank" rel="noreferrer" style={{ color: 'var(--sdl-aink)', fontWeight: 600 }}>Plash</a> from the Mac App Store.</li>
           <li>Copy the Plash URL above and add it as a website in Plash.</li>
           <li>Bind a shortcut to Plash&apos;s &ldquo;Toggle Browsing Mode&rdquo;. While it&apos;s on you can search, open apps, tick off tasks and get back to the desktop; while it&apos;s off, clicks go to your Mac.</li>
+          <li>In Plash&apos;s settings, turn on &ldquo;Open external links in default browser&rdquo;. Without it, Mac app tiles do nothing and websites open inside Plash.</li>
+          <li>
+            For &ldquo;Any Mac app&rdquo;: in the Shortcuts app, make a shortcut named &ldquo;{OPEN_SHORTCUT}&rdquo; with one &ldquo;Run Shell Script&rdquo; action,
+            set to pass its input as arguments, containing <code className="font-mono text-[12px]">open -a &quot;$1&quot;</code>. Then allow it under Shortcuts → Settings → Advanced → Allow Running Scripts.
+          </li>
+          <li>Settings changed while the wallpaper shows apply at once. To keep them in Plash, right-click the wallpaper in Browsing Mode and choose &ldquo;Update Website to Current&rdquo;.</li>
           <li>Optional: turn on &ldquo;Deactivate while on battery&rdquo;, and reload every few hours.</li>
           <li>Skip Plash&apos;s &ldquo;Invert colors&rdquo;. Pick a dark colorway in Appearance instead.</li>
         </ol>

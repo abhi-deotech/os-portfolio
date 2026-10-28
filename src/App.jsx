@@ -163,6 +163,21 @@ function App() {
   // Immersive mode's truth: the store follows `fullscreenchange`, never the click that asked for it.
   useImmersiveSync();
 
+  // Plash has no Edit menu, so ⌘C / ⌘V / ⌘X / ⌘A / ⌘Z do nothing in its web view until the page
+  // performs them itself — on the desktop as much as on the wallpaper. Loaded only inside Plash.
+  useEffect(() => {
+    if (!wallpaperMode.plash) return undefined;
+    let off;
+    let cancelled = false;
+    import('./wallpaper/plashEditKeys').then(({ installEditKeys }) => {
+      if (!cancelled) off = installEditKeys();
+    });
+    return () => {
+      cancelled = true;
+      off?.();
+    };
+  }, [wallpaperMode.plash]);
+
   // Theme goes onto documentElement, not onto the JSX below. This hook sits ABOVE the early
   // returns at the end of this component, so boot, login and portaled context menus are themed too.
   //

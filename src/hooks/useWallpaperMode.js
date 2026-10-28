@@ -27,8 +27,8 @@ function subscribe(onChange) {
   };
 }
 
-const navigate = (search) => {
-  window.history.pushState(null, '', `${window.location.pathname}${search}${window.location.hash}`);
+const navigate = (search, { replace = false } = {}) => {
+  window.history[replace ? 'replaceState' : 'pushState'](null, '', `${window.location.pathname}${search}${window.location.hash}`);
   window.dispatchEvent(new Event(NAV_EVENT));
 };
 
@@ -40,14 +40,31 @@ export const exitWallpaperMode = () =>
   navigate(document.documentElement.classList.contains(PLASH_CLASS) ? '?mode=desktop' : '');
 
 /**
- * Leave wallpaper mode straight into one of Lumina's apps. Plash's view has no session, so it signs in
- * as a guest — the same as the login screen's "Enter as Guest" — and App skips the boot sequence.
+ * Open one of Lumina's apps as a window over the wallpaper, without leaving wallpaper mode. Plash's
+ * view has no session, so it signs in as a guest first — the same as the login screen's "Enter as
+ * Guest". A window already open (perhaps minimized) comes to the front instead.
  */
 export const openLuminaApp = (id) => {
   const s = useOSStore.getState();
   if (!s.isAuthenticated) s.login('guest');
-  s.openWindow(id);
-  exitWallpaperMode();
+  if (s.openWindows.includes(id)) s.focusWindow(id);
+  else s.openWindow(id);
+};
+
+/** Settings, on its Wallpaper mode pane, as a window over the wallpaper. */
+export const openWallpaperSettings = () => {
+  const s = useOSStore.getState();
+  if (!s.isAuthenticated) s.login('guest');
+  s.openSettingsTab('wallpaper');
+};
+
+/**
+ * Settings edits made while the wallpaper is showing land in the URL, which is what the wallpaper
+ * reads. Replaced rather than pushed, so Back still leaves the mode. In Plash the change lasts until
+ * a reload unless saved with Plash's own "Update Website to Current".
+ */
+export const replaceWallpaperSearch = (search) => {
+  if (search !== window.location.search) navigate(search, { replace: true });
 };
 
 /** @returns {{ active: boolean, plash: boolean, interactive?: boolean, prefs?: object, theme?: object }} */

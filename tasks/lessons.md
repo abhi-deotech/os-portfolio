@@ -305,3 +305,14 @@ ignoring Browsing Mode.
 Manager, notch, screen size) before laying anything out, and make each assumption a setting. And every
 mode needs a reachable way back in every host state it can run in — list the states (browser, Plash
 passive, Plash browsing) and check each one has a control that a click can reach.
+
+## A mode that hosts tools must keep them inside it
+
+**Context:** wallpaper mode v2 opened Lumina apps by leaving the mode for the desktop. The owner wanted to
+use the apps without the wallpaper going away. v2 also assumed Plash behaves like a browser: its missing
+Edit menu killed ⌘C/⌘V, and its link routing needs a setting that is off by default.
+
+**The rule:** when a mode offers a launcher, the launched thing opens inside the mode unless the owner
+says otherwise. And for any host app (Plash, a webview wrapper), read how it handles keys, links, new
+windows and context menus before relying on browser behaviour; when the source isn't public, look for the
+last public tree in a fork.

@@ -3,16 +3,19 @@
  *
  * Three kinds of tile, one id space (`kind:id`), so the URL can carry the visitor's picks as one list:
  *   mac:*  a macOS app, opened through the URL scheme it registers (`spotify:`, `vscode:` …). The OS
- *          only routes the scheme if the app is installed, and only if the page's host hands custom
- *          schemes to macOS — true in Safari and Chrome; for Plash it has to be checked on the Mac.
+ *          only routes the scheme if the app is installed. Safari and Chrome hand such links to
+ *          macOS; Plash does only with its "Open external links in default browser" setting on (it
+ *          then passes every clicked link to another host to NSWorkspace).
  *   web:*  a website, opened in a new tab.
- *   app:*  one of Lumina's own apps; opening it leaves wallpaper mode for the full desktop.
+ *   app:*  one of Lumina's own apps, opened as a window over the wallpaper.
  *
- * Custom web links (name + URL) travel separately as `link` params; see config.js.
+ * Custom web links (name + URL) travel separately as `link` params, and any other Mac app by name as
+ * `mac` params; see config.js and `macAppHref` below.
  */
 import {
   Music, Code, NotebookPen, MessageSquare, Mail, Gem, MessagesSquare, Video, PenTool,
-  Settings as Gear,
+  Settings as Gear, Phone, Users, Sparkles, ShoppingBag, Map as MapIcon, Podcast, Workflow, ListChecks, Send,
+  MousePointer2, LayoutList, Command,
 } from 'lucide-react';
 
 /** `site` is only for the tile's icon (its favicon); `Icon` is the fallback glyph if that fails. */
@@ -28,7 +31,29 @@ export const MAC_APPS = {
   figma:    { name: 'Figma',    href: 'figma://',                    site: 'figma.com', Icon: PenTool },
   mail:     { name: 'Mail',     href: 'mailto:',                     site: 'icloud.com', Icon: Mail },
   settings: { name: 'Settings', href: 'x-apple.systempreferences:',  site: 'apple.com', Icon: Gear },
+  messages: { name: 'Messages', href: 'sms:',                        site: 'support.apple.com', Icon: MessageSquare },
+  whatsapp: { name: 'WhatsApp', href: 'whatsapp://',                 site: 'whatsapp.com', Icon: Phone },
+  teams:    { name: 'Teams',    href: 'msteams:',                    site: 'teams.microsoft.com', Icon: Users },
+  claude:   { name: 'Claude',   href: 'claude://',                   site: 'claude.ai', Icon: Sparkles },
+  telegram: { name: 'Telegram', href: 'tg://',                       site: 'telegram.org', Icon: Send },
+  cursor:   { name: 'Cursor',   href: 'cursor://',                   site: 'cursor.com', Icon: MousePointer2 },
+  linear:   { name: 'Linear',   href: 'linear://',                   site: 'linear.app', Icon: LayoutList },
+  raycast:  { name: 'Raycast',  href: 'raycast://',                  site: 'raycast.com', Icon: Command },
+  reminders:{ name: 'Reminders', href: 'x-apple-reminderkit://',     site: 'icloud.com', Icon: ListChecks },
+  maps:     { name: 'Maps',     href: 'maps://',                     site: 'maps.apple.com', Icon: MapIcon },
+  podcasts: { name: 'Podcasts', href: 'podcasts://',                 site: 'podcasts.apple.com', Icon: Podcast },
+  appstore: { name: 'App Store', href: 'macappstore://',             site: 'apps.apple.com', Icon: ShoppingBag },
+  shortcuts:{ name: 'Shortcuts', href: 'shortcuts://',               site: 'support.apple.com', Icon: Workflow },
 };
+
+/**
+ * Any other Mac app, by name. Apps such as Finder, Safari, Notes or Calendar register no URL scheme a
+ * page can call, but Shortcuts does: this runs a one-time shortcut, set up from Settings → Wallpaper
+ * mode, whose single "Run Shell Script" action is `open -a "$1"` with the app name as its input.
+ */
+export const OPEN_SHORTCUT = 'Lumina Open';
+export const macAppHref = (name) =>
+  `shortcuts://run-shortcut?name=${encodeURIComponent(OPEN_SHORTCUT)}&input=text&text=${encodeURIComponent(name)}`;
 
 export const WEB_LINKS = {
   gmail:    { name: 'Gmail',    href: 'https://mail.google.com/' },

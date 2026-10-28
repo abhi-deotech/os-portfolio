@@ -193,6 +193,56 @@ renders with Dock = Right from the migrated defaults.
 (Safari and Chrome do; WKWebView hosts may not), where `target="_blank"` links and searches open from
 Plash, and how the Browsing Mode class behaves live. All of it was simulated here by toggling the class.
 
+## Wallpaper mode v3 — apps stay on the wallpaper, 2026-10-28
+
+Owner notes after using v2 in Plash: ⌘C / ⌘V don't work in apps like Notepad; opening Notepad or
+Terminal throws you out of wallpaper mode (should stay, with every app usable); "can we make the mac
+apps available too?".
+
+Root causes, from Plash 2.16's source (last public tree, via a fork; the repo is now closed):
+- Plash is a menu-bar app with no Edit menu. ⌘C/⌘V are menu key equivalents, so in its WKWebView they
+  reach the page as bare keydowns and do nothing.
+- `decidePolicyFor navigationAction`: a clicked link (`.linkActivated`) to another host goes to
+  `NSWorkspace.open` ONLY when "Open external links in default browser" is on — default off. Otherwise
+  `vscode://` just fails in the web view. Form submissions are not `.linkActivated`, so searches opened
+  in a Plash window. Plash's native right-click menu has "Update Website to Current".
+
+- [x] `wallpaper/plashEditKeys.js` (lazy, loaded only when `is-plash-app`): ⌘C/⌘X via
+      `execCommand`, ⌘V via `clipboard.readText` + `insertText` (undoable, React sees it), ⌘A, ⌘Z/⇧⌘Z;
+      skips events an app already handled. Applies to the desktop inside Plash too.
+- [x] Lumina apps open as windows over the wallpaper. `components/workArea.js` context; Window sizes
+      itself into the area and maximizes/snaps within it (desktop unchanged: context is null there).
+      Work area = between Stage Manager's inset and the widget columns (+24px).
+- [x] Apps control + right-click "All Apps…": launcher panel with every Lumina app (dot when open,
+      click restores a minimized one) and every known Mac app.
+- [x] Settings opens over the wallpaper; `usePrefsSync` keeps store prefs and the URL in step (URL →
+      store on load, store → URL via `replaceState` on edits).
+- [x] Mac apps: 13 more URL schemes (Messages `sms:`, WhatsApp, Teams, Claude, Telegram, Cursor,
+      Linear, Raycast, Reminders, Maps, Podcasts, App Store, Shortcuts), plus "Any Mac app" by name
+      through a `Lumina Open` Shortcuts shortcut (`open -a "$1"`), `mac=` URL params, max 4.
+- [x] Search goes out as a clicked link, so Plash routes it to the browser.
+- [x] Inside Plash the page no longer takes over right-click: Plash's own menu (with "Update Website
+      to Current") shows. Esc exits only in a browser with no window showing and nothing focused.
+- [x] Settings → Set up Plash: steps for the external-links setting, the Shortcuts shortcut, and saving
+      changes made inside Plash.
+
+**Measured.** `npx eslint src` 0; token-lint no regressions; cap 962 / facts 148 / interaction 144 /
+profile 76 PASS; sdl in sync; `npx vite build` OK. Entry 78,101 B br (+649 B vs v2: Window's work-area
+geometry, the URL replace helper and the lazy-import hook are eager); WallpaperMode 7,198 B br (+1.4 KB);
+plashEditKeys 0.94 kB raw, own chunk. Preview at 1512×982: Settings, Terminal, Notepad windows centred
+in x 220–1052 (Notepad clamped 900→800 wide); maximize = fixed 40/460/20/220 insets; ⌥→ snap = x
+636–1052. Settings → DuckDuckGo rewrote the URL (`se=duckduckgo`) and the search placeholder. Simulated
+Plash: ⌘V pasted a stubbed clipboard into Notepad, ⌘A selected all, ⌘Z undid it, ⌘Q untouched;
+right-click not prevented. Without Plash: ⌘V not intercepted, wallpaper menu only outside windows.
+
+**Not validated (owner, on the Mac).** The real clipboard in WKWebView (`execCommand('copy')` and
+`readText` were stubbed or synthetic here; WebKit may show its small "Paste" button for text from other
+apps). Mac tiles with the external-links setting on; whether `shortcuts://run-shortcut` runs without
+bringing Shortcuts forward; the newly added URL schemes on a real Mac.
+
+The dev server had stale pre-bundled deps (504 "Outdated Optimize Dep" for react-markdown), which
+blanked the page when Notepad opened; restarting it fixed that. Not a code issue.
+
 ---
 
 # Browser API interaction pass — 2026-09-17
