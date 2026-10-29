@@ -243,6 +243,33 @@ bringing Shortcuts forward; the newly added URL schemes on a real Mac.
 The dev server had stale pre-bundled deps (504 "Outdated Optimize Dep" for react-markdown), which
 blanked the page when Notepad opened; restarting it fixed that. Not a code issue.
 
+## Wallpaper mode v3.1 — "unsupported URL" alert from Mac tiles, 2026-10-29
+
+Owner screenshot from Plash 2.17.4: clicking the VS Code tile put up Plash's "unsupported URL" alert.
+
+Root cause (reproduced in a WKWebView harness running Plash 2.16's `decidePolicyFor` and error path):
+with "Open external links in default browser" off, Plash allows the `vscode://` navigation in the main
+frame, it fails with NSURLError -1002, and Plash shows that error as an alert. The page sees nothing
+in either case (no beforeunload, pagehide or blur), so it cannot tell whether the setting is on.
+
+- [x] Inside Plash, Mac app links (Apps widget, All Apps panel, "any app" shortcuts) target a hidden
+      frame, `MAC_LINK_TARGET`. A failed subframe load is silent; with the setting on Plash still hands
+      the link to macOS. Browser behaviour is unchanged (no target outside Plash).
+- [x] CSP `frame-src` gains the 24 Mac app schemes in vite.config.js, vercel.json and netlify.toml.
+      Without them WebKit blocks the frame load before Plash's policy runs, so nothing opened even with
+      the setting on.
+- [x] After a Mac app click in Plash, a dismissable note says to turn on the Plash setting (or check
+      the app is installed). It hides after 10 s; "Don't show again" is kept in Plash's localStorage.
+
+**Measured.** Harness on the real dev page (`?mode=wallpaper`, Plash classes added, fresh data store):
+VS Code tile and the All Apps Slack link → setting off: subframe policy for `vscode://` / `slack://open`,
+no failed main-frame load (no alert), URL unchanged, note shown; setting on: handed to macOS. Every
+`MAC_APPS` scheme is in all three CSPs (scripted check). `npx eslint src vite.config.js` 0;
+token-lint no regressions; `npx vite build` OK; vercel.json parses.
+
+**Not validated (owner, on the Mac).** Real Plash 2.17.4 (closed source; 2.16's code was the model) and
+the deployed CSP. If Plash loads the deployed site, the fix needs a deploy before it shows up there.
+
 ---
 
 # Browser API interaction pass — 2026-09-17

@@ -55,6 +55,16 @@ export const OPEN_SHORTCUT = 'Lumina Open';
 export const macAppHref = (name) =>
   `shortcuts://run-shortcut?name=${encodeURIComponent(OPEN_SHORTCUT)}&input=text&text=${encodeURIComponent(name)}`;
 
+/**
+ * Inside Plash, Mac app links open in a hidden frame of this name rather than in the page. With
+ * "Open external links in default browser" off, Plash lets a `vscode://` link load in its web view,
+ * the load fails, and Plash shows an "unsupported URL" alert. The same failure in a subframe is
+ * silent, and with the setting on Plash still hands the link to macOS. Both were checked against
+ * Plash 2.16's navigation code in a WKWebView harness. Each scheme above must also be in the CSP's
+ * frame-src (vite.config.js, vercel.json, netlify.toml), or WebKit blocks the frame load first.
+ */
+export const MAC_LINK_TARGET = 'lumina-mac-links';
+
 export const WEB_LINKS = {
   gmail:    { name: 'Gmail',    href: 'https://mail.google.com/' },
   calendar: { name: 'Calendar', href: 'https://calendar.google.com/' },

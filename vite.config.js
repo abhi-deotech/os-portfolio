@@ -23,7 +23,11 @@ import compression from 'vite-plugin-compression'
 //
 // Re-adding COOP/COEP means re-breaking all cross-origin embedding on non-Chromium browsers. If
 // SharedArrayBuffer is ever genuinely needed again, isolate the feature, not the whole document.
-const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; child-src 'self' blob: https:; frame-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+//
+// frame-src lists the Mac app URL schemes from src/wallpaper/launchers.js: inside Plash those links
+// open in a hidden frame (see MAC_LINK_TARGET), and without them WebKit blocks the load before Plash
+// can hand it to macOS. Keep vercel.json and netlify.toml in step.
+const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; child-src 'self' blob: https:; frame-src 'self' blob: https: spotify: music: vscode: notion: obsidian: slack: discord: zoommtg: figma: mailto: x-apple.systempreferences: sms: whatsapp: msteams: claude: tg: cursor: linear: raycast: x-apple-reminderkit: maps: podcasts: macappstore: shortcuts:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 
 // https://vite.dev/config/
 export default defineConfig({

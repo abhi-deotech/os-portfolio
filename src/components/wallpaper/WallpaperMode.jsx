@@ -1,7 +1,7 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Menu, Separator, useContextMenu } from 'react-contexify';
 import { AnimatePresence } from 'framer-motion';
-import { Copy, Settings as SettingsIcon, Monitor, LayoutGrid } from 'lucide-react';
+import { Copy, Settings as SettingsIcon, Monitor, LayoutGrid, X } from 'lucide-react';
 import LiveWallpaper from '../LiveWallpaper';
 import WindowSlot from '../WindowSlot';
 import { WorkAreaContext } from '../workArea';
@@ -12,6 +12,7 @@ import useOSStore from '../../store/osStore';
 import { exitWallpaperMode, openWallpaperSettings, replaceWallpaperSearch } from '../../hooks/useWallpaperMode';
 import { screenInsets, buildWallpaperSearch, SIZE_PX } from '../../wallpaper/config';
 import { packColumns, GAP } from '../../wallpaper/pack';
+import { MAC_LINK_TARGET } from '../../wallpaper/launchers';
 import {
   ClockWidget, WorldClockWidget, CalendarWidget, MusicWidget, WeatherWidget, ProgressWidget,
   SearchWidget, AppsWidget, TodoWidget, NotesWidget,
@@ -112,6 +113,73 @@ const Controls = ({ plash, copied, onCopy, launcherOpen, onLauncher, alignEnd })
   );
 };
 
+const MAC_HINT_OFF = 'lumina.wallpaper.macHintOff';
+const MAC_HINT_MS = 10000;
+
+/**
+ * Inside Plash a Mac app link fails silently when "Open external links in default browser" is off
+ * (see MAC_LINK_TARGET), and the page cannot tell whether the app opened. So after a Mac app click
+ * this says what to check, until the visitor turns the note off.
+ */
+function useMacLinkHint(plash) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!plash) return undefined;
+    let timer;
+    const onClick = (e) => {
+      if (!e.target.closest?.(`a[target="${MAC_LINK_TARGET}"]`)) return;
+      try { if (localStorage.getItem(MAC_HINT_OFF)) return; } catch { /* no storage: show it */ }
+      setShown(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setShown(false), MAC_HINT_MS);
+    };
+    window.addEventListener('click', onClick, true);
+    return () => {
+      window.removeEventListener('click', onClick, true);
+      clearTimeout(timer);
+    };
+  }, [plash]);
+  const dismiss = (forGood) => {
+    if (forGood) {
+      try { localStorage.setItem(MAC_HINT_OFF, '1'); } catch { /* hides for this session only */ }
+    }
+    setShown(false);
+  };
+  return [shown, dismiss];
+}
+
+const MacLinkHint = ({ onDismiss }) => (
+  <div
+    role="status"
+    className="glass-2 lift flex items-start gap-2"
+    style={{ width: SIZE_PX.medium.width, borderRadius: 18, padding: '10px 10px 10px 14px', color: 'var(--sdl-ink)' }}
+  >
+    <div className="flex-1 min-w-0" style={{ fontSize: 12, fontWeight: 550, lineHeight: 1.4 }}>
+      <p>
+        Nothing opened? In Plash&apos;s settings, turn on &ldquo;Open external links in default browser&rdquo;.
+        If it&apos;s on, check the app is installed.
+      </p>
+      <button
+        type="button"
+        onClick={() => onDismiss(true)}
+        className="mt-1 rounded focus-visible:outline-none focus-visible:ring-2"
+        style={{ color: 'var(--wp-label)', fontWeight: 650 }}
+      >
+        Don&apos;t show again
+      </button>
+    </div>
+    <button
+      type="button"
+      onClick={() => onDismiss(false)}
+      aria-label="Close"
+      className="rounded-full p-0.5 focus-visible:outline-none focus-visible:ring-2"
+      style={{ color: 'var(--sdl-sec)' }}
+    >
+      <X size={14} aria-hidden="true" />
+    </button>
+  </div>
+);
+
 /**
  * Keeps the store's `wallpaperPrefs` and the URL in step while the wallpaper shows, so Settings opened
  * over it edits what is on screen. URL → store when the page loads or the URL changes (in Plash the
@@ -148,6 +216,7 @@ const WallpaperMode = ({ mode, fallbackWallpaper }) => {
   const openWindows = useOSStore((s) => s.openWindows);
   const minimizedWindows = useOSStore((s) => s.minimizedWindows);
   const windowsRef = useRef(null);
+  const [macHint, dismissMacHint] = useMacLinkHint(plash);
   usePrefsSync(prefs, theme);
 
   // In the browser the address bar IS the Plash URL: entering the mode navigated to it.
@@ -223,7 +292,14 @@ const WallpaperMode = ({ mode, fallbackWallpaper }) => {
 
       {interactive && launcherOpen && (
         <div className="absolute z-20" style={{ top, [edge]: inset[edge] }}>
-          <AppLauncher prefs={prefs} openWindows={openWindows} maxHeight={vh - top - inset.bottom} onClose={closeLauncher} />
+          <AppLauncher prefs={prefs} openWindows={openWindows} maxHeight={vh - top - inset.bottom} plash={plash} onClose={closeLauncher} />
+        </div>
+      )}
+
+      {plash && <iframe name={MAC_LINK_TARGET} title="Mac app links" hidden tabIndex={-1} />}
+      {interactive && macHint && (
+        <div className="absolute z-20" style={{ top, [edge]: inset[edge] }}>
+          <MacLinkHint onDismiss={dismissMacHint} />
         </div>
       )}
 
@@ -238,7 +314,7 @@ const WallpaperMode = ({ mode, fallbackWallpaper }) => {
               <div key={row.join()} className="flex" style={{ gap: GAP }}>
                 {row.map((id) => {
                   const Widget = WIDGET_COMPONENTS[id];
-                  return <Widget key={id} now={now} prefs={prefs} interactive={interactive} />;
+                  return <Widget key={id} now={now} prefs={prefs} interactive={interactive} plash={plash} />;
                 })}
               </div>
             ))}

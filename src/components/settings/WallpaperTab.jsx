@@ -401,7 +401,7 @@ const WallpaperTab = () => {
           <li>Install <a href="https://sindresorhus.com/plash" target="_blank" rel="noreferrer" style={{ color: 'var(--sdl-aink)', fontWeight: 600 }}>Plash</a> from the Mac App Store.</li>
           <li>Copy the Plash URL above and add it as a website in Plash.</li>
           <li>Bind a shortcut to Plash&apos;s &ldquo;Toggle Browsing Mode&rdquo;. While it&apos;s on you can search, open apps, tick off tasks and get back to the desktop; while it&apos;s off, clicks go to your Mac.</li>
-          <li>In Plash&apos;s settings, turn on &ldquo;Open external links in default browser&rdquo;. Without it, Mac app tiles do nothing and websites open inside Plash.</li>
+          <li>In Plash&apos;s settings, turn on &ldquo;Open external links in default browser&rdquo;. Without it, Mac app tiles can&apos;t open apps and websites open inside Plash.</li>
           <li>
             For &ldquo;Any Mac app&rdquo;: in the Shortcuts app, make a shortcut named &ldquo;{OPEN_SHORTCUT}&rdquo; with one &ldquo;Run Shell Script&rdquo; action,
             set to pass its input as arguments, containing <code className="font-mono text-[12px]">open -a &quot;$1&quot;</code>. Then allow it under Shortcuts → Settings → Advanced → Allow Running Scripts.

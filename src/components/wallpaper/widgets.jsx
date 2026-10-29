@@ -3,7 +3,7 @@ import { Music, MapPin, Search, Plus, X, Globe, Check } from 'lucide-react';
 import AppIcon from '../common/AppIcon';
 import { APP_BY_ID } from '../../config/apps';
 import { openLuminaApp } from '../../hooks/useWallpaperMode';
-import { MAC_APPS, WEB_LINKS, MAX_TILES, SEARCH_ENGINES, isKnownTile, macAppHref } from '../../wallpaper/launchers';
+import { MAC_APPS, WEB_LINKS, MAX_TILES, SEARCH_ENGINES, MAC_LINK_TARGET, isKnownTile, macAppHref } from '../../wallpaper/launchers';
 import { SIZE_PX } from '../../wallpaper/config';
 import useVisiblePoll from '../../hooks/useVisiblePoll';
 import { getNowPlaying } from '../../utils/musicApi';
@@ -405,7 +405,7 @@ function resolveTiles(prefs) {
   return [...tiles, ...macApps, ...links].filter(Boolean).slice(0, MAX_TILES);
 }
 
-export const AppsWidget = ({ prefs, interactive }) => {
+export const AppsWidget = ({ prefs, interactive, plash }) => {
   const tiles = useMemo(() => resolveTiles(prefs), [prefs]);
   const tile = `flex flex-col items-center justify-center gap-1 rounded-xl min-w-0 transition-colors duration-hover ease-sdl ${interactive ? 'hover:bg-veil/10' : ''} ${ring}`;
   const label = (name) => (
@@ -427,7 +427,7 @@ export const AppsWidget = ({ prefs, interactive }) => {
               href={t.href}
               tabIndex={interactive ? 0 : -1}
               title={t.name}
-              {...(t.external ? { target: '_blank', rel: 'noreferrer' } : {})}
+              {...(t.external ? { target: '_blank', rel: 'noreferrer' } : plash ? { target: MAC_LINK_TARGET } : {})}
               className={tile}
             >
               {t.icon}{label(t.name)}
