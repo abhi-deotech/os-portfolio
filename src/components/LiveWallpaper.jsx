@@ -1,6 +1,18 @@
 import React, { useEffect } from 'react';
 import useOSStore from '../store/osStore';
+import useMinuteClock from '../hooks/useMinuteClock';
 import { resolveWallpaper, isCustomWallpaper, isLegacyDataUrlWallpaper } from '../theme/wallpapers';
+import { skyBackground } from '../theme/sky';
+
+/** "Time of Day": repainted on the minute tick, so it costs one style change a minute and no animation. */
+const SkyLayer = ({ children }) => {
+  const now = useMinuteClock();
+  return (
+    <div className="absolute inset-0 -z-20" style={{ backgroundImage: skyBackground(now) }}>
+      {children}
+    </div>
+  );
+};
 
 /**
  * The desktop plane's ingredient layer.
@@ -31,6 +43,7 @@ const Wallpaper = ({ override }) => {
   let gradientClass = '';
   let backgroundStyle;
   let isColorwayPlane = false;
+  let isSky = false;
 
   if (custom) {
     const url = customUrl ?? (isLegacyDataUrlWallpaper(wallpaper) ? wallpaper : null);
@@ -39,6 +52,7 @@ const Wallpaper = ({ override }) => {
   } else {
     const wp = resolveWallpaper(wallpaper);
     if (wp.type === 'none') isColorwayPlane = true;
+    else if (wp.type === 'sky') isSky = true;
     else if (wp.type === 'image') backgroundStyle = { backgroundImage: `url(${wp.url})` };
     else gradientClass = wp.gradient;
   }
@@ -46,6 +60,15 @@ const Wallpaper = ({ override }) => {
   // "Colorway" renders nothing at all, so body's plane + wash (body::before in grammar.css) is what
   // the user sees. A readability scrim over an already-designed plane would only mute it.
   if (isColorwayPlane) return null;
+
+  // Its own component so the minute clock only runs while the sky is the wallpaper.
+  if (isSky) {
+    return (
+      <SkyLayer>
+        <div className="absolute inset-0" style={{ background: 'var(--sdl-scrim)', opacity: 0.35 }} />
+      </SkyLayer>
+    );
+  }
 
   return (
     <div

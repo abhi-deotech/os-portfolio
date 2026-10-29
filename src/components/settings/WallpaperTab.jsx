@@ -4,8 +4,9 @@ import useOSStore from '../../store/osStore';
 import { Card, Segmented, Row, Slider, Switch } from './primitives';
 import { enterWallpaperMode } from '../../hooks/useWallpaperMode';
 import {
-  WIDGETS, MAX_ZONES, MAX_LINKS, MAX_MAC_APPS, sanitizeWidgets, safeHttpUrl, sanitizeMacApp, buildWallpaperUrl,
+  WIDGETS, MAX_ZONES, MAX_LINKS, MAX_MAC_APPS, sanitizeWidgets, safeHttpUrl, sanitizeMacApp, sanitizeCalKey, buildWallpaperUrl,
 } from '../../wallpaper/config';
+import { fetchAgenda, localDay } from '../../wallpaper/agenda';
 import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES, OPEN_SHORTCUT } from '../../wallpaper/launchers';
 import { APP_BY_ID } from '../../config/apps';
 import { cityOf } from '../../wallpaper/time';
@@ -145,6 +146,20 @@ const WallpaperTab = () => {
     setQuery('');
   };
 
+  /* Agenda: the key, and a real round trip to /api/calendar to say whether it works. */
+  const [check, setCheck] = useState(null); // null | 'busy' | a result from fetchAgenda
+  const checkCalendar = async () => {
+    setCheck('busy');
+    setCheck(await fetchAgenda(prefs.calKey, localDay(new Date())));
+  };
+  const checkText = (c) => {
+    if (c === 'busy') return 'Checking…';
+    if (c.status === 'ok') return `Connected. ${c.events.length === 1 ? '1 event' : `${c.events.length} events`} today.`;
+    if (c.status === 'rejected') return 'The server rejected this key. It must match WALLPAPER_KEY in Vercel.';
+    if (c.status === 'unconfigured') return 'Key accepted, but the server has no CALENDAR_ICS_URLS yet.';
+    return 'Couldn’t load the calendar. Is the site deployed with both environment variables?';
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="mb-1" style={{ color: 'var(--sdl-ink)', fontSize: 34, fontWeight: 650, letterSpacing: '-0.02em', fontFamily: 'var(--sdl-font-title)' }}>
@@ -172,6 +187,11 @@ const WallpaperTab = () => {
         {isCustomWallpaper(wallpaper) && (
           <p className="text-[12px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
             Your uploaded wallpaper stays in this browser, so Plash shows the colorway&apos;s own background instead.
+          </p>
+        )}
+        {prefs.calKey && (
+          <p className="text-[12px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
+            This URL contains your calendar key, so anyone who has it can read today&apos;s event titles. Keep it to yourself.
           </p>
         )}
       </Card>
@@ -394,6 +414,41 @@ const WallpaperTab = () => {
         <p className="text-[11px] mt-3" style={{ color: 'var(--sdl-sec)' }}>
           Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" style={{ color: 'var(--sdl-aink)' }}>Open-Meteo</a> (CC BY 4.0).
         </p>
+      </Card>
+
+      <Card
+        title="Agenda"
+        sub="Today's events from your own calendar, with countdowns. The site reads your calendar on its server, so the calendar's private link never reaches this page or Plash."
+      >
+        <ol className="list-decimal pl-5 space-y-1.5 text-[13px] mb-4" style={{ color: 'var(--sdl-ink)' }}>
+          <li>
+            Copy your calendar&apos;s private iCal link. Google Calendar: Settings → your calendar → &ldquo;Secret address in iCal format&rdquo;.
+            Outlook: Settings → Calendar → Shared calendars → Publish a calendar → ICS.
+          </li>
+          <li>
+            In Vercel, open the project → Settings → Environment Variables. Add <code className="font-mono text-[12px]">CALENDAR_ICS_URLS</code> (one
+            link, or several separated by commas) and <code className="font-mono text-[12px]">WALLPAPER_KEY</code> (any long random text, e.g. from{' '}
+            <code className="font-mono text-[12px]">openssl rand -hex 24</code>). Then redeploy.
+          </li>
+          <li>Paste the same key below, switch on the Agenda widget, and copy the Plash URL again.</li>
+        </ol>
+        <div className="flex flex-wrap gap-2">
+          <input
+            type="password"
+            value={prefs.calKey}
+            onChange={(e) => { set({ calKey: sanitizeCalKey(e.target.value) }); setCheck(null); }}
+            placeholder="WALLPAPER_KEY"
+            aria-label="Calendar key"
+            autoComplete="off"
+            spellCheck={false}
+            className="flex-1 min-w-[220px] px-3 rounded-sdl-sm text-[13px] font-mono focus-visible:outline-none focus-visible:ring-2"
+            style={fieldStyle}
+          />
+          <Btn onClick={checkCalendar} disabled={!prefs.calKey || check === 'busy'}>Check connection</Btn>
+        </div>
+        <div role="status" className="text-[12px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
+          {check && checkText(check)}
+        </div>
       </Card>
 
       <Card title="Set up Plash">

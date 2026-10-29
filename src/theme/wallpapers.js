@@ -13,8 +13,9 @@
 
 import { relLuminance } from './registry';
 import { hexToOklch } from './oklch';
+import { SKY_STOPS } from './sky';
 
-/** @typedef {{id: string, name: string, type: 'live'|'image'|'none', gradient?: string, url?: string,
+/** @typedef {{id: string, name: string, type: 'live'|'image'|'none'|'sky', gradient?: string, url?: string,
  *             thumb?: string, tone?: {lum: number, rgb: number[]}}} Wallpaper */
 
 const UNSPLASH = (id, w, q) =>
@@ -52,6 +53,8 @@ export const WALLPAPERS = [
   { id: 'sunset-glow', name: 'Sunset Glow', type: 'live', gradient: 'bg-gradient-to-br from-[#ff4d4d] to-[#ffaf40]' },
   { id: 'quantum-flow', name: 'Quantum Flow', type: 'live', gradient: 'bg-gradient-to-br from-[#cc97ff] to-[#60a5fa]' },
   { id: 'linux-default', name: 'Linux Default', type: 'live', gradient: 'bg-gradient-to-br from-[#4e1a3d] via-[#772953] to-[#e95420]' },
+  // Follows the clock; painted from theme/sky.js once a minute, never animated.
+  { id: 'time-of-day', name: 'Time of Day', type: 'sky' },
   { id: 'abstract-blue', name: 'Abstract Blue', type: 'image', url: UNSPLASH('1618005182384-a83a8bd57fbe', 1200, 70), thumb: UNSPLASH('1618005182384-a83a8bd57fbe', 400, 40) },
   { id: 'dark-mountain', name: 'Dark Mountain', type: 'image', url: UNSPLASH('1477346611705-65d1883cee1e', 1200, 70), thumb: UNSPLASH('1477346611705-65d1883cee1e', 400, 40) },
   { id: 'cyber-vibes', name: 'Cyber Vibes', type: 'image', url: UNSPLASH('1614850523296-d8c1af93d400', 1200, 70), thumb: UNSPLASH('1614850523296-d8c1af93d400', 400, 40) },
@@ -94,8 +97,9 @@ const asHex = (rgb) => `#${rgb.map((c) => c.toString(16).padStart(2, '0')).join(
 const INGREDIENTS = new Map(
   WALLPAPERS.map((w) => {
     if (w.type === 'none') return [w.id, null]; // the plane IS the colorway; nothing to compare
-    if (w.type === 'live') {
-      const stops = hexIn(w.gradient || '');
+    if (w.type === 'live' || w.type === 'sky') {
+      // The sky is judged on every colour it passes through in a day, so no hour can surprise it.
+      const stops = w.type === 'sky' ? SKY_STOPS.flatMap((s) => s.slice(1)) : hexIn(w.gradient || '');
       return [w.id, {
         lum: mean(stops.map(relLuminance)),
         hues: stops.map((h) => hexToOklch(h).h),

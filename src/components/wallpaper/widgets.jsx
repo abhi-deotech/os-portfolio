@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Music, MapPin, Search, Plus, X, Globe, Check } from 'lucide-react';
+import { Music, MapPin, Search, Plus, X, Globe, Check, CalendarDays } from 'lucide-react';
 import AppIcon from '../common/AppIcon';
 import { APP_BY_ID } from '../../config/apps';
 import { openLuminaApp } from '../../hooks/useWallpaperMode';
@@ -8,6 +8,7 @@ import { SIZE_PX } from '../../wallpaper/config';
 import useVisiblePoll from '../../hooks/useVisiblePoll';
 import { getNowPlaying } from '../../utils/musicApi';
 import { fetchWeather, describeCode } from '../../wallpaper/weather';
+import { fetchAgenda, agendaView, untilText, localDay } from '../../wallpaper/agenda';
 import { resolveUnit } from '../../wallpaper/config';
 import {
   formatter, timeParts, zoneRelation, cityOf, isoWeek, dayOfYear, daysInYear, dayFraction,
@@ -289,6 +290,86 @@ export const ProgressWidget = ({ now }) => {
   );
 };
 
+/* ── Agenda ────────────────────────────────────────────────────────────────── */
+
+const AGENDA_NOTES = {
+  nokey: 'Connect your calendar in Settings → Wallpaper mode.',
+  rejected: 'The calendar key was rejected. Check it in Settings → Wallpaper mode.',
+  unconfigured: 'No calendar on the server yet. See Settings → Wallpaper mode.',
+  error: 'Calendar unavailable right now.',
+};
+
+const eventTime = (date, hour) => {
+  const { digits, period } = timeParts(date, hour);
+  return period ? `${digits} ${period}` : digits;
+};
+
+/**
+ * Today's next events from the visitor's own calendar, read through /api/calendar so the calendar's
+ * secret feed link never reaches the page. Countdowns come from the shared minute tick; the feed is
+ * asked again every 5 minutes while the page is visible, and at once when the date changes.
+ */
+export const AgendaWidget = ({ now, prefs }) => {
+  const { calKey, hour } = prefs;
+  const day = localDay(now);
+  const [state, setState] = useState({ status: 'loading' });
+
+  useVisiblePoll(async () => {
+    const next = await fetchAgenda(calKey, day);
+    // A network blip keeps the last good list up rather than blanking the card.
+    setState((prev) => (next.status === 'error' && prev.status === 'ok' && prev.day === day ? prev : { ...next, day }));
+  }, 5 * 60_000, Boolean(calKey), `${calKey}|${day}`);
+
+  const status = calKey ? state.status : 'nokey';
+  const { allDay, rows } = status === 'ok' ? agendaView(state.events, now) : { allDay: [], rows: [] };
+
+  return (
+    <Shell size="medium" label="Agenda" pad={14}>
+      <div className="flex items-baseline justify-between gap-3 min-w-0">
+        <Label style={{ flexShrink: 0 }}>Today</Label>
+        {allDay.length > 0 && (
+          <Sub style={{ fontSize: 11 }}>{allDay.length > 1 ? `${allDay[0]} +${allDay.length - 1}` : allDay[0]}</Sub>
+        )}
+      </div>
+      {AGENDA_NOTES[status] ? (
+        <div className="flex-1 flex flex-col justify-end gap-2">
+          <CalendarDays size={22} style={{ color: 'var(--sdl-sec)' }} aria-hidden="true" />
+          <Sub style={{ whiteSpace: 'normal' }}>{AGENDA_NOTES[status]}</Sub>
+        </div>
+      ) : (
+        <ul className="mt-1.5 flex-1 min-h-0 flex flex-col gap-0.5">
+          {status === 'ok' && rows.length === 0 && <li><Sub>Nothing else today.</Sub></li>}
+          {rows.map((e) => (
+            <li
+              key={`${e.title}|${e.start.toISOString()}`}
+              className="grid items-center gap-2 rounded-lg min-w-0"
+              style={{
+                gridTemplateColumns: '64px minmax(0, 1fr) auto',
+                height: 30,
+                padding: '0 8px',
+                margin: '0 -8px',
+                background: e.kind === 'now' ? 'var(--wp-track)' : 'transparent',
+                boxShadow: e.kind === 'now' ? 'inset 3px 0 0 var(--wp-mark)' : 'none',
+              }}
+            >
+              <span className="tabular-nums truncate" style={{ fontSize: 12, fontWeight: 600, color: 'var(--sdl-sec)' }}>
+                {eventTime(e.start, hour)}
+              </span>
+              <span className="truncate" style={{ fontSize: 13, fontWeight: e.kind === 'later' ? 550 : 650 }}>{e.title}</span>
+              <span
+                className="tabular-nums whitespace-nowrap"
+                style={{ fontSize: 11, fontWeight: 650, color: e.kind === 'later' ? 'var(--sdl-sec)' : 'var(--wp-mark)' }}
+              >
+                {e.kind === 'now' ? `until ${eventTime(e.end, hour)}` : e.kind === 'next' ? `in ${untilText(e.minutes)}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Shell>
+  );
+};
+
 /* ── Local state for the working widgets ───────────────────────────────────── */
 
 /**
@@ -519,6 +600,45 @@ export const TodoWidget = ({ interactive }) => {
           </li>
         ))}
       </ul>
+    </Shell>
+  );
+};
+
+/* ── Today's one thing ─────────────────────────────────────────────────────── */
+
+/**
+ * One line, set in the morning and read all day. It belongs to the day it was written: once that has
+ * passed it dims and says which day it was from, rather than pretending to still be today's.
+ */
+export const FocusWidget = ({ now, interactive }) => {
+  const [focus, setFocus] = useLocalState('lumina.wallpaper.focus', { text: '', day: '' });
+  const today = localDay(now);
+  const stale = Boolean(focus.text) && focus.day !== today;
+  const from = stale ? formatter('fday', { weekday: 'long' }).format(new Date(`${focus.day}T12:00`)) : '';
+  const line = { fontFamily: 'var(--sdl-font-title)', fontSize: 22, fontWeight: 600, lineHeight: 1.25, letterSpacing: '-0.01em' };
+
+  return (
+    <Shell size="medium" label="Today’s one thing">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label>Today’s one thing</Label>
+        {stale && <Sub style={{ fontSize: 11 }}>From {from}</Sub>}
+      </div>
+      {interactive ? (
+        <textarea
+          value={focus.text}
+          onChange={(e) => setFocus({ text: e.target.value.replace(/\n/g, ' ').slice(0, 120), day: localDay(new Date()) })}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); } }}
+          placeholder="What matters most today?"
+          aria-label="Today’s one thing"
+          rows={3}
+          className={`flex-1 mt-1 resize-none bg-transparent rounded-md ${ring}`}
+          style={{ ...line, color: stale ? 'var(--sdl-sec)' : 'var(--sdl-ink)' }}
+        />
+      ) : (
+        <p className="flex-1 mt-1 line-clamp-3" style={{ ...line, color: focus.text && !stale ? 'var(--sdl-ink)' : 'var(--sdl-sec)' }}>
+          {focus.text || 'Turn on Browsing Mode in Plash to set it.'}
+        </p>
+      )}
     </Shell>
   );
 };

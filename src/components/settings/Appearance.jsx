@@ -6,6 +6,7 @@ import { resolveColorway, COLORWAYS } from '../../theme/registry';
 import { useColorwayList } from '../../theme/useColorway';
 import { ICON_THEMES, iconAudit } from '../../theme/icons';
 import { WALLPAPERS, isCustomWallpaper, resolveWallpaper } from '../../theme/wallpapers';
+import { skyBackground } from '../../theme/sky';
 import { APPS } from '../../config/apps';
 import AppIcon from '../common/AppIcon';
 import { APPEARANCE_RESET_DIALOG } from '../../config/dialogs';
@@ -188,7 +189,8 @@ const Appearance = () => {
             background: !custom && resolveWallpaper(wallpaper)?.type === 'none' ? 'var(--sdl-plane)' : undefined,
             backgroundImage: custom
               ? (customWallpaperUrl ? `url(${customWallpaperUrl})` : undefined)
-              : resolveWallpaper(wallpaper)?.type === 'image' ? `url(${resolveWallpaper(wallpaper).url})` : undefined,
+              : resolveWallpaper(wallpaper)?.type === 'image' ? `url(${resolveWallpaper(wallpaper).url})`
+                : resolveWallpaper(wallpaper)?.type === 'sky' ? skyBackground(new Date()) : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
@@ -214,6 +216,7 @@ const Appearance = () => {
                 style={{
                   border: `2px solid ${on ? 'var(--sdl-accent)' : 'var(--sdl-glass-border)'}`,
                   background: wp.type === 'none' ? 'var(--sdl-plane)' : undefined,
+                  backgroundImage: wp.type === 'sky' ? skyBackground(new Date()) : undefined,
                 }}
               >
                 {wp.type === 'image' && <img src={wp.thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />}

@@ -15,7 +15,7 @@ import { packColumns, GAP } from '../../wallpaper/pack';
 import { MAC_LINK_TARGET } from '../../wallpaper/launchers';
 import {
   ClockWidget, WorldClockWidget, CalendarWidget, MusicWidget, WeatherWidget, ProgressWidget,
-  SearchWidget, AppsWidget, TodoWidget, NotesWidget,
+  SearchWidget, AppsWidget, TodoWidget, NotesWidget, AgendaWidget, FocusWidget,
 } from './widgets';
 
 /**
@@ -45,6 +45,8 @@ const WIDGET_COMPONENTS = {
   worldclock: WorldClockWidget,
   progress: ProgressWidget,
   music: MusicWidget,
+  agenda: AgendaWidget,
+  focus: FocusWidget,
 };
 
 /** Two voices (law 2), as one switch: see the variable list at the top of widgets.jsx. */

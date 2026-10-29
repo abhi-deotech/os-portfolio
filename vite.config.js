@@ -1,6 +1,35 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import compression from 'vite-plugin-compression'
+
+/**
+ * `npm run dev` has no Vercel runtime, so this serves the same `api/*.js` handlers Vercel deploys
+ * (Web-standard `GET(request)` exports), with `.env.local` loaded into process.env the way Vercel's
+ * env vars are. Dev only; production routing is Vercel's.
+ */
+function apiRoutes() {
+  return {
+    name: 'lumina-api-routes',
+    apply: 'serve',
+    configureServer(server) {
+      for (const [k, v] of Object.entries(loadEnv(server.config.mode, process.cwd(), ''))) process.env[k] ??= v
+      server.middlewares.use('/api', async (req, res, next) => {
+        const name = req.url.split('?')[0].replace(/^\//, '')
+        if (!/^[\w-]+$/.test(name)) return next()
+        let handler
+        try {
+          handler = (await server.ssrLoadModule(`/api/${name}.js`)).GET
+        } catch {
+          return next()
+        }
+        if (typeof handler !== 'function') return next()
+        const response = await handler(new Request(new URL(req.originalUrl, 'http://localhost'), { headers: req.headers }))
+        res.writeHead(response.status, Object.fromEntries(response.headers))
+        res.end(Buffer.from(await response.arrayBuffer()))
+      })
+    },
+  }
+}
 
 // Kept identical to netlify.toml and vercel.json. Served in dev and preview too so a
 // policy that breaks the app fails here rather than only in production — which is exactly what
@@ -33,6 +62,7 @@ const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.pu
 export default defineConfig({
   plugins: [
     react(),
+    apiRoutes(),
     // Brotli compression for production
     compression({
       algorithm: 'brotliCompress',
