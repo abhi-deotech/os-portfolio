@@ -36,6 +36,8 @@ export const WIDGETS = {
   worldclock: { name: 'World clocks',      size: 'small' },
   progress:   { name: 'Day and year',      size: 'small' },
   music:      { name: 'Now playing',       size: 'medium' },
+  agenda:     { name: 'Agenda',            size: 'medium' },
+  focus:      { name: 'Today’s one thing', size: 'medium' },
 };
 
 /** Pixel boxes for each size; the dashboard packs columns from these heights. */
@@ -80,7 +82,13 @@ export const DEFAULT_PREFS = {
   links: [],            // [{ name, href }] — the visitor's own web links, http(s) only
   macApps: [],          // ['Finder', …] — any Mac app by name, opened through a Shortcuts shortcut
   engine: 'google',
+  // The Agenda's key for /api/calendar (WALLPAPER_KEY on the server). It rides in the Plash URL, so
+  // that URL is private; the calendar's own feed links never leave the server.
+  calKey: '',
 };
+
+/** A calendar key as `openssl rand -hex 24` or a password manager makes one: no URL syntax. */
+export const sanitizeCalKey = (key) => String(key ?? '').replace(/[^\w-]/g, '').slice(0, 128);
 
 const isZone = (z) => {
   try { new Intl.DateTimeFormat(undefined, { timeZone: z }); return true; } catch { return false; }
@@ -136,6 +144,7 @@ export function buildWallpaperSearch(prefs, { colorway, wallpaper } = {}) {
   for (const l of p.links.slice(0, MAX_LINKS)) q.append('link', `${l.name}~${l.href}`);
   for (const name of p.macApps.slice(0, MAX_MAC_APPS)) q.append('mac', name);
   q.set('se', p.engine);
+  if (p.calKey) q.set('ck', p.calKey);
   if (colorway) q.set('cw', colorway);
   // An uploaded wallpaper is a Blob in THIS browser's IndexedDB; Plash can never load it, so the
   // colorway plane stands in rather than a URL that paints nothing.
@@ -213,6 +222,7 @@ export function readWallpaperMode(search, isPlash, browsing = false) {
       links,
       macApps: [...new Set(q.getAll('mac').map(sanitizeMacApp).filter(Boolean))].slice(0, MAX_MAC_APPS),
       engine: oneOf(q.get('se'), ['google', 'duckduckgo', 'bing', 'perplexity'], DEFAULT_PREFS.engine),
+      calKey: sanitizeCalKey(q.get('ck')),
     },
     // Only overrides the theme when the URL names a real value; otherwise the store's own wins.
     theme: {

@@ -1,6 +1,35 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import compression from 'vite-plugin-compression'
+
+/**
+ * `npm run dev` has no Vercel runtime, so this serves the same `api/*.js` handlers Vercel deploys
+ * (Web-standard `GET(request)` exports), with `.env.local` loaded into process.env the way Vercel's
+ * env vars are. Dev only; production routing is Vercel's.
+ */
+function apiRoutes() {
+  return {
+    name: 'lumina-api-routes',
+    apply: 'serve',
+    configureServer(server) {
+      for (const [k, v] of Object.entries(loadEnv(server.config.mode, process.cwd(), ''))) process.env[k] ??= v
+      server.middlewares.use('/api', async (req, res, next) => {
+        const name = req.url.split('?')[0].replace(/^\//, '')
+        if (!/^[\w-]+$/.test(name)) return next()
+        let handler
+        try {
+          handler = (await server.ssrLoadModule(`/api/${name}.js`)).GET
+        } catch {
+          return next()
+        }
+        if (typeof handler !== 'function') return next()
+        const response = await handler(new Request(new URL(req.originalUrl, 'http://localhost'), { headers: req.headers }))
+        res.writeHead(response.status, Object.fromEntries(response.headers))
+        res.end(Buffer.from(await response.arrayBuffer()))
+      })
+    },
+  }
+}
 
 // Kept identical to netlify.toml and vercel.json. Served in dev and preview too so a
 // policy that breaks the app fails here rather than only in production — which is exactly what
@@ -23,12 +52,17 @@ import compression from 'vite-plugin-compression'
 //
 // Re-adding COOP/COEP means re-breaking all cross-origin embedding on non-Chromium browsers. If
 // SharedArrayBuffer is ever genuinely needed again, isolate the feature, not the whole document.
-const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; child-src 'self' blob: https:; frame-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+//
+// frame-src lists the Mac app URL schemes from src/wallpaper/launchers.js: inside Plash those links
+// open in a hidden frame (see MAC_LINK_TARGET), and without them WebKit blocks the load before Plash
+// can hand it to macOS. Keep vercel.json and netlify.toml in step.
+const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; child-src 'self' blob: https:; frame-src 'self' blob: https: spotify: music: vscode: notion: obsidian: slack: discord: zoommtg: figma: mailto: x-apple.systempreferences: sms: whatsapp: msteams: claude: tg: cursor: linear: raycast: x-apple-reminderkit: maps: podcasts: macappstore: shortcuts:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    apiRoutes(),
     // Brotli compression for production
     compression({
       algorithm: 'brotliCompress',

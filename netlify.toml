@@ -13,7 +13,7 @@
   for = "/*"
   [headers.values]
     Cross-Origin-Resource-Policy = "cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; child-src 'self' blob: https:; frame-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.puter.com https://cdn.emulatorjs.org https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https: wss:; worker-src 'self' blob:; child-src 'self' blob: https:; frame-src 'self' blob: https: spotify: music: vscode: notion: obsidian: slack: discord: zoommtg: figma: mailto: x-apple.systempreferences: sms: whatsapp: msteams: claude: tg: cursor: linear: raycast: x-apple-reminderkit: maps: podcasts: macappstore: shortcuts:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 

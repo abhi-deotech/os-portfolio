@@ -316,3 +316,17 @@ Edit menu killed ⌘C/⌘V, and its link routing needs a setting that is off by 
 says otherwise. And for any host app (Plash, a webview wrapper), read how it handles keys, links, new
 windows and context menus before relying on browser behaviour; when the source isn't public, look for the
 last public tree in a fork.
+
+## A new route for a request must clear the page's own policies, not just the host's
+
+**Context:** wallpaper v3.1 sent Plash's Mac app links through a hidden iframe so a failure would be
+silent instead of an alert. A toy page in a WKWebView harness showed that it worked. On the real page,
+the click did nothing at all, even with Plash's setting on.
+
+**Cause:** the site's CSP has `frame-src 'self' blob: https:`, so WebKit blocked `vscode:` in the frame
+before any navigation policy ran. The toy page had no CSP. There was a second trap as well: each harness
+binary keeps its own WebKit cache, so the first re-run after the CSP edit served the old header.
+
+**Rule:** prove a routing change on the real page with its real headers, using a non-persistent data
+store. When a request moves to a new channel (frame, worker, fetch), check which CSP directive governs
+that channel.

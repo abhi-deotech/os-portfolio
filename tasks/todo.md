@@ -243,6 +243,92 @@ bringing Shortcuts forward; the newly added URL schemes on a real Mac.
 The dev server had stale pre-bundled deps (504 "Outdated Optimize Dep" for react-markdown), which
 blanked the page when Notepad opened; restarting it fixed that. Not a code issue.
 
+## Wallpaper mode v3.1 — "unsupported URL" alert from Mac tiles, 2026-10-29
+
+Owner screenshot from Plash 2.17.4: clicking the VS Code tile put up Plash's "unsupported URL" alert.
+
+Root cause (reproduced in a WKWebView harness running Plash 2.16's `decidePolicyFor` and error path):
+with "Open external links in default browser" off, Plash allows the `vscode://` navigation in the main
+frame, it fails with NSURLError -1002, and Plash shows that error as an alert. The page sees nothing
+in either case (no beforeunload, pagehide or blur), so it cannot tell whether the setting is on.
+
+- [x] Inside Plash, Mac app links (Apps widget, All Apps panel, "any app" shortcuts) target a hidden
+      frame, `MAC_LINK_TARGET`. A failed subframe load is silent; with the setting on Plash still hands
+      the link to macOS. Browser behaviour is unchanged (no target outside Plash).
+- [x] CSP `frame-src` gains the 24 Mac app schemes in vite.config.js, vercel.json and netlify.toml.
+      Without them WebKit blocks the frame load before Plash's policy runs, so nothing opened even with
+      the setting on.
+- [x] After a Mac app click in Plash, a dismissable note says to turn on the Plash setting (or check
+      the app is installed). It hides after 10 s; "Don't show again" is kept in Plash's localStorage.
+
+**Measured.** Harness on the real dev page (`?mode=wallpaper`, Plash classes added, fresh data store):
+VS Code tile and the All Apps Slack link → setting off: subframe policy for `vscode://` / `slack://open`,
+no failed main-frame load (no alert), URL unchanged, note shown; setting on: handed to macOS. Every
+`MAC_APPS` scheme is in all three CSPs (scripted check). `npx eslint src vite.config.js` 0;
+token-lint no regressions; `npx vite build` OK; vercel.json parses.
+
+**Not validated (owner, on the Mac).** Real Plash 2.17.4 (closed source; 2.16's code was the model) and
+the deployed CSP. If Plash loads the deployed site, the fix needs a deploy before it shows up there.
+
+## Wallpaper mode v4 — agenda, focus line, time-of-day wallpaper, 2026-10-30
+
+Owner request: bring the designs from the stand-alone `~/Projects/plash-wallpaper` prototype (built by
+mistake as a separate site) into wallpaper mode. Owner choices: Agenda widget, Focus widget and a
+time-of-day wallpaper; no workday bar, no rotating reminders (Notes covers them); hosting is Vercel; the
+old repo stays as it is. Same branch as v3.1 (owner's choice).
+
+- [x] Calendar backend: `api/calendar.js` (Vercel function) + `api/_lib/ics.js` (parser, ported from the
+      prototype). Feed links live only in the `CALENDAR_ICS_URLS` env var; the function answers only
+      requests carrying `WALLPAPER_KEY`. Parser handles recurring events, EXDATE, moved and cancelled
+      instances, all-day events and TZIDs without a VTIMEZONE block. `ical.js` added as a dependency.
+- [x] `vercel.json`: keep `/api/*` out of the SPA catch-all rewrite.
+- [x] Dev: a Vite middleware runs `api/*.js` under `npm run dev`, with env from `.env.local`.
+- [x] `scripts/agenda-check.mjs` → `npm run agenda:check`: the prototype's parser and endpoint tests.
+- [x] URL contract: widgets `agenda` (medium) and `focus` (medium), opt-in; `ck=` carries the calendar
+      key. wallpaperPrefs is local-only (not in the Puter sync), so the key stays on this machine.
+- [x] Agenda widget: today's next events, "Now · until 3:30" and "in 12 min" from the minute clock; all-day
+      events on the label line; refetch every 5 min while visible and when the date changes; honest
+      states for no key, rejected key, no feed on the server, and unavailable.
+- [x] Focus widget: one line in Plash's localStorage, editable while interactive; dims with "From {day}"
+      once the day has passed.
+- [x] Settings → Wallpaper mode: an Agenda card (key field, "Check connection", setup steps), and a note
+      that the Plash URL carries the key.
+- [x] Time-of-day wallpaper: `type: 'sky'` in `theme/wallpapers.js`, palette in `theme/sky.js`, painted
+      by LiveWallpaper once a minute, no animation. Its fit ingredients derive from the palette stops, so
+      the randomizer judges it like any gradient. Appearance shows a swatch for it.
+- [x] Gates after the last edit: `npx eslint src api scripts/agenda-check.mjs vite.config.js`,
+      `npm run token-lint`, `npx vite build`, cap / facts / interaction / profile / agenda checks.
+- [x] Browser: `?mode=wallpaper` with both widgets, the Agenda states (stubbed endpoint), Focus typing and
+      reload, the sky at several hours, Settings card.
+
+**Departures, on purpose.** The browser run used the real function under `npm run dev` with a temporary
+`.env.local` (a `data:` URL feed, since deleted), not a stubbed endpoint. That run found a real bug:
+`CALENDAR_ICS_URLS` was split on every comma, cutting any link that contains one. Feeds now split on
+whitespace or on a comma that starts the next link (checked both ways in agenda-check).
+
+**Measured.** `npx eslint src api scripts/agenda-check.mjs vite.config.js` 0; token-lint no regressions;
+agenda-check 32 PASS; cap 962 / facts 148 / interaction 144 / profile 76 PASS; `npx vite build` OK;
+vercel.json parses. Entry 74,315 B br vs 73,791 at 1e6ca99 (HEAD built in a worktree): **+524 B**, the
+sky palette and LiveWallpaper's sky branch. WallpaperMode chunk 7,616 vs 6,794 B br (+822). `ical.js` is
+in no client chunk. Browser at 1512×982 against `/api/calendar` in dev: Agenda shows the all-day title,
+"Design review · until 3:06" highlighted, "Standup · in 34 min", then the 1:1. Focus: typed, Enter blurs,
+stored with today's date; a stored line from yesterday reads "From Thursday" in `--sdl-sec`.
+`is-plash-app`: no controls, Focus read-only with its text. Sky painted at 02:42, 13:00 and 17:45 (style
+values checked; one dusk screenshot was a stale frame). Settings → Agenda: the right key reads "Connected.
+5 events today."; a wrong key gives the rejection text and the live widget switches to its rejected note;
+the key field is a password field; the URL card warns that it carries the key. Randomizer fit for
+Time of Day: ok for all 6 dark colorways, refused (tone, polarity 0.67–0.81) for all 10 light ones.
+
+**Not validated.**
+- Vercel itself: the function's Web-standard `GET` export, `api/_lib` bundling, and the narrowed rewrite
+  were not deployed here. First deploy check: `/api/calendar` answers 401 without a key, not index.html.
+- A real Google or Outlook feed (only hand-written and sample feeds were parsed).
+- Real Plash on the Mac (classes simulated, as before).
+
+**Noticed, not changed.** Typing in Settings' key field refetches the Agenda once per keystroke (its poll
+key includes the key). Harmless in Plash, a little wasteful while typing a key in a browser. The Google
+Fonts stylesheet in `index.html` is blocked by the CSP's `style-src` (pre-existing console error).
+
 ---
 
 # Browser API interaction pass — 2026-09-17
