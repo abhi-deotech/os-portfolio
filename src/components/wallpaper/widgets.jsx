@@ -1,10 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Music, MapPin, Search, Plus, X, Globe, Check, CalendarDays } from 'lucide-react';
+import { Music, MapPin, Search, Plus, X, Globe, Check, CalendarDays, Video, Workflow, FolderCode } from 'lucide-react';
 import AppIcon from '../common/AppIcon';
 import { APP_BY_ID } from '../../config/apps';
 import { openLuminaApp } from '../../hooks/useWallpaperMode';
-import { MAC_APPS, WEB_LINKS, MAX_TILES, SEARCH_ENGINES, MAC_LINK_TARGET, isKnownTile, macAppHref } from '../../wallpaper/launchers';
-import { SIZE_PX } from '../../wallpaper/config';
+import {
+  MAC_APPS, WEB_LINKS, MAX_TILES, SEARCH_ENGINES, MAC_LINK_PROPS, isKnownTile, macAppHref, shortcutHref, projectHref,
+  PROJECT_EDITOR_NAMES,
+} from '../../wallpaper/launchers';
+import { SIZE_PX, projectName } from '../../wallpaper/config';
 import useVisiblePoll from '../../hooks/useVisiblePoll';
 import { getNowPlaying } from '../../utils/musicApi';
 import { fetchWeather, describeCode } from '../../wallpaper/weather';
@@ -309,7 +312,39 @@ const eventTime = (date, hour) => {
  * secret feed link never reaches the page. Countdowns come from the shared minute tick; the feed is
  * asked again every 5 minutes while the page is visible, and at once when the date changes.
  */
-export const AgendaWidget = ({ now, prefs }) => {
+/**
+ * Join a call from the Agenda row: a round camera button, so the row keeps its title, end time and
+ * countdown. Zoom and Teams links are their apps' own schemes and open like the Apps tiles' Mac links
+ * (see MAC_LINK_PROPS); Meet and Webex are https and open in the browser.
+ *
+ * In passive Plash the page gets no clicks, so there it is an unfilled glyph that marks "this one has a
+ * call" rather than a filled button that would look live and do nothing; Browsing Mode turns it into
+ * the button. The label names the event, its start and the provider, so two Joins never read alike.
+ */
+const JoinChip = ({ join, label, interactive }) => {
+  const chip = 'flex items-center justify-center w-6 h-6 rounded-full shrink-0';
+  if (!interactive) {
+    return (
+      <span className={chip} role="img" aria-label={`${label}: call on ${join.provider}`} title={`On ${join.provider}. Turn on Browsing Mode to join.`} style={{ color: 'var(--wp-mark)', boxShadow: 'inset 0 0 0 1.5px var(--wp-track)' }}>
+        <Video size={13} aria-hidden="true" />
+      </span>
+    );
+  }
+  return (
+    <a
+      href={join.href}
+      aria-label={`Join ${label} on ${join.provider}`}
+      title={`Join on ${join.provider}`}
+      {...(join.app ? MAC_LINK_PROPS : { target: '_blank', rel: 'noreferrer' })}
+      className={`${chip} ${ring}`}
+      style={{ background: 'var(--wp-mark)', color: 'var(--wp-on-mark)' }}
+    >
+      <Video size={13} aria-hidden="true" />
+    </a>
+  );
+};
+
+export const AgendaWidget = ({ now, prefs, interactive }) => {
   const { calKey, hour } = prefs;
   const day = localDay(now);
   const [state, setState] = useState({ status: 'loading' });
@@ -356,11 +391,16 @@ export const AgendaWidget = ({ now, prefs }) => {
                 {eventTime(e.start, hour)}
               </span>
               <span className="truncate" style={{ fontSize: 13, fontWeight: e.kind === 'later' ? 550 : 650 }}>{e.title}</span>
-              <span
-                className="tabular-nums whitespace-nowrap"
-                style={{ fontSize: 11, fontWeight: 650, color: e.kind === 'later' ? 'var(--sdl-sec)' : 'var(--wp-mark)' }}
-              >
-                {e.kind === 'now' ? `until ${eventTime(e.end, hour)}` : e.kind === 'next' ? `in ${untilText(e.minutes)}` : ''}
+              <span className="flex items-center gap-2 min-w-0">
+                {e.kind !== 'later' && (
+                  <span
+                    className="tabular-nums whitespace-nowrap"
+                    style={{ fontSize: 11, fontWeight: 650, color: 'var(--wp-mark)' }}
+                  >
+                    {e.kind === 'now' ? `until ${eventTime(e.end, hour)}` : `in ${untilText(e.minutes)}`}
+                  </span>
+                )}
+                {e.join && <JoinChip join={e.join} label={`${e.title} at ${eventTime(e.start, hour)}`} interactive={interactive} />}
               </span>
             </li>
           ))}
@@ -452,6 +492,13 @@ export const SiteIcon = ({ host, Fallback = Globe }) => {
   return <img src={favicon(host)} alt="" width={28} height={28} className="rounded-md" onError={() => setFailed(true)} />;
 };
 
+/** A tile drawn from a glyph rather than a site's icon: shortcuts and project folders. */
+export const TileGlyph = ({ Icon }) => (
+  <span aria-hidden="true" className="w-7 h-7 rounded-md flex items-center justify-center" style={{ background: 'var(--wp-track)', color: 'var(--sdl-ink)' }}>
+    <Icon size={16} />
+  </span>
+);
+
 /** A Mac app known only by name has no icon a page can fetch; its initial stands in. */
 export const Monogram = ({ name }) => (
   <span
@@ -483,10 +530,20 @@ function resolveTiles(prefs) {
   const macApps = prefs.macApps.map((name) => ({
     id: `mac-any:${name}`, name, href: macAppHref(name), icon: <Monogram name={name} />,
   }));
-  return [...tiles, ...macApps, ...links].filter(Boolean).slice(0, MAX_TILES);
+  const shortcuts = (prefs.shortcuts ?? []).map((name) => ({
+    id: `sc:${name}`, name, title: `Run “${name}”`, href: shortcutHref(name), icon: <TileGlyph Icon={Workflow} />,
+  }));
+  const projects = (prefs.projects ?? []).map((p) => ({
+    id: `proj:${p.path}`,
+    name: projectName(p.path),
+    title: `Open ${p.path} in ${PROJECT_EDITOR_NAMES[p.editor]}`,
+    href: projectHref(p),
+    icon: <TileGlyph Icon={FolderCode} />,
+  }));
+  return [...tiles, ...macApps, ...shortcuts, ...projects, ...links].filter(Boolean).slice(0, MAX_TILES);
 }
 
-export const AppsWidget = ({ prefs, interactive, plash }) => {
+export const AppsWidget = ({ prefs, interactive }) => {
   const tiles = useMemo(() => resolveTiles(prefs), [prefs]);
   const tile = `flex flex-col items-center justify-center gap-1 rounded-xl min-w-0 transition-colors duration-hover ease-sdl ${interactive ? 'hover:bg-veil/10' : ''} ${ring}`;
   const label = (name) => (
@@ -507,8 +564,8 @@ export const AppsWidget = ({ prefs, interactive, plash }) => {
               key={t.id}
               href={t.href}
               tabIndex={interactive ? 0 : -1}
-              title={t.name}
-              {...(t.external ? { target: '_blank', rel: 'noreferrer' } : plash ? { target: MAC_LINK_TARGET } : {})}
+              title={t.title ?? t.name}
+              {...(t.external ? { target: '_blank', rel: 'noreferrer' } : MAC_LINK_PROPS)}
               className={tile}
             >
               {t.icon}{label(t.name)}

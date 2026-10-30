@@ -11,15 +11,19 @@
  * gate, input validation, the unconfigured answer, sorting and de-duplication across feeds, partial
  * failure, and that no feed URL (the secret) ever appears in a response.
  *
+ * Part 1 also drives api/_lib/meeting.js: the Join link for each video provider, the app scheme it
+ * becomes, and the lookalike and smuggled hosts that must NOT become a link.
+ *
  * Part 3 drives src/wallpaper/agenda.js's `agendaView`: which rows the widget shows at a minute, and
- * which one is "now", "next" (with its countdown) or "later".
+ * which one is "now", "next" (with its countdown) or "later", and when a row carries its Join link.
  *
  *   npm run agenda:check
  */
 import { createServer } from 'node:http';
 import { eventsForDay, zonedToEpoch } from '../api/_lib/ics.js';
+import { findMeetingLink } from '../api/_lib/meeting.js';
 import { GET } from '../api/calendar.js';
-import { agendaView, untilText } from '../src/wallpaper/agenda.js';
+import { agendaView, untilText, safeJoin } from '../src/wallpaper/agenda.js';
 
 let pass = 0;
 let fail = 0;
@@ -102,6 +106,75 @@ eq('IST midnight', iso(zonedToEpoch({ year: 2026, month: 10, day: 29 }, 'Asia/Ko
   eq('all-day shape', events.find((e) => e.title === 'Holiday'), { title: 'Holiday', allDay: true, start: '2026-10-29', end: '2026-10-30' });
 }
 
+/* ── Part 1b: meeting links ────────────────────────────────────────────────── */
+
+{
+  const link = (...fields) => findMeetingLink(fields);
+  eq('Zoom → app scheme, pwd kept', link('https://us02web.zoom.us/j/81234567890?pwd=AbC.12-x'),
+    { provider: 'Zoom', href: 'zoommtg://us02web.zoom.us/join?action=join&confno=81234567890&pwd=AbC.12-x' });
+  eq('Zoom bare host, no pwd', link('Join: https://zoom.us/j/912345678.'), { provider: 'Zoom', href: 'zoommtg://zoom.us/join?action=join&confno=912345678' });
+  eq('Zoom personal link stays https', link('https://zoom.us/my/abhi'), { provider: 'Zoom', href: 'https://zoom.us/my/abhi' });
+  eq('Zoom odd pwd dropped', link('https://zoom.us/j/912345678?pwd=a%22b'), { provider: 'Zoom', href: 'zoommtg://zoom.us/join?action=join&confno=912345678' });
+  eq('Teams → msteams:', link('<https://teams.microsoft.com/l/meetup-join/19%3ameeting_X%40thread.v2/0?context=%7b%22Tid%22%7d>'),
+    { provider: 'Teams', href: 'msteams:/l/meetup-join/19%3ameeting_X%40thread.v2/0?context=%7b%22Tid%22%7d' });
+  eq('Teams new-style /meet/', link('https://teams.microsoft.com/meet/2468?p=xyz'), { provider: 'Teams', href: 'msteams:/meet/2468?p=xyz' });
+  eq('Meet stays https', link('https://meet.google.com/abc-defg-hij'), { provider: 'Meet', href: 'https://meet.google.com/abc-defg-hij' });
+  eq('Webex stays https', link('https://acme.webex.com/meet/abhi'), { provider: 'Webex', href: 'https://acme.webex.com/meet/abhi' });
+
+  eq('lookalike host refused', link('https://zoom.us.evil.com/j/912345678'), null);
+  eq('userinfo smuggle refused', link('https://zoom.us@evil.com/j/912345678'), null);
+  eq('host in path refused', link('https://evil.com/zoom.us/j/912345678'), null);
+  eq('hyphen lookalike refused', link('https://evil-zoom.us/j/912345678'), null);
+  eq('http refused', link('http://zoom.us/j/912345678'), null);
+  eq('Meet without a code refused', link('https://meet.google.com/'), null);
+  eq('Teams non-meeting page refused', link('https://teams.microsoft.com/l/chat/0/0'), null);
+  eq('no link at all', link('Room 4B', null, undefined), null);
+  eq('first field wins over later ones', link('https://meet.google.com/abc-defg-hij', 'https://zoom.us/j/912345678').provider, 'Meet');
+  eq('skips a non-meeting link to reach one', link('Agenda https://docs.google.com/x then https://zoom.us/j/912345678').provider, 'Zoom');
+  eq('HTML-escaped &amp; keeps the Zoom passcode', link('<a href="https://us02web.zoom.us/j/81234567890?from=addon&amp;pwd=Xy12.1">join</a>')?.href,
+    'zoommtg://us02web.zoom.us/join?action=join&confno=81234567890&pwd=Xy12.1');
+  eq('Webex help page is not a join link; the Zoom link after it wins',
+    link('Trouble joining? See https://help.webex.com/en-us/article/WBX000029000 . Join: https://zoom.us/j/123456789?pwd=abc')?.provider, 'Zoom');
+  eq('Webex marketing page refused', link('https://www.webex.com/pricing'), null);
+  eq('Webex j.php needs MTID', [link('https://acme.webex.com/acme/j.php?MTID=m123')?.provider, link('https://acme.webex.com/acme/j.php')], ['Webex', null]);
+  eq('Webex Events, e.php, k2 and lowercase mtid accepted', [
+    'https://acme.webex.com/acme/onstage/g.php?MTID=m1', 'https://acme.webex.com/acme/e.php?MTID=m1',
+    'https://acme.webex.com/acme/k2/j.php?MTID=m1', 'https://acme.webex.com/acme/j.php?mtid=m1',
+  ].map((u) => link(u)?.provider), ['Webex', 'Webex', 'Webex', 'Webex']);
+  eq('Webex developer/settings pages refused', [link('https://developer.webex.com/docs/api'), link('https://settings.webex.com/a/b.php?MTID=1')], [null, null]);
+  eq('numeric-entity &#38; keeps the Zoom passcode', link('href="https://zoom.us/j/912345678?from=addon&#38;pwd=k1"')?.href, 'zoommtg://zoom.us/join?action=join&confno=912345678&pwd=k1');
+  eq('a link 100 KB into a long description is still found', link(`${'x'.repeat(100_000)} https://meet.google.com/abc-defg-hij`)?.provider, 'Meet');
+  {
+    // A run of punctuation inside a "link" must cost linear time (was quadratic: 40k dots took ~2.8s).
+    const t0 = performance.now();
+    link(`https://x${'.'.repeat(40000)}x`, `https://y${'.'.repeat(60000)}`);
+    eq('40k–60k punctuation run scanned in under 100 ms', performance.now() - t0 < 100, true);
+  }
+
+  const events = eventsForDay(cal(
+    ev(['UID:z', 'DTSTART:20261029T050000Z', 'DTEND:20261029T053000Z', 'SUMMARY:Zoom call',
+      'DESCRIPTION:Notes\\nPIN 4242\\nhttps://zoom.us/j/912345678?pwd=k1']),
+    ev(['UID:g', 'DTSTART:20261029T060000Z', 'DTEND:20261029T063000Z', 'SUMMARY:Meet call',
+      'X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij', 'LOCATION:https://zoom.us/j/912345678']),
+    ev(['UID:r', 'DTSTART:20260101T070000Z', 'DTEND:20260101T073000Z', 'RRULE:FREQ=DAILY', 'SUMMARY:Daily',
+      'LOCATION:https://teams.microsoft.com/l/meetup-join/abc']),
+    ev(['UID:n', 'DTSTART:20261029T080000Z', 'DTEND:20261029T083000Z', 'SUMMARY:No call', 'LOCATION:Room 4B']),
+  ), DAY);
+  const by = Object.fromEntries(events.map((e) => [e.title, e]));
+  eq('ics: description link found', by['Zoom call'].join?.provider, 'Zoom');
+  eq('ics: description text never returned', JSON.stringify(by['Zoom call']).includes('4242'), false);
+  eq('ics: X-GOOGLE-CONFERENCE beats LOCATION', by['Meet call'].join?.provider, 'Meet');
+  eq('ics: recurring instance carries its link', by.Daily.join?.href, 'msteams:/l/meetup-join/abc');
+  eq('ics: no link → no join key', 'join' in by['No call'], false);
+
+  // Events that do not land on the day are never scanned for a link.
+  const t0 = performance.now();
+  eventsForDay(cal(
+    ev(['UID:old', 'DTSTART:20200101T050000Z', 'DTEND:20200101T053000Z', 'SUMMARY:Old', `DESCRIPTION:https://x${'.'.repeat(80000)}x`]),
+  ), DAY);
+  eq('ics: an old event with a hostile description costs nothing', performance.now() - t0 < 200, true);
+}
+
 /* ── Part 2: the function ───────────────────────────────────────────────────── */
 
 const FEED = cal(
@@ -140,6 +213,14 @@ try {
   eq('broken feed named by position only', body.errors, ['Calendar 3: HTTP 404']);
   eq('no feed URL in the response', JSON.stringify(body).includes(base), false);
 
+  // The same meeting in two feeds, only the second with a link: the kept copy takes the link.
+  const bare = cal(ev(['UID:s', 'DTSTART:20261029T100000Z', 'DTEND:20261029T101500Z', 'SUMMARY:Standup']));
+  const linked = cal(ev(['UID:s', 'DTSTART:20261029T100000Z', 'DTEND:20261029T101500Z', 'SUMMARY:Standup', 'LOCATION:https://zoom.us/j/123456789?pwd=abc']));
+  const asData = (ics) => `data:text/calendar;base64,${Buffer.from(ics).toString('base64')}`;
+  process.env.CALENDAR_ICS_URLS = `${asData(bare)} ${asData(linked)}`;
+  const merged = await (await call('tz=UTC&date=2026-10-29&key=secret-key')).json();
+  eq('duplicate across feeds: one event, and it has the link', merged.events.map((e) => [e.title, e.join?.provider ?? null]), [['Standup', 'Zoom']]);
+
   // A comma inside a link is part of it; only whitespace or ",<next link>" separates feeds.
   process.env.CALENDAR_ICS_URLS = `${base}/cal.ics?a=1,2,${base}/missing.ics data:text/calendar;base64,${Buffer.from(FEED).toString('base64')}`;
   const split = await (await call('tz=Asia/Kolkata&date=2026-10-29&key=secret-key')).json();
@@ -171,6 +252,30 @@ try {
   eq('minutes until next', rows[1].minutes, 35);
   eq('starts exactly now counts as now', agendaView([{ title: 'X', allDay: false, start: at(0), end: at(30) }], now).rows[0].kind, 'now');
   eq('untilText', [untilText(12), untilText(60), untilText(125)], ['12 min', '1h', '2h 5m']);
+}
+
+{
+  const now = new Date('2026-10-29T10:00:00Z');
+  const at = (min) => new Date(now.getTime() + min * 60_000).toISOString();
+  const zoom = { provider: 'Zoom', href: 'zoommtg://zoom.us/join?action=join&confno=912345678' };
+  const meetJ = { provider: 'Meet', href: 'https://meet.google.com/abc-defg-hij' };
+  const view = (events) => agendaView(events, now).rows.map((r) => [r.title, r.join?.provider ?? null]);
+  eq('join on now; on others only within 10 min', view([
+    { title: 'Now', allDay: false, start: at(-5), end: at(20), join: zoom },
+    { title: 'Next', allDay: false, start: at(25), end: at(40), join: meetJ },
+    { title: 'Later', allDay: false, start: at(45), end: at(60), join: zoom },
+  ]), [['Now', 'Zoom'], ['Next', null], ['Later', null]]);
+  eq('next at 10 min gets join', view([{ title: 'Soon', allDay: false, start: at(10), end: at(40), join: meetJ }]), [['Soon', 'Meet']]);
+  eq('next at 11 min does not', view([{ title: 'Soon', allDay: false, start: at(11), end: at(40), join: meetJ }]), [['Soon', null]]);
+  eq('two events starting together: the call still gets its Join', view([
+    { title: 'Focus block', allDay: false, start: at(5), end: at(120) },
+    { title: 'Standup', allDay: false, start: at(5), end: at(20), join: zoom },
+  ]), [['Focus block', null], ['Standup', 'Zoom']]);
+  eq('safeJoin: app scheme marked app', safeJoin(zoom)?.app, true);
+  eq('safeJoin: https not app', safeJoin(meetJ)?.app, false);
+  eq('safeJoin: javascript: refused', safeJoin({ provider: 'X', href: 'javascript:alert(1)' }), null);
+  eq('safeJoin: http refused', safeJoin({ provider: 'X', href: 'http://zoom.us/j/1' }), null);
+  eq('safeJoin: junk refused', [safeJoin(null), safeJoin({ href: 5 }), safeJoin('zoommtg://x')], [null, null, null]);
 }
 
 console.log(`\nagenda-check: ${pass} passed, ${fail} failed — ${fail ? 'FAIL' : 'PASS'}`);

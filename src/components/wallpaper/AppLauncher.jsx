@@ -2,13 +2,15 @@ import React, { useEffect, useRef } from 'react';
 import AppIcon from '../common/AppIcon';
 import { APPS } from '../../config/apps';
 import { openLuminaApp } from '../../hooks/useWallpaperMode';
-import { MAC_APPS, MAC_LINK_TARGET, macAppHref } from '../../wallpaper/launchers';
-import { SiteIcon, Monogram } from './widgets';
+import { Workflow, FolderCode } from 'lucide-react';
+import { MAC_APPS, MAC_LINK_PROPS, macAppHref, shortcutHref, projectHref, PROJECT_EDITOR_NAMES } from '../../wallpaper/launchers';
+import { projectName } from '../../wallpaper/config';
+import { SiteIcon, Monogram, TileGlyph } from './widgets';
 
 /**
  * Every app, one click away, without leaving the wallpaper: all of Lumina's apps (they open as
- * windows over it, a dot marks the ones already open) and the Mac apps the page knows how to reach
- * (see launchers.js). Opens from the Apps control at the head of the widget column, over the column.
+ * windows over it, a dot marks the ones already open), the Mac apps the page knows how to reach
+ * (see launchers.js), and the visitor's own shortcuts and project folders. Opens from the Apps control at the head of the widget column, over the column.
  */
 
 const ring = 'focus-visible:outline-none focus-visible:ring-2';
@@ -28,9 +30,8 @@ const Grid = ({ children }) => (
   <div className="grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 2 }}>{children}</div>
 );
 
-const AppLauncher = ({ prefs, openWindows, maxHeight, plash, onClose }) => {
+const AppLauncher = ({ prefs, openWindows, maxHeight, onClose }) => {
   const ref = useRef(null);
-  const macTarget = plash ? MAC_LINK_TARGET : undefined;
 
   useEffect(() => {
     ref.current?.querySelector('button, a')?.focus();
@@ -85,18 +86,38 @@ const AppLauncher = ({ prefs, openWindows, maxHeight, plash, onClose }) => {
       <Heading>Mac</Heading>
       <Grid>
         {Object.entries(MAC_APPS).map(([id, a]) => (
-          <a key={id} href={a.href} target={macTarget} title={`Open ${a.name}`} onClick={onClose} className={tile}>
+          <a key={id} href={a.href} {...MAC_LINK_PROPS} title={`Open ${a.name}`} onClick={onClose} className={tile}>
             <SiteIcon host={a.site} Fallback={a.Icon} />
             <Name>{a.name}</Name>
           </a>
         ))}
         {prefs.macApps.map((name) => (
-          <a key={`any:${name}`} href={macAppHref(name)} target={macTarget} title={`Open ${name}`} onClick={onClose} className={tile}>
+          <a key={`any:${name}`} href={macAppHref(name)} {...MAC_LINK_PROPS} title={`Open ${name}`} onClick={onClose} className={tile}>
             <Monogram name={name} />
             <Name>{name}</Name>
           </a>
         ))}
       </Grid>
+
+      {(prefs.shortcuts?.length > 0 || prefs.projects?.length > 0) && (
+        <>
+          <Heading>Shortcuts and projects</Heading>
+          <Grid>
+            {(prefs.shortcuts ?? []).map((name) => (
+              <a key={`sc:${name}`} href={shortcutHref(name)} {...MAC_LINK_PROPS} title={`Run “${name}”`} onClick={onClose} className={tile}>
+                <TileGlyph Icon={Workflow} />
+                <Name>{name}</Name>
+              </a>
+            ))}
+            {(prefs.projects ?? []).map((p) => (
+              <a key={`proj:${p.path}`} href={projectHref(p)} {...MAC_LINK_PROPS} title={`Open ${p.path} in ${PROJECT_EDITOR_NAMES[p.editor]}`} onClick={onClose} className={tile}>
+                <TileGlyph Icon={FolderCode} />
+                <Name>{projectName(p.path)}</Name>
+              </a>
+            ))}
+          </Grid>
+        </>
+      )}
       <p className="px-1 pt-2" style={{ fontSize: 11, fontWeight: 550, color: 'var(--sdl-sec)' }}>
         Mac apps open in macOS. Add any other app by name in Settings → Wallpaper mode.
       </p>
