@@ -28,6 +28,56 @@ const PREVIEW_APPS = ['files', 'terminal', 'music', 'projects', 'settings', 'ach
   .map((id) => APPS.find((a) => a.id === id))
   .filter(Boolean);
 
+/** A solid block of `token`, for a background layer sized and placed like a rectangle. */
+const block = (token) => `linear-gradient(var(${token}), var(${token}))`;
+
+/**
+ * The relief wallpapers' swatches, one per scene and from tokens only, each drawn in the cut-paper
+ * grammar the scenes use (a face on the plane, its lower-right edge stepped down a tone), so they
+ * read right in both modes. The real scenes are SVG and lazy; a swatch should not load them.
+ *   chrono — two terraces round an accent mark (the sundial's dial);
+ *   topo   — banded contour rings round an off-centre summit;
+ *   prism  — a monolith and a lower step, offset over their shade, an accent line on top.
+ */
+const RELIEF_PREVIEWS = {
+  chrono: {
+    backgroundImage: [
+      'radial-gradient(circle at 44% 50%, var(--sdl-accent) 0 3px, rgb(var(--sdl-accent-rgb) / 0) 3.5px)',
+      'radial-gradient(circle at 44% 50%, var(--sdl-surface) 0 13%, rgb(var(--sdl-surface-rgb) / 0) 13.5%)',
+      'radial-gradient(circle at 46% 54%, var(--sdl-sunken) 0 13%, rgb(var(--sdl-sunken-rgb) / 0) 13.5%)',
+      'radial-gradient(circle at 44% 50%, var(--sdl-surface) 0 27%, rgb(var(--sdl-surface-rgb) / 0) 27.5%)',
+      'radial-gradient(circle at 46% 54%, var(--sdl-sunken) 0 27%, rgb(var(--sdl-sunken-rgb) / 0) 27.5%)',
+    ].join(', '),
+  },
+  topo: {
+    backgroundImage:
+      'repeating-radial-gradient(140% 100% at 32% 68%, var(--sdl-plane) 0 7%, var(--sdl-surface) 7% 13%, var(--sdl-sunken) 13% 14.5%)',
+  },
+  prism: {
+    backgroundImage: [block('--sdl-accent'), block('--sdl-surface'), block('--sdl-sunken'), block('--sdl-surface'), block('--sdl-sunken')].join(', '),
+    backgroundSize: '16% 2px, 16% 58%, 16% 58%, 22% 26%, 22% 26%',
+    backgroundPosition: '42% 25%, 42% 56%, 47% 64%, 64% 72%, 68% 80%',
+    backgroundRepeat: 'no-repeat',
+  },
+};
+
+/** The library entry's own swatch paint; photos and live gradients paint through other props. */
+const swatchPaint = (wp) => {
+  if (wp?.type === 'sky') return { backgroundImage: skyBackground(new Date()) };
+  if (wp?.type === 'relief') return RELIEF_PREVIEWS[wp.scene] ?? RELIEF_PREVIEWS.chrono;
+  return undefined;
+};
+const onPlane = (type) => type === 'none' || type === 'relief';
+
+const ReliefBadge = ({ className = '' }) => (
+  <span
+    className={`absolute text-[9px] font-bold uppercase tracking-wider ${className}`}
+    style={{ color: 'var(--sdl-sec)' }}
+  >
+    2.5D
+  </span>
+);
+
 const Appearance = () => {
   const colorway = useOSStore((s) => s.colorway);
   const setColorway = useOSStore((s) => s.setColorway);
@@ -56,6 +106,8 @@ const Appearance = () => {
   const groups = useColorwayList();
   const active = resolveColorway(colorway);
   const custom = isCustomWallpaper(wallpaper);
+  const currentWp = custom ? null : resolveWallpaper(wallpaper);
+  const currentType = currentWp?.type;
 
   // Measured, not asserted. Recomputed whenever the colorway changes so the warning can never go
   // stale against the swatches sitting right above it.
@@ -186,15 +238,16 @@ const Appearance = () => {
           style={{
             borderRadius: 'var(--sdl-radius)',
             border: '1px solid var(--sdl-glass-border)',
-            background: !custom && resolveWallpaper(wallpaper)?.type === 'none' ? 'var(--sdl-plane)' : undefined,
+            backgroundColor: onPlane(currentType) ? 'var(--sdl-plane)' : undefined,
             backgroundImage: custom
               ? (customWallpaperUrl ? `url(${customWallpaperUrl})` : undefined)
-              : resolveWallpaper(wallpaper)?.type === 'image' ? `url(${resolveWallpaper(wallpaper).url})`
-                : resolveWallpaper(wallpaper)?.type === 'sky' ? skyBackground(new Date()) : undefined,
+              : currentType === 'image' ? `url(${currentWp.url})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
+            ...swatchPaint(currentWp),
           }}
         >
+          {currentType === 'relief' && <ReliefBadge className="top-2.5 right-3" />}
           <div className="absolute inset-0 flex items-end p-3 gap-2">
             {PREVIEW_APPS.slice(0, 4).map((app) => (
               <AppIcon key={app.id} app={app} size={18} tile pad={9} animate={false} />
@@ -215,10 +268,11 @@ const Appearance = () => {
                 className={`h-14 rounded-lg overflow-hidden relative transition-all duration-hover ease-sdl focus-visible:outline-none focus-visible:ring-2 ${wp.type === 'live' ? wp.gradient : ''}`}
                 style={{
                   border: `2px solid ${on ? 'var(--sdl-accent)' : 'var(--sdl-glass-border)'}`,
-                  background: wp.type === 'none' ? 'var(--sdl-plane)' : undefined,
-                  backgroundImage: wp.type === 'sky' ? skyBackground(new Date()) : undefined,
+                  backgroundColor: onPlane(wp.type) ? 'var(--sdl-plane)' : undefined,
+                  ...swatchPaint(wp),
                 }}
               >
+                {wp.type === 'relief' && <ReliefBadge className="top-1 right-1.5" />}
                 {wp.type === 'image' && <img src={wp.thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />}
                 {wp.type === 'none' && (
                   <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--sdl-sec)' }}>

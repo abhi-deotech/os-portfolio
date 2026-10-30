@@ -15,8 +15,8 @@ import { relLuminance } from './registry';
 import { hexToOklch } from './oklch';
 import { SKY_STOPS } from './sky';
 
-/** @typedef {{id: string, name: string, type: 'live'|'image'|'none'|'sky', gradient?: string, url?: string,
- *             thumb?: string, tone?: {lum: number, rgb: number[]}}} Wallpaper */
+/** @typedef {{id: string, name: string, type: 'live'|'image'|'none'|'sky'|'relief', gradient?: string, url?: string,
+ *             thumb?: string, scene?: 'chrono'|'topo'|'prism', tone?: {lum: number, rgb: number[]}}} Wallpaper */
 
 const UNSPLASH = (id, w, q) =>
   `https://images.unsplash.com/photo-${id}?q=${q}&w=${w}&auto=format&fit=crop`;
@@ -55,6 +55,12 @@ export const WALLPAPERS = [
   { id: 'linux-default', name: 'Linux Default', type: 'live', gradient: 'bg-gradient-to-br from-[#4e1a3d] via-[#772953] to-[#e95420]' },
   // Follows the clock; painted from theme/sky.js once a minute, never animated.
   { id: 'time-of-day', name: 'Time of Day', type: 'sky' },
+  // Faux-3D relief: flat SVG lit by the sun's real position (src/wallpaper/solar.js), drawn by
+  // src/components/wallpaper/Faux3DStage.jsx. Painted only from the colorway's tokens, and
+  // re-lit on the minute tick — no WebGL and nothing running between ticks.
+  { id: 'chrono-relief', name: 'Chrono Sundial', type: 'relief', scene: 'chrono' },
+  { id: 'topo-relief', name: 'Weather Contours', type: 'relief', scene: 'topo' },
+  { id: 'focus-prism', name: 'Focus Monolith', type: 'relief', scene: 'prism' },
   { id: 'abstract-blue', name: 'Abstract Blue', type: 'image', url: UNSPLASH('1618005182384-a83a8bd57fbe', 1200, 70), thumb: UNSPLASH('1618005182384-a83a8bd57fbe', 400, 40) },
   { id: 'dark-mountain', name: 'Dark Mountain', type: 'image', url: UNSPLASH('1477346611705-65d1883cee1e', 1200, 70), thumb: UNSPLASH('1477346611705-65d1883cee1e', 400, 40) },
   { id: 'cyber-vibes', name: 'Cyber Vibes', type: 'image', url: UNSPLASH('1614850523296-d8c1af93d400', 1200, 70), thumb: UNSPLASH('1614850523296-d8c1af93d400', 400, 40) },
@@ -96,7 +102,9 @@ const asHex = (rgb) => `#${rgb.map((c) => c.toString(16).padStart(2, '0')).join(
  */
 const INGREDIENTS = new Map(
   WALLPAPERS.map((w) => {
-    if (w.type === 'none') return [w.id, null]; // the plane IS the colorway; nothing to compare
+    // The plane IS the colorway, and a relief is carved from the colorway's own tokens: neither
+    // carries a colour of its own, so there is nothing to compare.
+    if (w.type === 'none' || w.type === 'relief') return [w.id, null];
     if (w.type === 'live' || w.type === 'sky') {
       // The sky is judged on every colour it passes through in a day, so no hour can surprise it.
       const stops = w.type === 'sky' ? SKY_STOPS.flatMap((s) => s.slice(1)) : hexIn(w.gradient || '');
@@ -160,7 +168,8 @@ const MAX_CHROMA_RATIO = 2.2;
  */
 export function wallpaperFit(wallpaperId, cw) {
   const ing = INGREDIENTS.get(wallpaperId);
-  // The "Colorway" plane renders nothing, so it is in-register with every colorway by construction.
+  // The "Colorway" plane renders nothing and a relief is drawn from the colorway's tokens, so both
+  // are in-register with every colorway by construction.
   // An uploaded image is the user's own file and is never judged — see randomize.js.
   if (!ing) return { ok: true, polarity: 0, hue: 0, chroma: 0, reasons: [] };
 

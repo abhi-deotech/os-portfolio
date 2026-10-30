@@ -277,7 +277,7 @@ const WallpaperMode = ({ mode, fallbackWallpaper }) => {
       onContextMenu={onContextMenu}
     >
       <h1 className="sr-only">Lumina wallpaper</h1>
-      <LiveWallpaper override={theme.wallpaper ?? fallbackWallpaper} />
+      <LiveWallpaper override={theme.wallpaper ?? fallbackWallpaper} interactive={interactive} area={area} prefs={prefs} />
 
       {interactive && (
         <div className="absolute" style={{ top: inset.top, [edge]: inset[edge] }}>

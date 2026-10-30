@@ -171,9 +171,17 @@ function legibleIconThemes(cw) {
   });
 }
 
-/** Wallpapers that measure in-register with this colorway. Always non-empty: the plane always fits. */
-function fittingWallpapers(cw) {
-  return WALLPAPERS.filter((w) => wallpaperFit(w.id, cw).ok);
+/**
+ * Wallpapers that measure in-register with this colorway. Always non-empty: the plane always fits.
+ *
+ * The reliefs are carved from the colorway itself, so all of them fit everywhere; counted one by one
+ * they would be most of every list and half of all generated rolls. The family is one candidate,
+ * drawn from the reliefs other than `currentId` so the caller's no-repeat filter still has a choice.
+ */
+function fittingWallpapers(cw, currentId) {
+  const fits = WALLPAPERS.filter((w) => wallpaperFit(w.id, cw).ok);
+  const reliefs = fits.filter((w) => w.type === 'relief' && w.id !== currentId);
+  return fits.filter((w) => w.type !== 'relief').concat(reliefs.length ? [pick(reliefs)] : []);
 }
 
 /**
@@ -228,11 +236,10 @@ export function randomAppearance(current = {}) {
   };
 
   if (!keepWallpaper) {
-    const fitting = fittingWallpapers(cw).filter((w) => w.id !== current.wallpaper);
-    // `fittingWallpapers` cannot return empty — the "Colorway" plane fits every colorway by
-    // construction — but it CAN be reduced to empty by the no-repeat filter above, on a colorway
-    // whose only fit is the plane it is already wearing. Keeping the wallpaper is the right answer
-    // there; the colorway has already changed, so the roll is not a no-op.
+    const fitting = fittingWallpapers(cw, current.wallpaper).filter((w) => w.id !== current.wallpaper);
+    // `fittingWallpapers` always offers the "Colorway" plane and one relief that is not the current
+    // wallpaper (both fit every colorway by construction), so the no-repeat filter cannot empty it.
+    // The guard stays as cheap insurance should either rule change.
     if (fitting.length) patch.wallpaper = pick(fitting).id;
   }
 
