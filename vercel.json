@@ -1,4 +1,5 @@
 {
+  "installCommand": "ONNXRUNTIME_NODE_INSTALL=skip npm install",
   "rewrites": [
     {
       "source": "/((?!api/).*)",

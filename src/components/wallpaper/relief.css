@@ -1,0 +1,91 @@
+/*
+ * Faux-3D relief wallpapers — the shared tonal ramp and depth layers.
+ *
+ * Every scene paints ONLY with the --relief-* roles below (plus --sdl-accent / --sdl-bar-a /
+ * --sdl-bar-b for data marks), so all three follow the colorway and both grammars:
+ *   dark  — depth from cast shadows (the scrim token), recessed wells and bright rim hairlines;
+ *   light — SDL law 7's cut-paper grammar: no dark drop shadows, depth from stepped tone only
+ *           (lit highlight → plateau → lit wall → shade wall → crease) plus ink hairlines.
+ *
+ * The order of the ramp is a contract, measured for all 16 colorways by scripts/relief-check.mjs:
+ * a colorway's own roles do not order themselves (light accents are dark, so surface mixed with
+ * accent lands BELOW sunken; dark inks are near-white, so sunken mixed with ink lightens), which is
+ * why light mode redefines the roles that depend on that direction.
+ *
+ * Light direction arrives as custom properties stamped on .relief-stage by Faux3DStage (see
+ * lightStyleVars in src/wallpaper/solar.js): --light-dx, --light-dy, --shadow-x, --shadow-y,
+ * --bevel-x, --bevel-y, --light-angle, --light-elev. Pointer parallax arrives as --tilt-x/--tilt-y.
+ */
+
+.relief-stage {
+  --relief-floor: var(--sdl-plane);
+  --relief-plateau: var(--sdl-surface);
+  /* A highlight lighter than the floor in every colorway: where a surface turns to face the light. */
+  --relief-lit: color-mix(in oklab, var(--sdl-surface) 80%, rgb(var(--sdl-veil-rgb)));
+  /* The top of a raised boss (the sundial gnomon): lighter than the plateau it stands on. */
+  --relief-cap: color-mix(in oklab, var(--sdl-surface) 80%, rgb(var(--sdl-veil-rgb)));
+  --relief-wall-lit: color-mix(in oklab, var(--sdl-surface) 78%, var(--sdl-accent));
+  --relief-wall-shade: var(--sdl-sunken);
+  /* A groove: darker than whatever it is cut into. In dark mode that is the scrim, laid over it. */
+  --relief-crease: var(--sdl-scrim);
+  /* Engraved marks (ticks, numerals, the hub): a quiet ink line that reads on any floor. */
+  --relief-tick: rgb(var(--sdl-ink-rgb) / 0.28);
+  --relief-rim: rgb(var(--sdl-veil-rgb) / 0.14);
+  --relief-hairline: rgb(var(--sdl-ink-rgb) / 0.12);
+  /* Accent halo, scaled by the Atmosphere slider like grammar.css's --sdl-glow. */
+  --relief-glow: rgb(var(--sdl-accent-rgb) / calc(0.22 * var(--sdl-atmo, 1)));
+  /* A small accent mark (the minute marker): data, so it stays in both grammars. */
+  --relief-mark: rgb(var(--sdl-accent-rgb) / 0.22);
+  /* Cast shadow: the scrim in dark mode; overridden to a tonal step in light mode below. */
+  --relief-cast: var(--sdl-scrim);
+  --relief-cast-opacity: 0.55;
+
+  --tilt-x: 0;
+  --tilt-y: 0;
+
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--relief-floor);
+  pointer-events: none;
+}
+
+:root[data-mode='light'] .relief-stage {
+  /* Paper catches light: the plane lifted toward white, as grammar.css's light hairlines do. */
+  --relief-lit: color-mix(in oklab, var(--sdl-plane) 70%, rgb(255 255 255));
+  --relief-cap: color-mix(in oklab, var(--sdl-surface) 60%, rgb(255 255 255));
+  /* Between plateau and shade in every light colorway (an accent mix would fall below shade), and
+     nearer the plateau: the lit/shade step is the cue that matters, and on Honey surface and sunken
+     are only 0.026 L apart. */
+  --relief-wall-lit: color-mix(in oklab, var(--sdl-surface) 80%, var(--sdl-sunken));
+  --relief-crease: color-mix(in oklab, var(--sdl-sunken) 85%, var(--sdl-ink));
+  /* Cut paper: a "shadow" is the next tone down, never a darkening veil, and nothing glows. */
+  --relief-cast: var(--sdl-sunken);
+  --relief-cast-opacity: 1;
+  --relief-rim: rgb(var(--sdl-plane-rgb) / 0.9);
+  --relief-glow: transparent;
+}
+
+/*
+ * Depth layers. A scene renders each plane as an absolutely positioned element with class
+ * `relief-layer` and an inline `--depth` (px of travel at full tilt; 0 = pinned). A 2D translate,
+ * not translate3d: an identity 2D transform does not promote a compositing layer, so in passive
+ * Plash mode (--tilt-* stay 0) the layers cost no extra GPU memory and nothing repaints between
+ * minute ticks. While the pointer is actually moving, Faux3DStage sets data-tilting and the layers
+ * are promoted for the motion only.
+ */
+.relief-layer {
+  position: absolute;
+  inset: 0;
+  transform: translate(calc(var(--tilt-x) * var(--depth, 0) * 1px), calc(var(--tilt-y) * var(--depth, 0) * 1px));
+  transition: transform 600ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.relief-stage[data-tilting='on'] .relief-layer {
+  will-change: transform;
+}
+
+:root[data-motion='reduced'] .relief-layer {
+  transform: none;
+  transition: none;
+}

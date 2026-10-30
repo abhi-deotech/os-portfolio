@@ -325,9 +325,76 @@ Time of Day: ok for all 6 dark colorways, refused (tone, polarity 0.67–0.81) f
 - A real Google or Outlook feed (only hand-written and sample feeds were parsed).
 - Real Plash on the Mac (classes simulated, as before).
 
-**Noticed, not changed.** Typing in Settings' key field refetches the Agenda once per keystroke (its poll
+**Noticed, not changed (v4).** Typing in Settings' key field refetches the Agenda once per keystroke (its poll
 key includes the key). Harmless in Plash, a little wasteful while typing a key in a browser. The Google
 Fonts stylesheet in `index.html` is blocked by the CSP's `style-src` (pre-existing console error).
+
+## Faux-3D relief wallpapers, 2026-10-30
+
+Owner request: implement `~/Downloads/faux_3d_wallpaper_plan.md` (three 2.5D wallpapers drawn only from
+SDL tokens, lit by the sun's position, no WebGL). Branch `feat/faux-3d-wallpapers`, stacked on PR #99.
+Owner decisions: **no IP geolocation** (the "place chosen in Settings, never guessed" rule stands; with no
+place the sun follows the clock), **Node runtime** for the new endpoint, like `/api/calendar`.
+
+Corrections to the plan, from reading the code: the to-do key is `lumina.wallpaper.todo`; LiveWallpaper
+sits outside `WorkAreaContext`'s provider, so WallpaperMode passes the area as a prop; `npm run lint` has 63
+baseline errors in `public/games/`, so the gate is `npx eslint src api`; `npm run build` rewrites tracked
+snapshots, so the gate is `npx vite build`; with no IP guessing, `/api/wallpaper-context` requires lat/lon,
+which also makes its public CDN cache safe (keyed by rounded coordinates, never by the caller's IP).
+
+- [x] `src/components/wallpaper/relief.css`: the shared tonal ramp (`--relief-*`), dark and light grammar,
+      depth layers driven by `--tilt-x/y`, nothing animated in passive mode.
+- [x] `src/wallpaper/solar.js` + `scripts/solar-check.mjs`: sun position from (date, place), clock model
+      with no place, lunar rim at night, screen light vector, CSS vars.
+- [x] `api/wallpaper-context.js` + `scripts/context-check.mjs`: Open-Meteo current conditions for a rounded
+      lat/lon, CDN-cached 10 min; 400 without coordinates.
+- [x] `src/wallpaper/useContextualScene.js`, `src/components/wallpaper/Faux3DStage.jsx` (lazy chunk):
+      light vars, focal centre in the work area, pointer parallax only while interactive.
+- [x] Scenes in `src/components/wallpaper/relief/`: ChronoRelief, TopoRelief, FocusPrism.
+- [x] Register `type: 'relief'` in wallpapers.js (fit null: drawn from tokens); LiveWallpaper (lazy,
+      dropped in Performance mode), WallpaperMode (area, interactive, prefs), Appearance swatches.
+- [x] Gates: `npx eslint src api scripts`, `npm run token-lint:strict`, `npx vite build` (stage is its own
+      chunk, entry growth small), all check scripts; adversarial review; browser check in both grammars.
+
+**How it was built.** Six agents in parallel with exclusive file ownership against a written contract
+(solar API, endpoint, scene props, the `--relief-*` roles), then a five-lens adversarial review (tokens and
+grammar, Plash cost, correctness, integration, plan completeness) with an independent skeptic per finding:
+26 findings, 25 confirmed. Fixes went out the same way with a verifier per file set; the lead closed what
+the verifiers flagged.
+
+**Confirmed and fixed.** Light mode lit the wrong wall on 8 of 10 light colorways (accent mixes fall below
+sunken there) and the gnomon cap darkened toward the sun; dark mode's crease (sunken mixed toward a
+near-white ink) made shadows bright. The ramp is now ordered by construction and measured: new roles
+`--relief-lit`, `--relief-cap`, `--relief-tick`, `--relief-mark`; crease = scrim in dark; light wall-lit =
+surface 80% / sunken; glow scales with Atmosphere and is off in light mode. Also: Prism shadow overlaps
+(one union path per group), task channels (none at 0, one as soon as anything is done, all eight and the
+beacon only at 100%), the door reflects a focus line; Topo rebuilds ~235 KB of SVG at most every ten
+minutes (land in 10-minute buckets, light in 3° steps) and snow draws no rain rings; sunrise/sunset no
+longer flip the light 180° in a minute (sun-to-moon hand-over from the sunset hour angle to midnight,
+which also covers 60-66°N summer nights and polar-night noons); weather and the agenda are polled only by
+the scene that draws them, and stale weather (> 2 polls) is dropped; an error boundary around the lazy
+stage; depth layers use a 2D translate and are promoted only while the pointer moves; "Surprise me" counts
+the reliefs as one candidate; per-scene Appearance swatches; `unit=__proto__` → 400; r ≥ 1, no scene at 0×0.
+**Not fixed, on purpose:** resize debounce (bounded at one render per frame, interactive only) and the work
+area shifting when Browsing Mode toggles the control row (the review's skeptics agreed both can stay).
+
+**Measured.** eslint 0; token-lint --strict no regressions; solar-check 127 (USNO sunrise/noon/sunset for
+four cities within 1 min; continuity ≤ 10°/min and ≤ 0.02 elevation/min through every minute of
+midsummer at Reykjavik, Fairbanks, Trondheim, Anchorage, polar night at Tromsø, and a London control; in
+four time zones), context-check 134, relief-check 168 (OKLab L of the ramp for all 16 colorways: cap >
+plateau, lit > floor, plateau > wall-lit > shade in light mode, wall-lit ≥ 0.02 L above shade, crease below
+shade, ticks ≥ 0.08 L from the floor, no glow in light mode), agenda 32, cap 962, facts 148, interaction
+144, profile 76. `npx vite build` OK: entry 74,704 B br (+389 vs v4), Faux3DStage its own 9.9 KB br chunk
+with its CSS; no relief code in the entry. Browser (1512×982): all three scenes in Rose Dusk, Carbon Vivid,
+Garden Dawn, Periwinkle and Honey; Chrono centred in the work area; live `/api/wallpaper-context` against
+Open-Meteo 200 + `public, s-maxage=600`, 400 with only an `x-vercel-ip-latitude` header; 20 pointer moves →
+1 rAF, tilt back to 0 after 1.2 s; with `is-plash-app`: parallax off, 0 rAF on pointer moves, 0 running
+animations. No console errors from the feature.
+
+**Not validated.** Real Plash/WKWebView on macOS (the preview pane is Chromium): `color-mix()`, `var()` in
+SVG `stop-color`, `calc()` in inline opacity, and layer promotion all need an eye on the Mac. Vercel
+itself (the function and the CDN cache). The Tromsø midnight SUN still flips at solar midnight (sun above
+the horizon, outside twilight; documented in solar-check).
 
 ---
 
