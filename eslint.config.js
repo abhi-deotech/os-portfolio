@@ -6,7 +6,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // public/games holds vendored third-party canvas games served as-is (not bundled, not ours to restyle).
+  globalIgnores(['dist', 'public/games']),
   {
     files: ['**/*.{js,jsx}'],
     plugins: {
