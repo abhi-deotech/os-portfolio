@@ -1,7 +1,7 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Menu, Separator, useContextMenu } from 'react-contexify';
 import { AnimatePresence } from 'framer-motion';
-import { Copy, Settings as SettingsIcon, Monitor, LayoutGrid, X } from 'lucide-react';
+import { Copy, Settings as SettingsIcon, Monitor, LayoutGrid, X, Check } from 'lucide-react';
 import LiveWallpaper from '../LiveWallpaper';
 import WindowSlot from '../WindowSlot';
 import { WorkAreaContext } from '../workArea';
@@ -12,7 +12,7 @@ import useOSStore from '../../store/osStore';
 import { exitWallpaperMode, openWallpaperSettings, replaceWallpaperSearch } from '../../hooks/useWallpaperMode';
 import { screenInsets, buildWallpaperSearch, SIZE_PX } from '../../wallpaper/config';
 import { packColumns, GAP } from '../../wallpaper/pack';
-import { MAC_LINK_TARGET } from '../../wallpaper/launchers';
+import { MAC_LINK_ATTR } from '../../wallpaper/launchers';
 import {
   ClockWidget, WorldClockWidget, CalendarWidget, MusicWidget, WeatherWidget, ProgressWidget,
   SearchWidget, AppsWidget, TodoWidget, NotesWidget, AgendaWidget, FocusWidget,
@@ -81,6 +81,14 @@ function useViewport() {
   return size;
 }
 
+/**
+ * Plash's own command for leaving Browsing Mode. It has to be a plain link: tested in Plash 2.17.4, the
+ * same href aimed at a hidden iframe does nothing, while a top-level click
+ * turns the mode off at once with no alert and no navigation away. The control row only renders while
+ * the page is interactive, which inside Plash means Browsing Mode is on, so this only ever turns it off.
+ */
+const PLASH_DONE_HREF = 'plash:toggle-browsing-mode';
+
 const Controls = ({ plash, copied, onCopy, launcherOpen, onLauncher, alignEnd }) => {
   const button = 'glass-2 h-8 px-3 rounded-full text-[12px] flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2';
   return (
@@ -108,6 +116,16 @@ const Controls = ({ plash, copied, onCopy, launcherOpen, onLauncher, alignEnd })
           <Copy size={14} aria-hidden="true" /> {copied === 'ok' ? 'Copied' : copied === 'failed' ? 'Copy failed' : 'Plash URL'}
         </button>
       )}
+      {plash && (
+        <a
+          href={PLASH_DONE_HREF}
+          className={button}
+          title="Turn off Browsing Mode"
+          style={{ background: 'var(--wp-mark)', color: 'var(--wp-on-mark)', fontWeight: 650 }}
+        >
+          <Check size={14} aria-hidden="true" /> Done
+        </a>
+      )}
       <span className="sr-only" aria-live="polite">
         {copied === 'ok' ? 'Plash URL copied' : copied === 'failed' ? 'Couldn’t copy the Plash URL' : ''}
       </span>
@@ -119,9 +137,9 @@ const MAC_HINT_OFF = 'lumina.wallpaper.macHintOff';
 const MAC_HINT_MS = 10000;
 
 /**
- * Inside Plash a Mac app link fails silently when "Open external links in default browser" is off
- * (see MAC_LINK_TARGET), and the page cannot tell whether the app opened. So after a Mac app click
- * this says what to check, until the visitor turns the note off.
+ * Inside Plash a Mac app link only reaches macOS with "Open external links in default browser" on
+ * (see MAC_LINK_ATTR in launchers.js), and the page cannot tell whether the app opened. So after a
+ * Mac app click this says what to check, until the visitor turns the note off.
  */
 function useMacLinkHint(plash) {
   const [shown, setShown] = useState(false);
@@ -129,7 +147,7 @@ function useMacLinkHint(plash) {
     if (!plash) return undefined;
     let timer;
     const onClick = (e) => {
-      if (!e.target.closest?.(`a[target="${MAC_LINK_TARGET}"]`)) return;
+      if (!e.target.closest?.(`a[${MAC_LINK_ATTR}]`)) return;
       try { if (localStorage.getItem(MAC_HINT_OFF)) return; } catch { /* no storage: show it */ }
       setShown(true);
       clearTimeout(timer);
@@ -294,11 +312,10 @@ const WallpaperMode = ({ mode, fallbackWallpaper }) => {
 
       {interactive && launcherOpen && (
         <div className="absolute z-20" style={{ top, [edge]: inset[edge] }}>
-          <AppLauncher prefs={prefs} openWindows={openWindows} maxHeight={vh - top - inset.bottom} plash={plash} onClose={closeLauncher} />
+          <AppLauncher prefs={prefs} openWindows={openWindows} maxHeight={vh - top - inset.bottom} onClose={closeLauncher} />
         </div>
       )}
 
-      {plash && <iframe name={MAC_LINK_TARGET} title="Mac app links" hidden tabIndex={-1} />}
       {interactive && macHint && (
         <div className="absolute z-20" style={{ top, [edge]: inset[edge] }}>
           <MacLinkHint onDismiss={dismissMacHint} />

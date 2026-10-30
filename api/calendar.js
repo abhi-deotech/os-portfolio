@@ -55,14 +55,20 @@ export async function GET(request) {
   const errors = results.flatMap((r, i) => (r.status === 'rejected' ? [`Calendar ${i + 1}: ${r.reason.message}`] : []));
   if (errors.length === urls.length) return json(502, { error: 'Could not load any calendar', details: errors });
 
-  const seen = new Set();
+  // The same meeting can come from two feeds, and only one copy may carry its join link (a calendar
+  // published as "titles and locations" drops the description), so a duplicate lends its link.
+  const seen = new Map();
   const events = results
     .flatMap((r) => (r.status === 'fulfilled' ? r.value : []))
     .filter((e) => {
       const key = `${e.title}|${e.start}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
+      const first = seen.get(key);
+      if (!first) {
+        seen.set(key, e);
+        return true;
+      }
+      if (!first.join && e.join) first.join = e.join;
+      return false;
     })
     .sort((a, b) => (a.allDay === b.allDay ? a.start.localeCompare(b.start) : a.allDay ? -1 : 1));
 

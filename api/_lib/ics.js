@@ -1,6 +1,7 @@
 // Turns an iCalendar (.ics) feed into the list of events that touch one local day.
 // Kept free of Vercel specifics so it can be tested with plain `node --test`.
 import ICAL from 'ical.js';
+import { findMeetingLink, MEETING_FIELDS } from './meeting.js';
 
 const MAX_ITERATIONS = 20000; // ~55 years of a daily meeting
 
@@ -75,8 +76,9 @@ function registerTimezones(vcalendar) {
 
 /**
  * Events from one .ics feed that overlap `date` (YYYY-MM-DD) in `timeZone`.
- * Returns [{ title, allDay, start, end }] where start/end are ISO instants for
- * timed events and YYYY-MM-DD (end exclusive) for all-day events.
+ * Returns [{ title, allDay, start, end, join? }] where start/end are ISO instants for
+ * timed events and YYYY-MM-DD (end exclusive) for all-day events, and `join` ({ provider, href })
+ * is present only when the event carries a recognised video-call link (see meeting.js).
  */
 export function eventsForDay(icsText, { date, timeZone }) {
   const vcalendar = new ICAL.Component(ICAL.parse(icsText));
@@ -102,17 +104,23 @@ export function eventsForDay(icsText, { date, timeZone }) {
   }
 
   const out = [];
-  const push = (title, start, end, startTzid, endTzid) => {
+  // `joinOf` is called only for an occurrence that lands on the day, so a feed's past and future
+  // events are never scanned for links (their descriptions are written by whoever sent the invite).
+  const push = (title, start, end, startTzid, endTzid, joinOf) => {
     if (start.isDate) {
       const s = dateString(start);
       const e = end ? dateString(end) : addDays(s, 1);
-      if (s <= date && e > date) out.push({ title, allDay: true, start: s, end: e });
+      if (s <= date && e > date) {
+        const join = joinOf();
+        out.push({ title, allDay: true, start: s, end: e, ...(join && { join }) });
+      }
       return;
     }
     const s = toEpoch(start, startTzid, timeZone);
     const e = end ? toEpoch(end, endTzid, timeZone) : s;
     if (s < rangeEnd && (e > rangeStart || (e === s && s >= rangeStart))) {
-      out.push({ title, allDay: false, start: new Date(s).toISOString(), end: new Date(e).toISOString() });
+      const join = joinOf();
+      out.push({ title, allDay: false, start: new Date(s).toISOString(), end: new Date(e).toISOString(), ...(join && { join }) });
     }
   };
 
@@ -121,9 +129,14 @@ export function eventsForDay(icsText, { date, timeZone }) {
     const title = event.summary || '(No title)';
     const startTzid = tzidOf(component, 'dtstart');
     const endTzid = tzidOf(component, 'dtend') || startTzid;
+    let join;
+    const joinOf = () => {
+      if (join === undefined) join = findMeetingLink(MEETING_FIELDS.map((name) => component.getFirstPropertyValue(name)));
+      return join;
+    };
 
     if (event.isRecurrenceException() || !event.isRecurring()) {
-      push(title, event.startDate, event.endDate, startTzid, endTzid);
+      push(title, event.startDate, event.endDate, startTzid, endTzid, joinOf);
       continue;
     }
 
@@ -135,7 +148,7 @@ export function eventsForDay(icsText, { date, timeZone }) {
       if (exceptionKeys.has(`${event.uid}|${key}`)) continue;
       const end = next.clone();
       end.addDuration(ICAL.Duration.fromSeconds(durationSeconds));
-      push(title, next, end, startTzid, startTzid);
+      push(title, next, end, startTzid, startTzid, joinOf);
     }
   }
 

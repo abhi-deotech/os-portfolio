@@ -4,10 +4,11 @@ import useOSStore from '../../store/osStore';
 import { Card, Segmented, Row, Slider, Switch } from './primitives';
 import { enterWallpaperMode } from '../../hooks/useWallpaperMode';
 import {
-  WIDGETS, MAX_ZONES, MAX_LINKS, MAX_MAC_APPS, sanitizeWidgets, safeHttpUrl, sanitizeMacApp, sanitizeCalKey, buildWallpaperUrl,
+  WIDGETS, MAX_ZONES, MAX_LINKS, MAX_MAC_APPS, MAX_SHORTCUTS, MAX_PROJECTS, PROJECT_EDITORS, sanitizeWidgets, safeHttpUrl,
+  sanitizeMacApp, sanitizeShortcut, sanitizeProject, projectName, sanitizeCalKey, buildWallpaperUrl,
 } from '../../wallpaper/config';
 import { fetchAgenda, localDay } from '../../wallpaper/agenda';
-import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES, OPEN_SHORTCUT } from '../../wallpaper/launchers';
+import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES, OPEN_SHORTCUT, PROJECT_EDITOR_NAMES } from '../../wallpaper/launchers';
 import { APP_BY_ID } from '../../config/apps';
 import { cityOf } from '../../wallpaper/time';
 import { searchPlaces } from '../../wallpaper/weather';
@@ -87,8 +88,11 @@ const WallpaperTab = () => {
     set({ widgets: next });
   };
 
-  /* Apps: one list of `kind:id` tiles, plus the visitor's own links and Mac apps, capped together. */
-  const tileCount = prefs.tiles.length + prefs.links.length + prefs.macApps.length;
+  /* Apps: one list of `kind:id` tiles, plus the visitor's own links, Mac apps, shortcuts and project
+     folders, capped together. */
+  const shortcuts = prefs.shortcuts ?? [];
+  const projects = prefs.projects ?? [];
+  const tileCount = prefs.tiles.length + prefs.links.length + prefs.macApps.length + shortcuts.length + projects.length;
   const toggleTile = (id) => {
     if (prefs.tiles.includes(id)) set({ tiles: prefs.tiles.filter((t) => t !== id) });
     else if (tileCount < MAX_TILES) set({ tiles: [...prefs.tiles, id] });
@@ -113,6 +117,27 @@ const WallpaperTab = () => {
     if (!canAddMac) return;
     set({ macApps: [...prefs.macApps, macApp] });
     setMacName('');
+  };
+
+  const [scName, setScName] = useState('');
+  const shortcut = sanitizeShortcut(scName);
+  const canAddShortcut = shortcut && !shortcuts.includes(shortcut) && shortcuts.length < MAX_SHORTCUTS && tileCount < MAX_TILES;
+  const addShortcut = (e) => {
+    e.preventDefault();
+    if (!canAddShortcut) return;
+    set({ shortcuts: [...shortcuts, shortcut] });
+    setScName('');
+  };
+
+  const [projPath, setProjPath] = useState('');
+  const [projEditor, setProjEditor] = useState('cursor');
+  const project = sanitizeProject({ editor: projEditor, path: projPath });
+  const canAddProject = project && !projects.some((p) => p.path === project.path) && projects.length < MAX_PROJECTS && tileCount < MAX_TILES;
+  const addProject = (e) => {
+    e.preventDefault();
+    if (!canAddProject) return;
+    set({ projects: [...projects, project] });
+    setProjPath('');
   };
 
   /* World clocks */
@@ -308,6 +333,49 @@ const WallpaperTab = () => {
         <p className="text-[11px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
           For apps with no link of their own, like Finder, Safari, Notes or Calendar. Type the name as it appears in your Applications folder, and set up the &ldquo;{OPEN_SHORTCUT}&rdquo; shortcut once (see Set up Plash below).
         </p>
+        <h4 className="text-[11px] uppercase tracking-wider mt-4 mb-2" style={{ color: 'var(--sdl-sec)', fontWeight: 650 }}>Your shortcuts</h4>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {shortcuts.map((name) => (
+            <span key={name} className="inline-flex items-center gap-1 pl-3 pr-1 h-8 rounded-full text-[12px]" style={{ background: 'var(--sdl-soft)', color: 'var(--sdl-aink)', fontWeight: 600 }}>
+              {name}
+              <button type="button" aria-label={`Remove ${name}`} onClick={() => set({ shortcuts: shortcuts.filter((x) => x !== name) })} className="w-6 h-6 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2">
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+        {shortcuts.length < MAX_SHORTCUTS && (
+          <form onSubmit={addShortcut} className="flex flex-wrap gap-2">
+            <input value={scName} onChange={(e) => setScName(e.target.value)} placeholder="Start focus block" aria-label="Shortcut name" className="flex-1 min-w-[180px] px-3 rounded-sdl-sm text-[13px] focus-visible:outline-none focus-visible:ring-2" style={fieldStyle} />
+            <Btn type="submit" disabled={!canAddShortcut}>Add shortcut</Btn>
+          </form>
+        )}
+        <p className="text-[11px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
+          Runs any shortcut from the Shortcuts app by its exact name, so one tile can set a Focus, open a note, start a timer or switch Plash to another layout.
+        </p>
+
+        <h4 className="text-[11px] uppercase tracking-wider mt-4 mb-2" style={{ color: 'var(--sdl-sec)', fontWeight: 650 }}>Projects</h4>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {projects.map((p) => (
+            <span key={p.path} title={p.path} className="inline-flex items-center gap-1 pl-3 pr-1 h-8 rounded-full text-[12px]" style={{ background: 'var(--sdl-soft)', color: 'var(--sdl-aink)', fontWeight: 600 }}>
+              {projectName(p.path)} · {PROJECT_EDITOR_NAMES[p.editor]}
+              <button type="button" aria-label={`Remove ${projectName(p.path)}`} onClick={() => set({ projects: projects.filter((x) => x.path !== p.path) })} className="w-6 h-6 rounded-full flex items-center justify-center focus-visible:outline-none focus-visible:ring-2">
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+        {projects.length < MAX_PROJECTS && (
+          <form onSubmit={addProject} className="flex flex-wrap gap-2">
+            <input value={projPath} onChange={(e) => setProjPath(e.target.value)} placeholder="/Users/you/Projects/site" aria-label="Project folder path" spellCheck={false} className="flex-1 min-w-[220px] px-3 rounded-sdl-sm text-[13px] font-mono focus-visible:outline-none focus-visible:ring-2" style={fieldStyle} />
+            <Segmented label="Open projects in" value={projEditor} options={PROJECT_EDITORS.map((id) => ({ id, name: PROJECT_EDITOR_NAMES[id] }))} onChange={setProjEditor} />
+            <Btn type="submit" disabled={!canAddProject}>Add project</Btn>
+          </form>
+        )}
+        <p className="text-[11px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
+          Opens a folder straight in your editor. In Finder, select the folder and press Option-Command-C to copy its path. The path is part of the Plash URL, so keep that URL to yourself.
+        </p>
+
         <p className="text-[11px] mt-3" style={{ color: 'var(--sdl-sec)' }}>
           Mac apps open through the link each app registers, so they need the app installed. Lumina apps open as windows over the wallpaper. The Apps button above the widgets lists every app.
         </p>
@@ -455,7 +523,7 @@ const WallpaperTab = () => {
         <ol className="list-decimal pl-5 space-y-1.5 text-[13px]" style={{ color: 'var(--sdl-ink)' }}>
           <li>Install <a href="https://sindresorhus.com/plash" target="_blank" rel="noreferrer" style={{ color: 'var(--sdl-aink)', fontWeight: 600 }}>Plash</a> from the Mac App Store.</li>
           <li>Copy the Plash URL above and add it as a website in Plash.</li>
-          <li>Bind a shortcut to Plash&apos;s &ldquo;Toggle Browsing Mode&rdquo;. While it&apos;s on you can search, open apps, tick off tasks and get back to the desktop; while it&apos;s off, clicks go to your Mac.</li>
+          <li>Bind a shortcut to Plash&apos;s &ldquo;Toggle Browsing Mode&rdquo;. While it&apos;s on you can search, open apps, join calls, tick off tasks and get back to the desktop; while it&apos;s off, clicks go to your Mac. The Done button at the top of the widgets turns it off again.</li>
           <li>In Plash&apos;s settings, turn on &ldquo;Open external links in default browser&rdquo;. Without it, Mac app tiles can&apos;t open apps and websites open inside Plash.</li>
           <li>
             For &ldquo;Any Mac app&rdquo;: in the Shortcuts app, make a shortcut named &ldquo;{OPEN_SHORTCUT}&rdquo; with one &ldquo;Run Shell Script&rdquo; action,

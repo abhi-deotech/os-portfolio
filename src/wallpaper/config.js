@@ -51,6 +51,10 @@ export const SIZE_PX = {
 export const MAX_ZONES = 3;
 export const MAX_LINKS = 4;
 export const MAX_MAC_APPS = 4;
+export const MAX_SHORTCUTS = 4;
+export const MAX_PROJECTS = 4;
+/** Editors a project tile can open in; each registers `<id>://file/<path>` (VS Code's scheme, kept by Cursor). */
+export const PROJECT_EDITORS = ['cursor', 'vscode'];
 
 /**
  * A Mac app's name as Finder shows it ("Microsoft Teams", "Final Cut Pro"). It is handed to a
@@ -60,6 +64,41 @@ export const sanitizeMacApp = (name) => {
   const clean = String(name ?? '').replace(/[^\p{L}\p{N} .&+'()-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 40);
   return clean || null;
 };
+
+/**
+ * A Shortcuts shortcut's name, run by name through `shortcuts://run-shortcut`. Shortcuts matches the
+ * name exactly, so it is kept as typed (emoji sequences, accents, curly quotes, Indic vowel signs,
+ * no-break and repeated spaces): `shortcutHref` percent-encodes it, so nothing here can reshape the
+ * link. Only what no real name holds is changed: control characters and line breaks become spaces,
+ * the bidi controls that would let a tile's label read differently from the name it runs are removed,
+ * and the ends are trimmed as the Shortcuts app trims them.
+ */
+const BIDI_CONTROLS = /[\u202a-\u202e\u2066-\u2069]/gu;
+export const sanitizeShortcut = (name) => {
+  const clean = String(name ?? '').replace(/[\p{Cc}\p{Zl}\p{Zp}]/gu, ' ').replace(BIDI_CONTROLS, '').trim();
+  // By code point, so a cut never splits an emoji's surrogate pair.
+  return [...clean].slice(0, 50).join('').trim() || null;
+};
+
+/**
+ * A project folder for a project tile: an absolute path, as Finder's Option-Command-C copies it, and
+ * the editor to open it in. The path rides in the Plash URL and becomes a `cursor://file…` link, so
+ * anything that is not a plain path is refused: no `..` or `.` segments, no control or format
+ * characters, and no `?` or `#`, which would end the path part of that link.
+ */
+export function sanitizeProject(project) {
+  const editor = PROJECT_EDITORS.includes(project?.editor) ? project.editor : null;
+  const raw = String(project?.path ?? '').trim();
+  // Format characters (bidi overrides, zero-widths) are refused too: they would let the tile's label
+  // and tooltip show a different folder from the one that opens.
+  if (!editor || !raw.startsWith('/') || raw.length > 200 || /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}?#]/u.test(raw)) return null;
+  const parts = raw.split('/').filter(Boolean);
+  if (parts.length === 0 || parts.some((p) => p === '.' || p === '..')) return null;
+  return { editor, path: `/${parts.join('/')}` };
+}
+
+/** The folder's own name, for its tile. */
+export const projectName = (path) => path.slice(path.lastIndexOf('/') + 1);
 
 /**
  * Defaults describe the owner's Mac: Stage Manager's strip of running apps on the left, the Dock on
@@ -81,6 +120,8 @@ export const DEFAULT_PREFS = {
   tiles: ['mac:vscode', 'mac:spotify', 'web:gmail', 'web:github', 'web:chatgpt', 'app:terminal', 'app:notepad', 'app:music'],
   links: [],            // [{ name, href }] — the visitor's own web links, http(s) only
   macApps: [],          // ['Finder', …] — any Mac app by name, opened through a Shortcuts shortcut
+  shortcuts: [],        // ['Start focus block', …] — the visitor's own shortcuts, run by name
+  projects: [],         // [{ editor, path }] — folders opened in Cursor or VS Code
   engine: 'google',
   // The Agenda's key for /api/calendar (WALLPAPER_KEY on the server). It rides in the Plash URL, so
   // that URL is private; the calendar's own feed links never leave the server.
@@ -143,6 +184,8 @@ export function buildWallpaperSearch(prefs, { colorway, wallpaper } = {}) {
   q.set('apps', p.tiles.join(','));
   for (const l of p.links.slice(0, MAX_LINKS)) q.append('link', `${l.name}~${l.href}`);
   for (const name of p.macApps.slice(0, MAX_MAC_APPS)) q.append('mac', name);
+  for (const name of p.shortcuts.slice(0, MAX_SHORTCUTS)) q.append('sc', name);
+  for (const pr of p.projects.slice(0, MAX_PROJECTS)) q.append('proj', `${pr.editor}~${pr.path}`);
   q.set('se', p.engine);
   if (p.calKey) q.set('ck', p.calKey);
   if (colorway) q.set('cw', colorway);
@@ -197,6 +240,13 @@ export function readWallpaperMode(search, isPlash, browsing = false) {
     return href ? { name: raw.slice(0, cut).slice(0, 24), href } : null;
   }).filter(Boolean);
 
+  const projects = [];
+  for (const raw of q.getAll('proj')) {
+    const cut = raw.indexOf('~');
+    const pr = cut > 0 ? sanitizeProject({ editor: raw.slice(0, cut), path: raw.slice(cut + 1) }) : null;
+    if (pr && !projects.some((x) => x.path === pr.path) && projects.length < MAX_PROJECTS) projects.push(pr);
+  }
+
   const cw = q.get('cw');
   const wp = q.get('wp');
   return {
@@ -221,6 +271,8 @@ export function readWallpaperMode(search, isPlash, browsing = false) {
       tiles: q.has('apps') ? list(q.get('apps')).slice(0, 12) : DEFAULT_PREFS.tiles,
       links,
       macApps: [...new Set(q.getAll('mac').map(sanitizeMacApp).filter(Boolean))].slice(0, MAX_MAC_APPS),
+      shortcuts: [...new Set(q.getAll('sc').map(sanitizeShortcut).filter(Boolean))].slice(0, MAX_SHORTCUTS),
+      projects,
       engine: oneOf(q.get('se'), ['google', 'duckduckgo', 'bing', 'perplexity'], DEFAULT_PREFS.engine),
       calKey: sanitizeCalKey(q.get('ck')),
     },

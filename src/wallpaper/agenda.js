@@ -29,17 +29,31 @@ export async function fetchAgenda(key, day, timeZone = Intl.DateTimeFormat().res
   }
 }
 
+/** Minutes before a call that its Join button appears on the `next` row. */
+export const JOIN_LEAD_MIN = 10;
+
+/**
+ * The server's join link (api/_lib/meeting.js), kept only if it is one of the shapes that file makes.
+ * The page renders it as an href, so it is checked here too rather than trusted.
+ */
+export function safeJoin(join) {
+  if (!join || typeof join.href !== 'string' || typeof join.provider !== 'string') return null;
+  if (!/^(?:https:\/\/|zoommtg:\/\/|msteams:\/)/.test(join.href)) return null;
+  return { provider: join.provider.slice(0, 16), href: join.href, app: !join.href.startsWith('https:') };
+}
+
 /**
  * What the card shows at minute `now`: all-day titles, then the timed events that have not ended,
  * at most `max`. The one in progress is `now`; the first still to come is `next`, with the minutes
- * until it starts; the rest are `later`.
+ * until it starts; the rest are `later`. `join` rides on `now` rows, and on any row starting
+ * JOIN_LEAD_MIN or less away.
  */
 export function agendaView(events, now, max = 3) {
   const t = now.getTime();
   const allDay = events.filter((e) => e.allDay).map((e) => e.title);
   const timed = events
     .filter((e) => !e.allDay)
-    .map((e) => ({ title: e.title, start: new Date(e.start), end: new Date(e.end) }))
+    .map((e) => ({ title: e.title, start: new Date(e.start), end: new Date(e.end), join: safeJoin(e.join) }))
     .filter((e) => e.end.getTime() > t || (e.end.getTime() === e.start.getTime() && e.start.getTime() >= t))
     .sort((a, b) => a.start - b.start)
     .slice(0, max);
@@ -47,9 +61,12 @@ export function agendaView(events, now, max = 3) {
   let nextSeen = false;
   const rows = timed.map((e) => {
     if (e.start.getTime() <= t) return { ...e, kind: 'now' };
-    if (nextSeen) return { ...e, kind: 'later' };
+    // Join is gated on each row's own lead time, not on being `next`: two events can start together.
+    const minutes = Math.ceil((e.start.getTime() - t) / 60_000);
+    const join = minutes <= JOIN_LEAD_MIN ? e.join : null;
+    if (nextSeen) return { ...e, kind: 'later', join };
     nextSeen = true;
-    return { ...e, kind: 'next', minutes: Math.ceil((e.start.getTime() - t) / 60_000) };
+    return { ...e, kind: 'next', minutes, join };
   });
   return { allDay, rows };
 }

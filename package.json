@@ -18,6 +18,7 @@
     "solar:check": "node scripts/solar-check.mjs",
     "context:check": "node scripts/context-check.mjs",
     "relief:check": "node scripts/relief-check.mjs",
+    "url:check": "node scripts/wallpaper-url-check.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "census": "node scripts/token-census.mjs",

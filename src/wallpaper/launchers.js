@@ -55,15 +55,32 @@ export const OPEN_SHORTCUT = 'Lumina Open';
 export const macAppHref = (name) =>
   `shortcuts://run-shortcut?name=${encodeURIComponent(OPEN_SHORTCUT)}&input=text&text=${encodeURIComponent(name)}`;
 
+/** One of the visitor's own shortcuts, run by name (names come through config.js's sanitizeShortcut). */
+export const shortcutHref = (name) => `shortcuts://run-shortcut?name=${encodeURIComponent(name)}`;
+
 /**
- * Inside Plash, Mac app links open in a hidden frame of this name rather than in the page. With
- * "Open external links in default browser" off, Plash lets a `vscode://` link load in its web view,
- * the load fails, and Plash shows an "unsupported URL" alert. The same failure in a subframe is
- * silent, and with the setting on Plash still hands the link to macOS. Both were checked against
- * Plash 2.16's navigation code in a WKWebView harness. Each scheme above must also be in the CSP's
- * frame-src (vite.config.js, vercel.json, netlify.toml), or WebKit blocks the frame load first.
+ * A project folder in its editor: VS Code's documented `vscode://file/<absolute path>`, which Cursor
+ * keeps as `cursor://file/…`. The path is sanitized in config.js (absolute, no `..`, no `?`/`#`), and
+ * each segment is percent-encoded so spaces and `%` survive.
  */
-export const MAC_LINK_TARGET = 'lumina-mac-links';
+export const PROJECT_EDITOR_NAMES = { cursor: 'Cursor', vscode: 'VS Code' };
+export const projectHref = ({ editor, path }) =>
+  `${editor}://file/${path.split('/').filter(Boolean).map(encodeURIComponent).join('/')}`;
+
+/**
+ * Mac app links are plain top-level links, marked with this attribute so wallpaper mode can tell a
+ * Mac link was clicked (see useMacLinkHint in WallpaperMode.jsx).
+ *
+ * Tested in real Plash 2.17.4 on macOS 27 (2026-10-30), with "Open external links in default
+ * browser" on: a plain link (maps://) and a target=_blank link (podcasts://) both opened their app
+ * and the wallpaper stayed put; the same kind of link aimed at a hidden iframe (shortcuts://) did
+ * nothing, however often clicked. An earlier version used that hidden frame, after checking Plash
+ * 2.16's navigation code in a WKWebView harness, and so no Mac tile opened anything in real Plash.
+ * With the setting off, Plash cannot hand any of these to macOS; Settings → Wallpaper mode says to
+ * turn it on, and the hint repeats it after a click.
+ */
+export const MAC_LINK_ATTR = 'data-mac-link';
+export const MAC_LINK_PROPS = { [MAC_LINK_ATTR]: '' };
 
 export const WEB_LINKS = {
   gmail:    { name: 'Gmail',    href: 'https://mail.google.com/' },
