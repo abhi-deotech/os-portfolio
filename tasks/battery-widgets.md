@@ -1,4 +1,4 @@
-# Battery widgets for wallpaper mode — BUILT 2026-10-31 (not yet installed on the Mac)
+# Battery widgets for wallpaper mode — BUILT 2026-10-31, working in real Plash (local preview build)
 
 Source: `~/Projects/battery-optimization/README.md`, which has the charging rules and a planned
 `battery-guard` LaunchAgent. **Status: built on `feat/mac-integrations`, uncommitted. The owner chose an https relay on the Mac with the wallpaper staying on Vercel; see Review.**
@@ -233,9 +233,27 @@ As built, where it differs from the proposal:
   - Health: 94%, 187 of 1000, 1% per 31, the routine line due and up to date.
   - Settings Check connection: "Connected. 80% on the adapter, 31.6°." with the real pmset checklist.
 
+**Real Plash, 2026-10-31 12:36.** battery-guard installed and the certificate trusted by the owner.
+The local preview build (`vite preview` on http://127.0.0.1:5173, added to Plash as "Battery wallpaper
+(local preview)") showed real readings on the desktop, in the owner's screenshot:
+- Battery: 64%, On battery, 4 h 49 m left, 29.3°.
+- Battery health: 94%, 187 cycles of 1000, 1% per 32 cycles, Routines up to date.
+- The Battery tile is first in Apps.
+
+The relay is trusted the normal way: `security verify-cert` passes, URLSession gets 200, and WebKit gets
+200 from the allowlisted origin. A non-allowlisted origin is refused by CORS, as designed.
+
+**Production domain, 2026-10-31.** The site's public address is
+`https://abhimanyu-saxena-development.vercel.app` (Vercel project os-portfolio, team
+abhi-deotechs-projects). `os-portfolio-sooty.vercel.app` (the GitHub repo's homepage link) returns 404,
+and the team and deployment addresses sit behind Vercel's login, so Plash can't use those.
+- battery-guard's allowlist now names the production domain.
+- A WKWebView on the live production page, with its real CSP and normal keychain trust, fetched the
+  relay → 200.
+- No Vercel settings or environment variables are needed for battery.
+
 **Not validated.**
-- Real Plash with the trusted certificate: battery-guard isn't installed yet, and trusting the
-  certificate is the owner's step.
+- The new widget code on production: this branch isn't merged or deployed yet.
 - The Vercel deploy: the production CSP is expected to allow the relay, but that's untested.
 - Copy buttons: this pane denies clipboard writes. The existing Copy Plash URL fails there too, and
   both say so.

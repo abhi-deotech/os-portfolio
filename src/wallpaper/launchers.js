@@ -44,8 +44,9 @@ export const MAC_APPS = {
   podcasts: { name: 'Podcasts', href: 'podcasts://',                 site: 'podcasts.apple.com', Icon: Podcast },
   appstore: { name: 'App Store', href: 'macappstore://',             site: 'apps.apple.com', Icon: ShoppingBag },
   shortcuts:{ name: 'Shortcuts', href: 'shortcuts://',               site: 'support.apple.com', Icon: Workflow },
-  // System Settings → Battery: Charge Limit, Low Power Mode and Optimized Charging live here.
-  battery:  { name: 'Battery',  href: 'x-apple.systempreferences:com.apple.Battery-Settings.extension', site: 'apple.com', Icon: BatteryCharging },
+  // System Settings → Battery: Charge Limit, Low Power Mode and Optimized Charging live here. No
+  // `site`: apple.com's icon is the Apple logo, which says Settings rather than Battery, so the glyph shows.
+  battery:  { name: 'Battery',  href: 'x-apple.systempreferences:com.apple.Battery-Settings.extension', Icon: BatteryCharging },
 };
 
 /**
