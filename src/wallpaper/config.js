@@ -23,8 +23,8 @@ export const PLASH_BROWSING_CLASS = 'plash-is-browsing-mode';
  * The catalogue. Sizes follow Apple's widget families — small is one 164px square, medium two side
  * by side, large a 2×2 square — plus `bar`, a slim full-width strip for the search box. Every source
  * here is local, localStorage or a plain cross-origin fetch, so all of it works in WebKit; nothing in
- * this list depends on a Chromium-only API. The two battery widgets read battery-guard's relay on the
- * Mac itself (see battery.js), so they show a setup note until it's installed.
+ * this list depends on a Chromium-only API. The battery, CPU and Memory widgets read battery-guard's
+ * relay on the Mac itself (see battery.js and system.js), so they show a setup note until it's installed.
  */
 export const WIDGETS = {
   search:     { name: 'Search',            size: 'bar' },
@@ -42,6 +42,8 @@ export const WIDGETS = {
   clickup:    { name: 'ClickUp',           size: 'large' },
   battery:    { name: 'Battery',           size: 'small' },
   batteryHealth: { name: 'Battery health', size: 'medium' },
+  cpu:        { name: 'CPU',               size: 'small' },
+  memory:     { name: 'Memory',            size: 'small' },
 };
 
 /** Pixel boxes for each size; the dashboard packs columns from these heights. */
@@ -136,7 +138,15 @@ export const DEFAULT_PREFS = {
   // battery-guard's relay runs on this Mac (battery.js). Off by default, so the page never asks a
   // visitor's loopback for anything.
   battery: false,
+  // The capacity Battery health's death clock counts down to (DEATH_AT_OPTIONS).
+  deathAt: 80,
 };
+
+/**
+ * The capacities Battery health's death clock can count down to. 80% is where Apple's battery check
+ * says "Service Recommended". Defined here, not in battery.js, so this eager module stays free of it.
+ */
+export const DEATH_AT_OPTIONS = [90, 85, 80, 75, 70];
 
 /** A calendar key as `openssl rand -hex 24` or a password manager makes one: no URL syntax. */
 export const sanitizeCalKey = (key) => String(key ?? '').replace(/[^\w-]/g, '').slice(0, 128);
@@ -199,6 +209,7 @@ export function buildWallpaperSearch(prefs, { colorway, wallpaper } = {}) {
   q.set('se', p.engine);
   if (p.calKey) q.set('ck', p.calKey);
   if (p.battery) q.set('bat', '1');
+  if (p.deathAt !== DEFAULT_PREFS.deathAt) q.set('bdt', String(p.deathAt));
   if (p.clickup) q.set('cu', '1');
   if (colorway) q.set('cw', colorway);
   // An uploaded wallpaper is a Blob in THIS browser's IndexedDB; Plash can never load it, so the
@@ -288,6 +299,7 @@ export function readWallpaperMode(search, isPlash, browsing = false) {
       engine: oneOf(q.get('se'), ['google', 'duckduckgo', 'bing', 'perplexity'], DEFAULT_PREFS.engine),
       calKey: sanitizeCalKey(q.get('ck')),
       battery: q.get('bat') === '1',
+      deathAt: DEATH_AT_OPTIONS.includes(Number(q.get('bdt'))) ? Number(q.get('bdt')) : DEFAULT_PREFS.deathAt,
       clickup: q.get('cu') === '1',
     },
     // Only overrides the theme when the URL names a real value; otherwise the store's own wins.

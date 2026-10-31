@@ -98,6 +98,10 @@ eq('projectName', projectName('/Users/me/Projects/site'), 'site');
 eq('battery: off by default, no param', [readWallpaperMode('?mode=wallpaper', false).prefs.battery, buildWallpaperSearch({}).includes('bat=')], [false, false]);
 eq('battery: on round-trips as bat=1', readWallpaperMode(buildWallpaperSearch({ battery: true }), false).prefs.battery, true);
 eq('battery: only exactly 1 turns it on', ['bat=0', 'bat=true', 'bat=11', 'bat='].map((b) => readWallpaperMode(`?mode=wallpaper&${b}`, false).prefs.battery), [false, false, false, false]);
+eq('death clock: 80 by default, no param', [readWallpaperMode('?mode=wallpaper', false).prefs.deathAt, buildWallpaperSearch({}).includes('bdt=')], [80, false]);
+eq('death clock: 70 round-trips as bdt=70', [buildWallpaperSearch({ deathAt: 70 }).includes('bdt=70'), readWallpaperMode(buildWallpaperSearch({ deathAt: 70 }), false).prefs.deathAt], [true, 70]);
+eq('death clock: only the offered values', ['bdt=72', 'bdt=95', 'bdt=abc', 'bdt=85.0'].map((b) => readWallpaperMode(`?mode=wallpaper&${b}`, false).prefs.deathAt), [80, 80, 80, 85]);
+eq('CPU and Memory are known widgets', readWallpaperMode('?mode=wallpaper&w=cpu,memory,nope', false).prefs.widgets, ['cpu', 'memory']);
 eq('battery widgets are known ids', readWallpaperMode('?mode=wallpaper&w=battery,batteryHealth,nope', false).prefs.widgets, ['battery', 'batteryHealth']);
 
 /* ── 3. Links ───────────────────────────────────────────────────────────────── */

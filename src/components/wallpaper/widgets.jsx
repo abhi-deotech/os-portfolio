@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   Music, MapPin, Search, Plus, X, Globe, Check, CalendarDays, Video, Workflow, FolderCode,
   BatteryMedium, BatteryLow, BatteryCharging, Plug, Thermometer, CalendarClock, ListChecks, Play, Square,
+  Cpu, MemoryStick, Hourglass,
 } from 'lucide-react';
 import AppIcon from '../common/AppIcon';
 import { APP_BY_ID } from '../../config/apps';
@@ -16,7 +17,8 @@ import { getNowPlaying } from '../../utils/musicApi';
 import { fetchWeather, describeCode } from '../../wallpaper/weather';
 import { fetchAgenda, agendaView, untilText, localDay } from '../../wallpaper/agenda';
 import { fetchClickupShared, clickupAction, clickupView, agendaTasks } from '../../wallpaper/clickup';
-import { fetchBatteryShared, batteryView, healthView } from '../../wallpaper/battery';
+import { fetchBatteryShared, batteryView, healthView, deathClock, ymdParts } from '../../wallpaper/battery';
+import { fetchSystemShared, systemCadence, cpuView, memoryView } from '../../wallpaper/system';
 import { resolveUnit } from '../../wallpaper/config';
 import {
   formatter, timeParts, zoneRelation, cityOf, isoWeek, dayOfYear, daysInYear, dayFraction,
@@ -971,14 +973,79 @@ export const BatteryWidget = ({ prefs }) => {
   );
 };
 
+/** "May 2028", in the visitor's own language. */
+const monthYear = (d) => d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+
+const UNIT_WORDS = { y: ['year', 'years'], m: ['month', 'months'], d: ['day', 'days'] };
+const ymdWords = (parts) => parts.filter((p) => p.n > 0 || parts.length === 1)
+  .map((p) => `${p.n} ${UNIT_WORDS[p.u][p.n === 1 ? 0 : 1]}`).join(', ');
+
+/** Under three months to go, the clock takes the warning ink. */
+const DEATH_WARN_DAYS = 90;
+
 /**
- * The slow numbers: maximum capacity as System Settings shows it, cycles, the wear pace against Apple's,
- * and the one routine from the README that is due. The routine dates and the monthly log come from
+ * The death clock: when maximum capacity reaches the chosen threshold (80% unless Settings says
+ * otherwise), counted down in years, months and days at the current pace (battery.js deathClock). It
+ * moves once a day, never by the second, so it costs nothing to keep on screen.
+ */
+const DeathClock = ({ clock }) => {
+  const at = `${clock.threshold}%`;
+  if (clock.status === 'reached') {
+    return (
+      <div className="mt-1.5 min-w-0">
+        <span className="block truncate" style={{ fontSize: 14, fontWeight: 650, color: 'var(--sdl-warn)' }}>Reached {at}</span>
+        <Sub style={{ fontSize: 11 }}>Service recommended</Sub>
+      </div>
+    );
+  }
+  if (clock.status !== 'counting') {
+    return (
+      <div className="mt-1.5 min-w-0">
+        <span className="block truncate" style={{ fontSize: 13, fontWeight: 650 }}>{at} in <span style={{ color: 'var(--sdl-sec)' }}>…</span></span>
+        <Sub style={{ fontSize: 11 }}>{clock.status === 'learning' ? 'Measuring your usage' : 'Not in the next 20 years'}</Sub>
+      </div>
+    );
+  }
+  const parts = ymdParts(clock.ymd);
+  const ink = clock.days < DEATH_WARN_DAYS ? 'var(--sdl-warn)' : 'var(--sdl-ink)';
+  const how = clock.method === 'trend' ? 'measured trend' : clock.method === 'age' ? 'use plus age' : 'use only, a harsh estimate';
+  return (
+    <div
+      className="mt-1.5 min-w-0"
+      role="img"
+      aria-label={`Maximum capacity reaches ${at} in about ${ymdWords(parts)}, around ${monthYear(clock.end)}`}
+      title={`${clock.perYear.toFixed(1)}% of capacity a year (${how})`}
+    >
+      <div className="flex items-baseline gap-1.5 min-w-0 whitespace-nowrap">
+        <Hourglass size={12} style={{ color: 'var(--wp-mark)', flexShrink: 0, alignSelf: 'center' }} aria-hidden="true" />
+        <span style={{ fontSize: 12, fontWeight: 650, color: 'var(--sdl-sec)' }}>{at} in</span>
+        <span className="tabular-nums" style={{ fontFamily: ROUNDED, color: ink }}>
+          {parts.map((p) => (
+            <span key={p.u} style={{ marginRight: 3 }}>
+              <span style={{ fontSize: 19, fontWeight: 650 }}>{p.n}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--sdl-sec)' }}>{p.u}</span>
+            </span>
+          ))}
+        </span>
+      </div>
+      <Sub style={{ fontSize: 11 }}>
+        ~{monthYear(clock.end)}{clock.cyclesPerDay !== null ? ` · ${clock.cyclesPerDay.toFixed(1)} cycles/day` : ' · measured trend'}
+      </Sub>
+    </div>
+  );
+};
+
+/**
+ * The slow numbers: maximum capacity as System Settings shows it, cycles, the death clock, and the one
+ * routine from the README that is due. The routine dates, the usage rate and the monthly log come from
  * battery-guard, so a fresh install says so rather than inventing a history.
  */
 export const BatteryHealthWidget = ({ now, prefs }) => {
   const result = useBattery(prefs.battery);
-  const h = result?.status === 'ok' ? healthView(result.reading, now) : null;
+  const reading = result?.status === 'ok' ? result.reading : null;
+  const h = reading ? healthView(reading, now) : null;
+  // Recomputed per render, but `now` only matters to the day: the clock steps once a day.
+  const clock = h ? deathClock(reading, prefs.deathAt, now) : null;
   if (!h) {
     return (
       <Shell size="medium" label="Battery health">
@@ -1000,11 +1067,9 @@ export const BatteryHealthWidget = ({ now, prefs }) => {
               {h.cycles} cycles <span style={{ color: 'var(--sdl-sec)', fontWeight: 550 }}>of {h.rated}</span>
             </span>
           )}
-          {h.pace !== null && (
-            <Sub>1% per {h.pace} cycles{h.paceSince ? ' lately' : ''} · Apple: 1% per {h.applePace}</Sub>
-          )}
+          {clock && <DeathClock clock={clock} />}
           {h.due && (
-            <div className="flex items-start gap-1.5 mt-2 min-w-0">
+            <div className="flex items-start gap-1.5 mt-1.5 min-w-0">
               <CalendarClock size={14} style={{ color: h.due.done ? 'var(--sdl-sec)' : 'var(--wp-mark)', flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
               <div className="min-w-0">
                 <span className="block truncate" style={{ fontSize: 12, fontWeight: 650, color: h.due.done ? 'var(--sdl-sec)' : 'var(--sdl-ink)' }}>{h.due.line}</span>
@@ -1014,6 +1079,141 @@ export const BatteryHealthWidget = ({ now, prefs }) => {
           )}
         </div>
       </div>
+    </Shell>
+  );
+};
+
+/* ── CPU and memory ────────────────────────────────────────────────────────── */
+
+/** Two minutes of samples on the adapter (40 × 3 s): the CPU sparkline and its "busy for" line. */
+const SYSTEM_SAMPLES = 40;
+
+/**
+ * Both widgets share one poll (fetchSystemShared). Its pace follows the power source the last answer
+ * reported: 3 s on the adapter, 10 s on battery, 15 s in Low Power Mode, nothing while hidden.
+ */
+function useSystem(enabled) {
+  const [state, setState] = useState({ result: null, samples: [] });
+  const power = state.result?.status === 'ok' ? state.result.reading.power : null;
+  useVisiblePoll(async () => {
+    const result = await fetchSystemShared();
+    setState((s) => ({
+      result,
+      samples: result.status === 'ok' && result.reading.cpu
+        ? [...s.samples, { at: Date.now(), total: result.reading.cpu.total }].slice(-SYSTEM_SAMPLES)
+        : s.samples,
+    }));
+  }, systemCadence(power), enabled);
+  return enabled ? state : { result: { status: 'off' }, samples: [] };
+}
+
+const SetupNote = ({ title, Icon, result }) => (
+  <Shell size="small" label={title}>
+    <Label>{title}</Label>
+    <div className="flex-1 flex flex-col justify-end gap-2">
+      <Icon size={22} style={{ color: 'var(--sdl-sec)' }} aria-hidden="true" />
+      <Sub style={{ whiteSpace: 'normal' }}>{result ? BATTERY_NOTES[result.status] ?? BATTERY_NOTES.error : ' '}</Sub>
+    </div>
+  </Shell>
+);
+
+/** The last two minutes of total CPU as a line, newest on the right. */
+const Sparkline = ({ samples, ink }) => {
+  const w = 58;
+  const h = 26;
+  if (samples.length < 2) return <span style={{ width: w, height: h }} aria-hidden="true" />;
+  const step = w / (SYSTEM_SAMPLES - 1);
+  const x0 = w - step * (samples.length - 1);
+  const pts = samples.map((s, i) => `${(x0 + i * step).toFixed(1)},${(h - 1 - s.total * (h - 2)).toFixed(1)}`);
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden="true" style={{ flexShrink: 0, overflow: 'visible' }}>
+      <polygon points={`${x0},${h} ${pts.join(' ')} ${w},${h}`} style={{ fill: ink, opacity: 0.14 }} />
+      <polyline points={pts.join(' ')} fill="none" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" style={{ stroke: ink }} />
+    </svg>
+  );
+};
+
+/**
+ * One bar per core, grouped by kind (E for efficiency, P for performance) the way the chip is built.
+ * The bars jump rather than glide: animating them on every 3 s poll cost the WebKit page 0.78 s of CPU
+ * per 30 s, against 0.15 s without (measured in a WKWebView, 2026-11-01).
+ */
+const CoreBars = ({ groups, ink }) => (
+  <div className="flex gap-2.5 items-end" aria-hidden="true" style={{ marginTop: 6 }}>
+    {groups.map((g, gi) => (
+      <div key={gi} className="flex flex-col gap-1 min-w-0" style={{ flex: g.cores.length }}>
+        <div className="flex gap-[3px] items-end" style={{ height: 26 }}>
+          {g.cores.map((v, i) => (
+            <div key={i} className="relative flex-1 h-full overflow-hidden" style={{ borderRadius: 2, background: 'var(--wp-track)' }}>
+              <div
+                className="absolute inset-x-0 bottom-0"
+                style={{ height: `${Math.max(6, v * 100)}%`, background: ink, opacity: g.kind === 'E' ? 0.7 : 1 }}
+              />
+            </div>
+          ))}
+        </div>
+        <span style={{ fontSize: 10, fontWeight: 650, lineHeight: 1, color: 'var(--sdl-sec)', letterSpacing: '0.04em' }}>{g.kind}</span>
+      </div>
+    ))}
+  </div>
+);
+
+/**
+ * CPU from battery-guard: how busy the whole chip is, a two-minute line, every core by kind, and one
+ * line that says whether anything needs doing (heat, or a long busy spell). law 10: no green for "fine".
+ */
+export const CpuWidget = ({ prefs }) => {
+  const { result, samples } = useSystem(prefs.battery);
+  const v = result?.status === 'ok' ? cpuView(result.reading, samples) : null;
+  if (!v) return <SetupNote title="CPU" Icon={Cpu} result={result?.status === 'ok' ? { status: 'error' } : result} />;
+  const ink = TONE_INK[v.tone] ?? 'var(--wp-mark)';
+  return (
+    <Shell size="small" label={`CPU ${v.pct}% busy. ${v.line}`}>
+      <Label>CPU</Label>
+      <div className="flex items-end justify-between gap-1">
+        <span className="tabular-nums" style={{ fontFamily: ROUNDED, fontSize: 36, fontWeight: 600, lineHeight: 1.05, color: TONE_INK[v.tone] ?? 'var(--sdl-ink)' }}>
+          {v.pct}<span style={{ fontSize: 20 }}>%</span>
+        </span>
+        <span style={{ marginBottom: 5 }}><Sparkline samples={samples} ink={ink} /></span>
+      </div>
+      <CoreBars groups={v.groups} ink={ink} />
+      <Sub style={{ marginTop: 'auto', color: TONE_INK[v.tone] ?? 'var(--sdl-sec)' }}>{v.line}</Sub>
+    </Shell>
+  );
+};
+
+const MEMORY_INK = { app: 'var(--wp-mark)', wired: 'rgb(var(--sdl-ink-rgb) / 0.5)', compressed: 'rgb(var(--sdl-ink-rgb) / 0.28)' };
+
+/**
+ * Memory from battery-guard: used of total, the Activity Monitor split as one bar, and the pressure,
+ * which is what matters. The bar's outline takes the pressure's ink once it leaves normal.
+ */
+export const MemoryWidget = ({ prefs }) => {
+  const { result } = useSystem(prefs.battery);
+  const v = result?.status === 'ok' ? memoryView(result.reading) : null;
+  if (!v) return <SetupNote title="Memory" Icon={MemoryStick} result={result?.status === 'ok' ? { status: 'error' } : result} />;
+  const ink = TONE_INK[v.tone];
+  return (
+    <Shell size="small" label={`Memory ${v.used} of ${v.total} GB used, pressure ${v.pressure}. ${v.split}. ${v.detail}`}>
+      <div className="flex items-start justify-between gap-2">
+        <Label>Memory</Label>
+        <span className="shrink-0" style={{ fontSize: 12, fontWeight: 650, color: ink ?? 'var(--sdl-sec)' }}>{v.pressure}</span>
+      </div>
+      {/* 32px, not the CPU's 36: "63.9 / 64 GB" is 135px at 36 in SF Rounded (measured in WebKit). */}
+      <span className="tabular-nums whitespace-nowrap" style={{ fontFamily: ROUNDED, fontSize: 32, fontWeight: 600, lineHeight: 1.15, color: ink ?? 'var(--sdl-ink)' }}>
+        {v.used}<span style={{ fontSize: 15, color: 'var(--sdl-sec)' }}> / {v.total} GB</span>
+      </span>
+      <div
+        className="flex overflow-hidden"
+        aria-hidden="true"
+        style={{ height: 8, borderRadius: 4, background: 'var(--wp-track)', margin: '9px 0 8px', boxShadow: ink ? `0 0 0 1.5px ${ink}` : 'none' }}
+      >
+        {v.parts.map((p) => (
+          <div key={p.id} style={{ width: `${p.share * 100}%`, background: MEMORY_INK[p.id] }} />
+        ))}
+      </div>
+      <Sub style={{ marginTop: 'auto' }}>{v.split}</Sub>
+      <Sub style={{ color: v.swapping ? 'var(--sdl-warn)' : 'var(--sdl-sec)' }}>{v.detail}</Sub>
     </Shell>
   );
 };
