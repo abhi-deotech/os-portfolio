@@ -53,7 +53,8 @@ export function agendaView(events, now, max = 3) {
   const allDay = events.filter((e) => e.allDay).map((e) => e.title);
   const timed = events
     .filter((e) => !e.allDay)
-    .map((e) => ({ title: e.title, start: new Date(e.start), end: new Date(e.end), join: safeJoin(e.join) }))
+    // `task` marks a ClickUp task's due moment (clickup.js `agendaTasks`): no join, no end of its own.
+    .map((e) => ({ title: e.title, start: new Date(e.start), end: new Date(e.end), join: safeJoin(e.join), task: e.task ?? null }))
     .filter((e) => e.end.getTime() > t || (e.end.getTime() === e.start.getTime() && e.start.getTime() >= t))
     .sort((a, b) => a.start - b.start)
     .slice(0, max);

@@ -2,22 +2,10 @@
 // Returns today's events from the feeds in CALENDAR_ICS_URLS. The feed URLs are
 // secret (anyone with one can read the calendar), so they live only in Vercel
 // env vars, and the endpoint answers only callers that send WALLPAPER_KEY.
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { eventsForDay, isValidTimeZone, localDate } from './_lib/ics.js';
+import { json, keyRejection } from './_lib/key.js';
 
 const FETCH_TIMEOUT_MS = 8000;
-
-function json(status, body) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json', 'cache-control': 'private, no-store' },
-  });
-}
-
-function sameSecret(a, b) {
-  const digest = (s) => createHash('sha256').update(String(s)).digest();
-  return timingSafeEqual(digest(a), digest(b));
-}
 
 // Feeds are separated by whitespace, or by a comma that starts the next link. A comma inside a link
 // (a query string, a data: URL) is part of it.
@@ -29,14 +17,10 @@ function feedUrls() {
 }
 
 export async function GET(request) {
-  const expected = process.env.WALLPAPER_KEY;
-  if (!expected) return json(500, { error: 'WALLPAPER_KEY is not set on the server' });
+  const rejected = keyRejection(request);
+  if (rejected) return rejected;
 
   const url = new URL(request.url);
-  const bearer = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  const provided = bearer || url.searchParams.get('key') || '';
-  if (!provided || !sameSecret(provided, expected)) return json(401, { error: 'Missing or wrong key' });
-
   const timeZone = url.searchParams.get('tz') || 'UTC';
   if (!isValidTimeZone(timeZone)) return json(400, { error: 'Unknown time zone' });
   const date = url.searchParams.get('date') || localDate(Date.now(), timeZone);

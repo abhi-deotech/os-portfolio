@@ -4,7 +4,7 @@ import compression from 'vite-plugin-compression'
 
 /**
  * `npm run dev` has no Vercel runtime, so this serves the same `api/*.js` handlers Vercel deploys
- * (Web-standard `GET(request)` exports), with `.env.local` loaded into process.env the way Vercel's
+ * (Web-standard `GET(request)` / `POST(request)` exports), with `.env.local` loaded into process.env the way Vercel's
  * env vars are. Dev only; production routing is Vercel's.
  */
 function apiRoutes() {
@@ -18,12 +18,15 @@ function apiRoutes() {
         if (!/^[\w-]+$/.test(name)) return next()
         let handler
         try {
-          handler = (await server.ssrLoadModule(`/api/${name}.js`)).GET
+          handler = (await server.ssrLoadModule(`/api/${name}.js`))[req.method]
         } catch {
           return next()
         }
         if (typeof handler !== 'function') return next()
-        const response = await handler(new Request(new URL(req.originalUrl, 'http://localhost'), { headers: req.headers }))
+        const chunks = []
+        for await (const chunk of req) chunks.push(chunk)
+        const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : Buffer.concat(chunks)
+        const response = await handler(new Request(new URL(req.originalUrl, 'http://localhost'), { method: req.method, headers: req.headers, body }))
         res.writeHead(response.status, Object.fromEntries(response.headers))
         res.end(Buffer.from(await response.arrayBuffer()))
       })
