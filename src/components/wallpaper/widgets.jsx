@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   Music, MapPin, Search, Plus, X, Globe, Check, CalendarDays, Video, Workflow, FolderCode,
-  BatteryMedium, BatteryLow, BatteryCharging, Plug, Thermometer, CalendarClock,
+  BatteryMedium, BatteryLow, BatteryCharging, Plug, Thermometer, CalendarClock, ListChecks, Play, Square,
 } from 'lucide-react';
 import AppIcon from '../common/AppIcon';
 import { APP_BY_ID } from '../../config/apps';
@@ -15,6 +15,7 @@ import useVisiblePoll from '../../hooks/useVisiblePoll';
 import { getNowPlaying } from '../../utils/musicApi';
 import { fetchWeather, describeCode } from '../../wallpaper/weather';
 import { fetchAgenda, agendaView, untilText, localDay } from '../../wallpaper/agenda';
+import { fetchClickupShared, clickupAction, clickupView, agendaTasks } from '../../wallpaper/clickup';
 import { fetchBatteryShared, batteryView, healthView } from '../../wallpaper/battery';
 import { resolveUnit } from '../../wallpaper/config';
 import {
@@ -348,10 +349,31 @@ const JoinChip = ({ join, label, interactive }) => {
   );
 };
 
+/**
+ * A ClickUp task's due moment on the Agenda: the same round button as Join, a checklist glyph, opening
+ * the task in ClickUp (https, so the default browser). Passive Plash gets the unfilled glyph.
+ */
+const TaskChip = ({ task, label, interactive }) => {
+  const chip = 'flex items-center justify-center w-6 h-6 rounded-full shrink-0';
+  if (!interactive || !task.url) {
+    return (
+      <span className={chip} role="img" aria-label={`${label}: ClickUp task due`} title="ClickUp task due" style={{ color: 'var(--wp-mark)', boxShadow: 'inset 0 0 0 1.5px var(--wp-track)' }}>
+        <ListChecks size={13} aria-hidden="true" />
+      </span>
+    );
+  }
+  return (
+    <a href={task.url} target="_blank" rel="noreferrer" aria-label={`Open ${label} in ClickUp`} title="Open in ClickUp" className={`${chip} ${ring}`} style={{ color: 'var(--wp-mark)', boxShadow: 'inset 0 0 0 1.5px var(--wp-mark)' }}>
+      <ListChecks size={13} aria-hidden="true" />
+    </a>
+  );
+};
+
 export const AgendaWidget = ({ now, prefs, interactive }) => {
-  const { calKey, hour } = prefs;
+  const { calKey, hour, clickup } = prefs;
   const day = localDay(now);
   const [state, setState] = useState({ status: 'loading' });
+  const [cu, setCu] = useState({ status: 'loading' });
 
   useVisiblePoll(async () => {
     const next = await fetchAgenda(calKey, day);
@@ -359,8 +381,19 @@ export const AgendaWidget = ({ now, prefs, interactive }) => {
     setState((prev) => (next.status === 'error' && prev.status === 'ok' && prev.day === day ? prev : { ...next, day }));
   }, 5 * 60_000, Boolean(calKey), `${calKey}|${day}`);
 
-  const status = calKey ? state.status : 'nokey';
-  const { allDay, rows } = status === 'ok' ? agendaView(state.events, now) : { allDay: [], rows: [] };
+  // ClickUp tasks due today join the timeline when Settings says so; one request feeds this and the
+  // ClickUp widget (fetchClickupShared).
+  useVisiblePoll(async () => {
+    const next = await fetchClickupShared(calKey, day);
+    setCu((prev) => (next.status !== 'ok' && prev.status === 'ok' && prev.day === day ? prev : { ...next, day }));
+  }, 5 * 60_000, Boolean(calKey && clickup), `${calKey}|${day}|clickup`);
+
+  const calOk = state.status === 'ok';
+  const cuOk = Boolean(clickup) && cu.status === 'ok';
+  // Either source is enough for a timeline: a ClickUp-only setup shouldn't read "no calendar".
+  const status = !calKey ? 'nokey' : calOk || cuOk ? 'ok' : state.status;
+  const events = [...(calOk ? state.events : []), ...(cuOk ? agendaTasks(cu.tasks, day) : [])];
+  const { allDay, rows } = status === 'ok' ? agendaView(events, now) : { allDay: [], rows: [] };
 
   return (
     <Shell size="medium" label="Agenda" pad={14}>
@@ -380,7 +413,7 @@ export const AgendaWidget = ({ now, prefs, interactive }) => {
           {status === 'ok' && rows.length === 0 && <li><Sub>Nothing else today.</Sub></li>}
           {rows.map((e) => (
             <li
-              key={`${e.title}|${e.start.toISOString()}`}
+              key={`${e.task?.id ?? ''}|${e.title}|${e.start.toISOString()}`}
               className="grid items-center gap-2 rounded-lg min-w-0"
               style={{
                 gridTemplateColumns: '64px minmax(0, 1fr) auto',
@@ -401,10 +434,11 @@ export const AgendaWidget = ({ now, prefs, interactive }) => {
                     className="tabular-nums whitespace-nowrap"
                     style={{ fontSize: 11, fontWeight: 650, color: 'var(--wp-mark)' }}
                   >
-                    {e.kind === 'now' ? `until ${eventTime(e.end, hour)}` : `in ${untilText(e.minutes)}`}
+                    {e.task ? (e.kind === 'now' ? 'due now' : `due in ${untilText(e.minutes)}`) : e.kind === 'now' ? `until ${eventTime(e.end, hour)}` : `in ${untilText(e.minutes)}`}
                   </span>
                 )}
                 {e.join && <JoinChip join={e.join} label={`${e.title} at ${eventTime(e.start, hour)}`} interactive={interactive} />}
+                {e.task && <TaskChip task={e.task} label={e.title} interactive={interactive} />}
               </span>
             </li>
           ))}
@@ -661,6 +695,136 @@ export const TodoWidget = ({ interactive }) => {
           </li>
         ))}
       </ul>
+    </Shell>
+  );
+};
+
+/* ── ClickUp ───────────────────────────────────────────────────────────────── */
+
+const CLICKUP_NOTES = {
+  nokey: 'Add the wallpaper key in Settings → Wallpaper mode to connect ClickUp.',
+  rejected: 'The wallpaper key was rejected. Check it in Settings → Wallpaper mode.',
+  unconfigured: 'No ClickUp token on the server yet. See Settings → Wallpaper mode.',
+  limited: 'ClickUp is busy. Trying again in a few minutes.',
+  error: 'ClickUp unavailable right now.',
+};
+
+/** "Overdue", "3:30 PM" / "Today", or the weekday, for a row's right-hand edge. */
+function dueText(task, hour) {
+  if (task.bucket === 'overdue') return 'Overdue';
+  const due = new Date(task.due);
+  if (task.bucket === 'today') return task.dueTime ? eventTime(due, hour) : 'Today';
+  return formatter('cu-wd', { weekday: 'short' }).format(due);
+}
+
+const elapsedText = (start, now) => untilText(Math.max(0, Math.floor((now.getTime() - new Date(start).getTime()) / 60_000)));
+
+/**
+ * The owner's ClickUp tasks due by the end of the coming week, overdue first, read through
+ * /api/clickup so the ClickUp token never reaches the page. In Browsing Mode each row can be ticked
+ * off (ClickUp moves it to its list's closed status) and timed (one timer at a time, as in ClickUp);
+ * the title opens the task in ClickUp. Polled every 3 minutes while visible, and again after a change.
+ */
+export const ClickUpWidget = ({ now, prefs, interactive }) => {
+  const { calKey, hour } = prefs;
+  const day = localDay(now);
+  const [state, setState] = useState({ status: 'loading' });
+  const [hidden, setHidden] = useState(() => new Set()); // completed here, until ClickUp agrees
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [tick, setTick] = useState(0);
+
+  useVisiblePoll(async () => {
+    const next = await fetchClickupShared(calKey, day);
+    setState((prev) => (next.status !== 'ok' && prev.status === 'ok' && prev.day === day ? prev : { ...next, day }));
+  }, 3 * 60_000, Boolean(calKey), `${calKey}|${day}|${tick}`);
+
+  const act = async (body, taskId) => {
+    setBusy(true);
+    setError('');
+    if (body.action === 'complete') setHidden((h) => new Set(h).add(taskId));
+    const res = await clickupAction(calKey, body);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      if (body.action === 'complete') setHidden((h) => { const n = new Set(h); n.delete(taskId); return n; });
+      return;
+    }
+    if (body.action !== 'complete') setState((prev) => (prev.status === 'ok' ? { ...prev, timer: res.timer } : prev));
+    setTick((t) => t + 1); // read ClickUp back, so the list is what ClickUp now says
+  };
+
+  const status = calKey ? state.status : 'nokey';
+  const timer = status === 'ok' ? state.timer : null;
+  const tasks = status === 'ok' ? clickupView(state.tasks, now, timer).filter((t) => !hidden.has(t.id)) : [];
+  const dueNow = tasks.filter((t) => t.bucket !== 'later').length;
+
+  return (
+    <Shell size="large" label="ClickUp">
+      <div className="flex items-center justify-between gap-2 min-w-0" style={{ minHeight: 24 }}>
+        <Label style={{ flexShrink: 0 }}>ClickUp</Label>
+        {timer ? (
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span className="tabular-nums whitespace-nowrap" style={{ fontSize: 11, fontWeight: 650, color: 'var(--wp-mark)' }}>
+              {timer.start ? elapsedText(timer.start, now) : 'Timing'}
+            </span>
+            {interactive && (
+              <button type="button" disabled={busy} aria-label={`Stop the timer on ${timer.name}`} title="Stop timer" onClick={() => act({ action: 'stop' })} className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${ring}`} style={{ background: 'var(--wp-mark)', color: 'var(--wp-on-mark)' }}>
+                <Square size={10} fill="currentColor" aria-hidden="true" />
+              </button>
+            )}
+          </span>
+        ) : (
+          status === 'ok' && <Sub style={{ fontSize: 11 }}>{dueNow ? `${dueNow} due` : 'Nothing due today'}</Sub>
+        )}
+      </div>
+      {timer && <Sub style={{ fontSize: 11, marginTop: 2 }}>Timing: {timer.name}</Sub>}
+      {CLICKUP_NOTES[status] ? (
+        <div className="flex-1 flex flex-col justify-end gap-2">
+          <ListChecks size={22} style={{ color: 'var(--sdl-sec)' }} aria-hidden="true" />
+          <Sub style={{ whiteSpace: 'normal' }}>{CLICKUP_NOTES[status]}</Sub>
+        </div>
+      ) : (
+        <ul className="mt-2 flex-1 min-h-0 overflow-y-auto scrollbar-hide space-y-0.5">
+          {status === 'ok' && tasks.length === 0 && <li><Sub>Nothing due this week.</Sub></li>}
+          {tasks.map((t) => (
+            <li key={t.id} className="flex items-center gap-2 min-h-[28px] min-w-0">
+              {interactive ? (
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={false}
+                  aria-label={`Complete ${t.name}`}
+                  title="Mark complete in ClickUp"
+                  disabled={busy}
+                  onClick={() => act({ action: 'complete', taskId: t.id }, t.id)}
+                  className={`w-[18px] h-[18px] rounded-full shrink-0 ${ring}`}
+                  style={{ border: `2px solid ${t.color || 'var(--sdl-sec)'}` }}
+                />
+              ) : (
+                <span aria-hidden="true" className="w-[10px] h-[10px] rounded-full shrink-0 mx-1" style={{ background: t.color || 'var(--sdl-sec)' }} />
+              )}
+              {interactive && t.url ? (
+                <a href={t.url} target="_blank" rel="noreferrer" title={`${t.name} · ${t.list} · ${t.status}`} className={`flex-1 min-w-0 truncate text-[13px] rounded ${ring}`} style={{ color: 'var(--sdl-ink)', fontWeight: t.running ? 650 : 550 }}>
+                  {t.name}
+                </a>
+              ) : (
+                <span className="flex-1 min-w-0 truncate text-[13px]" style={{ color: 'var(--sdl-ink)', fontWeight: t.running ? 650 : 550 }}>{t.name}</span>
+              )}
+              <span className="tabular-nums whitespace-nowrap shrink-0" style={{ fontSize: 11, fontWeight: 650, color: t.bucket === 'overdue' ? 'var(--sdl-alert)' : t.bucket === 'today' ? 'var(--wp-mark)' : 'var(--sdl-sec)' }}>
+                {dueText(t, hour)}
+              </span>
+              {interactive && !t.running && (
+                <button type="button" disabled={busy} aria-label={`Start a timer on ${t.name}`} title="Start timer" onClick={() => act({ action: 'start', taskId: t.id })} className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${ring}`} style={{ color: 'var(--sdl-sec)' }}>
+                  <Play size={12} aria-hidden="true" />
+                </button>
+              )}
+              {interactive && t.running && <span className="w-6 h-6 shrink-0" aria-hidden="true" />}
+            </li>
+          ))}
+        </ul>
+      )}
+      {error && <Sub style={{ fontSize: 11, color: 'var(--sdl-alert)', whiteSpace: 'normal', marginTop: 4 }}>{error}</Sub>}
     </Shell>
   );
 };

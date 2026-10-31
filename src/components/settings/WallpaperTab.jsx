@@ -8,6 +8,7 @@ import {
   sanitizeMacApp, sanitizeShortcut, sanitizeProject, projectName, sanitizeCalKey, buildWallpaperUrl, resolveUnit,
 } from '../../wallpaper/config';
 import { fetchAgenda, localDay } from '../../wallpaper/agenda';
+import { fetchClickup } from '../../wallpaper/clickup';
 import { fetchBattery, powerChecklist, minutesText, tempText, BATTERY_RELAY } from '../../wallpaper/battery';
 import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES, OPEN_SHORTCUT, PROJECT_EDITOR_NAMES } from '../../wallpaper/launchers';
 import { APP_BY_ID } from '../../config/apps';
@@ -184,6 +185,21 @@ const WallpaperTab = () => {
     if (c.status === 'rejected') return 'The server rejected this key. It must match WALLPAPER_KEY in Vercel.';
     if (c.status === 'unconfigured') return 'Key accepted, but the server has no CALENDAR_ICS_URLS yet.';
     return 'Couldn’t load the calendar. Is the site deployed with both environment variables?';
+  };
+
+  /* ClickUp: the same key, and a real round trip to /api/clickup. */
+  const [cuCheck, setCuCheck] = useState(null); // null | 'busy' | a result from fetchClickup
+  const checkClickup = async () => {
+    setCuCheck('busy');
+    setCuCheck(await fetchClickup(prefs.calKey, localDay(new Date())));
+  };
+  const clickupText = (c) => {
+    if (c === 'busy') return 'Checking…';
+    if (c.status === 'ok') return `Connected. ${c.tasks.length === 1 ? '1 task' : `${c.tasks.length} tasks`} due this week${c.timer ? `, timer running on “${c.timer.name}”` : ''}.`;
+    if (c.status === 'rejected') return 'The server rejected the key above. It must match WALLPAPER_KEY in Vercel.';
+    if (c.status === 'unconfigured') return 'Key accepted, but the server has no CLICKUP_TOKEN yet.';
+    if (c.status === 'limited') return 'ClickUp is rate-limiting this token. Try again in a minute.';
+    return 'Couldn’t reach ClickUp. Check CLICKUP_TOKEN (and CLICKUP_TEAM_ID, if set) in Vercel.';
   };
 
   /* Battery: a real round trip to battery-guard's relay on this Mac, and its power-settings checklist. */
@@ -547,6 +563,33 @@ const WallpaperTab = () => {
         </div>
         <div role="status" className="text-[12px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
           {check && checkText(check)}
+        </div>
+      </Card>
+
+      <Card
+        title="ClickUp"
+        sub="Your ClickUp tasks due this week, overdue first: tick them off and start or stop ClickUp's timer from the wallpaper. The site talks to ClickUp on its server, so your ClickUp token never reaches this page or Plash."
+      >
+        <ol className="list-decimal pl-5 space-y-1.5 text-[13px] mb-4" style={{ color: 'var(--sdl-ink)' }}>
+          <li>
+            In ClickUp, open your avatar → Settings → Apps and generate a personal API token (it starts with <code className="font-mono text-[12px]">pk_</code>).
+            It can do anything you can in ClickUp, so keep it only in Vercel.
+          </li>
+          <li>
+            In Vercel, add <code className="font-mono text-[12px]">CLICKUP_TOKEN</code>. If you&apos;re in more than one Workspace, also add{' '}
+            <code className="font-mono text-[12px]">CLICKUP_TEAM_ID</code> (the number after <code className="font-mono text-[12px]">app.clickup.com/</code> in
+            your Workspace&apos;s address). Then redeploy. It uses the same <code className="font-mono text-[12px]">WALLPAPER_KEY</code> as the Agenda, set above.
+          </li>
+          <li>Switch on the ClickUp widget, and copy the Plash URL again.</li>
+        </ol>
+        <Row title="Show tasks due today on the Agenda" sub="Tasks with a due time join the timeline with a countdown; tasks due today with no time join the all-day line.">
+          <Switch label="Show ClickUp tasks on the Agenda" checked={Boolean(prefs.clickup)} onChange={(on) => set({ clickup: on })} />
+        </Row>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <Btn onClick={checkClickup} disabled={!prefs.calKey || cuCheck === 'busy'}>Check connection</Btn>
+        </div>
+        <div role="status" className="text-[12px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
+          {!prefs.calKey ? 'Add the key in the Agenda card above first.' : cuCheck && clickupText(cuCheck)}
         </div>
       </Card>
 

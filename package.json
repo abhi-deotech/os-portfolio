@@ -27,7 +27,8 @@
     "token-lint:strict": "node scripts/token-lint.mjs --strict",
     "sdl:check": "node scripts/sdl-sync-check.mjs",
     "shots": "node --experimental-websocket scripts/shot.mjs",
-    "games:sync": "node scripts/games-manifest.mjs"
+    "games:sync": "node scripts/games-manifest.mjs",
+    "clickup:check": "node scripts/clickup-check.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

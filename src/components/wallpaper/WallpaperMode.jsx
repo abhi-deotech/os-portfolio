@@ -15,7 +15,7 @@ import { packColumns, GAP } from '../../wallpaper/pack';
 import { MAC_LINK_ATTR } from '../../wallpaper/launchers';
 import {
   ClockWidget, WorldClockWidget, CalendarWidget, MusicWidget, WeatherWidget, ProgressWidget,
-  SearchWidget, AppsWidget, TodoWidget, NotesWidget, AgendaWidget, FocusWidget, BatteryWidget, BatteryHealthWidget,
+  SearchWidget, AppsWidget, TodoWidget, NotesWidget, AgendaWidget, FocusWidget, BatteryWidget, BatteryHealthWidget, ClickUpWidget,
 } from './widgets';
 
 /**
@@ -46,6 +46,7 @@ const WIDGET_COMPONENTS = {
   progress: ProgressWidget,
   music: MusicWidget,
   agenda: AgendaWidget,
+  clickup: ClickUpWidget,
   focus: FocusWidget,
   battery: BatteryWidget,
   batteryHealth: BatteryHealthWidget,

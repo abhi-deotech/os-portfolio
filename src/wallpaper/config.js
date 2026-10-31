@@ -39,6 +39,7 @@ export const WIDGETS = {
   music:      { name: 'Now playing',       size: 'medium' },
   agenda:     { name: 'Agenda',            size: 'medium' },
   focus:      { name: 'Today’s one thing', size: 'medium' },
+  clickup:    { name: 'ClickUp',           size: 'large' },
   battery:    { name: 'Battery',           size: 'small' },
   batteryHealth: { name: 'Battery health', size: 'medium' },
 };
@@ -129,6 +130,9 @@ export const DEFAULT_PREFS = {
   // The Agenda's key for /api/calendar (WALLPAPER_KEY on the server). It rides in the Plash URL, so
   // that URL is private; the calendar's own feed links never leave the server.
   calKey: '',
+  // ClickUp tasks due today also appear on the Agenda (the ClickUp widget reads them either way).
+  // Same key: /api/clickup sits behind WALLPAPER_KEY too, and the ClickUp token stays on the server.
+  clickup: false,
   // battery-guard's relay runs on this Mac (battery.js). Off by default, so the page never asks a
   // visitor's loopback for anything.
   battery: false,
@@ -195,6 +199,7 @@ export function buildWallpaperSearch(prefs, { colorway, wallpaper } = {}) {
   q.set('se', p.engine);
   if (p.calKey) q.set('ck', p.calKey);
   if (p.battery) q.set('bat', '1');
+  if (p.clickup) q.set('cu', '1');
   if (colorway) q.set('cw', colorway);
   // An uploaded wallpaper is a Blob in THIS browser's IndexedDB; Plash can never load it, so the
   // colorway plane stands in rather than a URL that paints nothing.
@@ -283,6 +288,7 @@ export function readWallpaperMode(search, isPlash, browsing = false) {
       engine: oneOf(q.get('se'), ['google', 'duckduckgo', 'bing', 'perplexity'], DEFAULT_PREFS.engine),
       calKey: sanitizeCalKey(q.get('ck')),
       battery: q.get('bat') === '1',
+      clickup: q.get('cu') === '1',
     },
     // Only overrides the theme when the URL names a real value; otherwise the store's own wins.
     theme: {
