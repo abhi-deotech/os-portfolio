@@ -71,7 +71,19 @@ export function parseBattery(body) {
     limits: readLimits(body.limits),
     routine: { below40: day(routine.below40), near20: day(routine.near20), since: day(routine.since) },
     history: history.map((h) => ({ date: h.date, cycles: h.cycles, nominalMah: h.nominalMah, designMah: h.designMah })),
+    // The death clock's inputs: the battery's start month (set on the Mac, `--battery-since`), the use
+    // rate in cycles a day, and a seven-day median capacity that doesn't jitter between readings.
+    batterySince: typeof body.batterySince === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(body.batterySince) ? body.batterySince : null,
+    usage: readUsage(body.usage),
+    nominalMahSmoothed: mah(body.nominalMahSmoothed),
   };
+}
+
+function readUsage(u) {
+  if (!u || typeof u !== 'object') return null;
+  const cyclesPerDay = num(u.cyclesPerDay, 0, 20);
+  if (cyclesPerDay === null || !['ledger', 'log'].includes(u.source)) return null;
+  return { cyclesPerDay, source: u.source, days: num(u.days, 0, 10_000) };
 }
 
 /**
@@ -183,24 +195,14 @@ export const RUN_DOWN_DAYS = 14;
 export const CALIBRATE_DAYS = 30;
 
 /**
- * What the Battery health widget says: maximum capacity as System Settings shows it (nominal ÷ design),
- * cycles, the wear pace against Apple's (80% left at the rated cycles, so 1% per 50 at 1000), and the
- * one routine that is due. Pace is measured since the first health-log row once there is enough of a
- * gap, otherwise over the battery's whole life (which includes calendar aging).
+ * What the Battery health widget says beside its death clock: maximum capacity as System Settings
+ * shows it (nominal ÷ design, from the seven-day median so the ring doesn't flicker between 94% and
+ * 95%), cycles against the rated count, and the one routine that is due.
  */
 export function healthView(r, now) {
-  if (!r.nominalMah || !r.designMah) return null;
-  const maxPct = (r.nominalMah / r.designMah) * 100;
-  const rated = r.cyclesRated ?? 1000;
-  let pace = null;
-  let paceSince = null;
-  const first = r.history[0];
-  if (first && r.cycles !== null) {
-    const cycles = r.cycles - first.cycles;
-    const lost = (first.nominalMah / first.designMah) * 100 - maxPct;
-    if (cycles >= 20 && lost > 0) { pace = cycles / lost; paceSince = first.date; }
-  }
-  if (pace === null && r.cycles && maxPct < 100) pace = r.cycles / (100 - maxPct);
+  const nominal = r.nominalMahSmoothed ?? r.nominalMah;
+  if (!nominal || !r.designMah) return null;
+  const maxPct = (nominal / r.designMah) * 100;
 
   let due = null;
   const { below40, near20, since } = r.routine;
@@ -221,12 +223,127 @@ export function healthView(r, now) {
   return {
     maxPct: Math.round(maxPct),
     cycles: r.cycles,
-    rated,
-    pace: pace === null ? null : Math.round(pace),
-    paceSince,
-    applePace: Math.round(rated / 20),
+    rated: r.cyclesRated ?? 1000,
     due,
   };
+}
+
+/* ── Death clock ───────────────────────────────────────────────────────────── */
+
+/** The measured trend takes over once the monthly log spans this long and shows at least this drop. */
+export const TREND_MIN_DAYS = 90;
+export const TREND_MIN_DROP = 1;
+
+/** Beyond this the clock says so rather than counting decades. */
+const NEVER_DAYS = 20 * 365;
+
+const noon = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12);
+const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+const addMonths = (d, n) => {
+  const y = d.getFullYear() + Math.floor((d.getMonth() + n) / 12);
+  const m = (((d.getMonth() + n) % 12) + 12) % 12;
+  return new Date(y, m, Math.min(d.getDate(), daysInMonth(y, m)), 12);
+};
+const wholeDays = (a, b) => Math.round((noon(b) - noon(a)) / DAY_MS);
+
+/**
+ * Calendar distance from `a` to `b` (b later) as years, months and days, the way a person counts:
+ * whole months first (31 Jan + 1 month is 28 or 29 Feb), then the days left over.
+ */
+export function ymdBetween(a, b) {
+  let months = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+  if (addMonths(a, months) > noon(b)) months -= 1;
+  const days = wholeDays(addMonths(a, months), b);
+  return { y: Math.floor(months / 12), m: months % 12, d: days };
+}
+
+/** Least-squares capacity trend over the monthly log, in % lost per day; null until it can be trusted. */
+export function historyTrend(history) {
+  if (history.length < 3) return null;
+  const pts = history.map((h) => ({ x: Date.parse(`${h.date}T00:00:00Z`) / DAY_MS, y: (h.nominalMah / h.designMah) * 100 }));
+  const span = pts[pts.length - 1].x - pts[0].x;
+  if (span < TREND_MIN_DAYS) return null;
+  const mx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+  const my = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+  const sxx = pts.reduce((s, p) => s + (p.x - mx) ** 2, 0);
+  const slope = pts.reduce((s, p) => s + (p.x - mx) * (p.y - my), 0) / sxx;
+  return -slope * span >= TREND_MIN_DROP ? -slope : null;
+}
+
+/**
+ * When maximum capacity will reach `threshold`, at the current pace.
+ *
+ * Capacity is the seven-day median from battery-guard, so one reading can't move the date by weeks.
+ * The pace, best evidence first:
+ *   trend   the monthly log's own slope, once it spans 3 months and shows a 1% drop;
+ *   age     use plus age: Apple's rating (80% left at the rated cycles, so 0.02% a cycle at 1000) times
+ *           cycles a day, plus the yearly loss that rating leaves unexplained over the battery's life
+ *           (it needs `batterySince`). A battery that has worn better than rated keeps its own rate;
+ *   cycles  with no start date, every lost point is blamed on cycles. That is harsher: it can only
+ *           bring the date earlier than the use-plus-age estimate would.
+ *
+ * @returns null without capacity data; else `{ threshold, maxPct, status }` plus, when counting,
+ *   `{ days, end, ymd, perYear, method, cyclesPerDay, source }`. status: 'counting' | 'reached' |
+ *   'learning' (no usage rate yet) | 'never' (more than 20 years away).
+ */
+export function deathClock(r, threshold, now) {
+  const nominal = r.nominalMahSmoothed ?? r.nominalMah;
+  if (!nominal || !r.designMah) return null;
+  const maxPct = (nominal / r.designMah) * 100;
+  const base = { threshold, maxPct };
+  if (maxPct <= threshold) return { ...base, status: 'reached' };
+
+  const lost = 100 - maxPct;
+  const rated = r.cyclesRated ?? 1000;
+  const cycleWearRated = 20 / rated;
+  const cyclesPerDay = r.usage?.cyclesPerDay ?? null;
+  let perDay;
+  let method;
+  const trend = historyTrend(r.history);
+  if (trend !== null) {
+    perDay = trend;
+    method = 'trend';
+  } else {
+    if (cyclesPerDay === null) return { ...base, status: 'learning' };
+    const cycles = r.cycles ?? 0;
+    let cycleWear = cycleWearRated;
+    let agePerDay = 0;
+    const [y, m] = r.batterySince ? r.batterySince.split('-').map(Number) : [];
+    const ageDays = r.batterySince ? wholeDays(new Date(y, m - 1, 1), now) : 0;
+    if (ageDays >= 180) {
+      const ageLoss = lost - cycles * cycleWearRated;
+      if (ageLoss >= 0) agePerDay = ageLoss / ageDays;
+      else if (cycles > 0) cycleWear = lost / cycles;
+      method = 'age';
+    } else {
+      if (cycles > 0) cycleWear = Math.max(cycleWearRated, lost / cycles);
+      method = 'cycles';
+    }
+    perDay = agePerDay + cycleWear * cyclesPerDay;
+  }
+
+  const days = perDay > 0 ? (maxPct - threshold) / perDay : Infinity;
+  if (days > NEVER_DAYS) return { ...base, status: 'never', method };
+  const start = noon(now);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + Math.round(days), 12);
+  return {
+    ...base,
+    status: 'counting',
+    days: Math.round(days),
+    end,
+    ymd: ymdBetween(start, end),
+    perYear: perDay * 365,
+    method,
+    cyclesPerDay,
+    source: method === 'trend' ? 'log' : r.usage.source,
+  };
+}
+
+/** "1y 6m 7d" as parts, so the widget can set the numbers large and the units small. Zero leaders drop. */
+export function ymdParts({ y, m, d }) {
+  const parts = [{ n: y, u: 'y' }, { n: m, u: 'm' }, { n: d, u: 'd' }];
+  const first = parts.findIndex((p) => p.n > 0);
+  return first === -1 ? [{ n: 0, u: 'd' }] : parts.slice(first);
 }
 
 /**
