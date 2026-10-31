@@ -5,9 +5,10 @@ import { Card, Segmented, Row, Slider, Switch } from './primitives';
 import { enterWallpaperMode } from '../../hooks/useWallpaperMode';
 import {
   WIDGETS, MAX_ZONES, MAX_LINKS, MAX_MAC_APPS, MAX_SHORTCUTS, MAX_PROJECTS, PROJECT_EDITORS, sanitizeWidgets, safeHttpUrl,
-  sanitizeMacApp, sanitizeShortcut, sanitizeProject, projectName, sanitizeCalKey, buildWallpaperUrl,
+  sanitizeMacApp, sanitizeShortcut, sanitizeProject, projectName, sanitizeCalKey, buildWallpaperUrl, resolveUnit,
 } from '../../wallpaper/config';
 import { fetchAgenda, localDay } from '../../wallpaper/agenda';
+import { fetchBattery, powerChecklist, minutesText, tempText, BATTERY_RELAY } from '../../wallpaper/battery';
 import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES, OPEN_SHORTCUT, PROJECT_EDITOR_NAMES } from '../../wallpaper/launchers';
 import { APP_BY_ID } from '../../config/apps';
 import { cityOf } from '../../wallpaper/time';
@@ -184,6 +185,36 @@ const WallpaperTab = () => {
     if (c.status === 'unconfigured') return 'Key accepted, but the server has no CALENDAR_ICS_URLS yet.';
     return 'Couldn’t load the calendar. Is the site deployed with both environment variables?';
   };
+
+  /* Battery: a real round trip to battery-guard's relay on this Mac, and its power-settings checklist. */
+  const [batCheck, setBatCheck] = useState(null); // null | 'busy' | a result from fetchBattery
+  const [copiedFix, setCopiedFix] = useState(null);
+  const checkBattery = async () => {
+    setBatCheck('busy');
+    setBatCheck(await fetchBattery());
+  };
+  const batteryText = (c) => {
+    if (c === 'busy') return 'Checking…';
+    if (c.status === 'ok') {
+      const r = c.reading;
+      const time = r.minutes ? `, ${minutesText(r.minutes)} ${r.ac ? 'to go' : 'left'}` : '';
+      const temp = r.tempC === null ? '' : `, ${tempText(r.tempC, resolveUnit(prefs.unit))}`;
+      return `Connected. ${r.pct}% ${r.ac ? 'on the adapter' : 'on battery'}${time}${temp}.`;
+    }
+    if (c.status === 'unreachable') return 'Couldn’t reach battery-guard. Is it running, and is its certificate trusted? Opening the address in step 3 shows which.';
+    return 'battery-guard answered, but not in a shape this page can read. Update both to the latest version.';
+  };
+  const copyFix = async (item) => {
+    try {
+      await navigator.clipboard.writeText(item.fix);
+      setCopiedFix(item.id);
+    } catch {
+      setCopiedFix(`${item.id}:failed`);
+    }
+    setTimeout(() => setCopiedFix(null), 2500);
+  };
+  const checklist = batCheck?.status === 'ok' ? powerChecklist(batCheck.reading) : [];
+  const code = 'font-mono text-[12px]';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -519,6 +550,71 @@ const WallpaperTab = () => {
         </div>
       </Card>
 
+      <Card
+        title="Battery"
+        sub="This Mac's battery against your charging rules: where it sits between 20% and 80%, heat, capacity and the routines that are due. It comes from battery-guard, a small background helper on your Mac that also sends the plug-in, Charge Limit and heat alerts."
+      >
+        <ol className="list-decimal pl-5 space-y-1.5 text-[13px] mb-4" style={{ color: 'var(--sdl-ink)' }}>
+          <li>
+            Install it: run <code className={code}>~/Projects/battery-optimization/bin/install.sh</code>. It builds the helper, makes its
+            certificate and starts it at every login. No admin rights.
+          </li>
+          <li>
+            Trust its certificate once, with the <code className={code}>security add-trusted-cert</code> command the installer prints (macOS asks
+            for your password). This page is https, and Safari&apos;s engine only lets it read a helper on your Mac that has a trusted certificate.
+          </li>
+          <li>
+            Check it: open{' '}
+            <a href={BATTERY_RELAY.replace('/v1/battery', '/')} target="_blank" rel="noreferrer" style={{ color: 'var(--sdl-aink)', fontWeight: 600 }}>
+              https://127.0.0.1:47380
+            </a>
+            . It should load with no certificate warning.
+          </li>
+          <li>Switch it on below, add the Battery widgets, and copy the Plash URL again.</li>
+        </ol>
+        <Row title="battery-guard runs on this Mac" sub="Only then does the page ask your Mac for its battery. Visitors' browsers never do.">
+          <Switch label="battery-guard runs on this Mac" checked={prefs.battery} onChange={(on) => { set({ battery: on }); setBatCheck(null); }} />
+        </Row>
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          <Btn onClick={checkBattery} disabled={batCheck === 'busy'}>Check connection</Btn>
+        </div>
+        <div role="status" className="text-[12px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
+          {batCheck && batteryText(batCheck)}
+        </div>
+        {checklist.length > 0 && (
+          <div className="mt-4">
+            <h4 className="text-[11px] uppercase tracking-wider mb-2" style={{ color: 'var(--sdl-sec)', fontWeight: 650 }}>Power settings</h4>
+            <ul className="space-y-2">
+              {checklist.map((item) => (
+                <li key={item.id} className="flex flex-wrap items-center gap-2 text-[13px]" style={{ color: 'var(--sdl-ink)' }}>
+                  <span style={{ color: item.ok ? 'var(--sdl-sec)' : 'var(--sdl-warn)', fontWeight: 650 }}>{item.ok ? 'Set' : 'Not set'}</span>
+                  <span className="flex-1 min-w-[160px]">
+                    {item.label}
+                    <span className="block text-[12px]" style={{ color: 'var(--sdl-sec)' }}>{item.why}</span>
+                  </span>
+                  {!item.ok && (
+                    <>
+                      <code className={code} style={{ color: 'var(--sdl-sec)' }}>{item.fix}</code>
+                      <Btn onClick={() => copyFix(item)}>
+                        {copiedFix === item.id ? 'Copied' : copiedFix === `${item.id}:failed` ? 'Copy failed' : 'Copy'}
+                      </Btn>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p className="text-[12px] mt-2" style={{ color: 'var(--sdl-sec)' }}>
+              These need admin rights, so paste them into Terminal yourself. The Charge Limit and Optimized Battery Charging can&apos;t be read:
+              check them in{' '}
+              <a href="x-apple.systempreferences:com.apple.Battery-Settings.extension" style={{ color: 'var(--sdl-aink)', fontWeight: 600 }}>
+                System Settings → Battery
+              </a>
+              .
+            </p>
+          </div>
+        )}
+      </Card>
+
       <Card title="Set up Plash">
         <ol className="list-decimal pl-5 space-y-1.5 text-[13px]" style={{ color: 'var(--sdl-ink)' }}>
           <li>Install <a href="https://sindresorhus.com/plash" target="_blank" rel="noreferrer" style={{ color: 'var(--sdl-aink)', fontWeight: 600 }}>Plash</a> from the Mac App Store.</li>
@@ -530,12 +626,12 @@ const WallpaperTab = () => {
             set to pass its input as arguments, containing <code className="font-mono text-[12px]">open -a &quot;$1&quot;</code>. Then allow it under Shortcuts → Settings → Advanced → Allow Running Scripts.
           </li>
           <li>Settings changed while the wallpaper shows apply at once. To keep them in Plash, right-click the wallpaper in Browsing Mode and choose &ldquo;Update Website to Current&rdquo;.</li>
-          <li>Optional: turn on &ldquo;Deactivate while on battery&rdquo;, and reload every few hours.</li>
+          <li>Optional: reload every few hours. &ldquo;Deactivate while on battery&rdquo; saves a little power, but hides the Battery widgets exactly when they matter.</li>
           <li>Skip Plash&apos;s &ldquo;Invert colors&rdquo;. Pick a dark colorway in Appearance instead.</li>
         </ol>
         <p className="text-[12px] mt-3" style={{ color: 'var(--sdl-sec)' }}>
           The URL carries your colorway, wallpaper and everything on this page. Every widget works in Plash, which runs
-          Safari&apos;s engine: none of them rely on Chrome-only features. Plash marks the page it shows, so even the
+          Safari&apos;s engine: none of them rely on Chrome-only features. The Battery widgets also need battery-guard running on this Mac. Plash marks the page it shows, so even the
           plain site address opens in wallpaper mode there, with the default layout.
         </p>
       </Card>

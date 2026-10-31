@@ -15,7 +15,7 @@
 import {
   Music, Code, NotebookPen, MessageSquare, Mail, Gem, MessagesSquare, Video, PenTool,
   Settings as Gear, Phone, Users, Sparkles, ShoppingBag, Map as MapIcon, Podcast, Workflow, ListChecks, Send,
-  MousePointer2, LayoutList, Command,
+  MousePointer2, LayoutList, Command, BatteryCharging,
 } from 'lucide-react';
 
 /** `site` is only for the tile's icon (its favicon); `Icon` is the fallback glyph if that fails. */
@@ -44,6 +44,8 @@ export const MAC_APPS = {
   podcasts: { name: 'Podcasts', href: 'podcasts://',                 site: 'podcasts.apple.com', Icon: Podcast },
   appstore: { name: 'App Store', href: 'macappstore://',             site: 'apps.apple.com', Icon: ShoppingBag },
   shortcuts:{ name: 'Shortcuts', href: 'shortcuts://',               site: 'support.apple.com', Icon: Workflow },
+  // System Settings → Battery: Charge Limit, Low Power Mode and Optimized Charging live here.
+  battery:  { name: 'Battery',  href: 'x-apple.systempreferences:com.apple.Battery-Settings.extension', site: 'apple.com', Icon: BatteryCharging },
 };
 
 /**

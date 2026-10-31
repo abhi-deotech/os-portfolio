@@ -93,6 +93,13 @@ eq('projectName', projectName('/Users/me/Projects/site'), 'site');
     capped.projects.map((p) => `${p.editor}~${p.path}`), ['cursor~/p/0', 'cursor~/p/1', 'cursor~/p/2', 'cursor~/p/3'].slice(0, MAX_PROJECTS));
 }
 
+/* ── 2b. The battery relay flag (`bat`) ─────────────────────────────────────── */
+
+eq('battery: off by default, no param', [readWallpaperMode('?mode=wallpaper', false).prefs.battery, buildWallpaperSearch({}).includes('bat=')], [false, false]);
+eq('battery: on round-trips as bat=1', readWallpaperMode(buildWallpaperSearch({ battery: true }), false).prefs.battery, true);
+eq('battery: only exactly 1 turns it on', ['bat=0', 'bat=true', 'bat=11', 'bat='].map((b) => readWallpaperMode(`?mode=wallpaper&${b}`, false).prefs.battery), [false, false, false, false]);
+eq('battery widgets are known ids', readWallpaperMode('?mode=wallpaper&w=battery,batteryHealth,nope', false).prefs.widgets, ['battery', 'batteryHealth']);
+
 /* ── 3. Links ───────────────────────────────────────────────────────────────── */
 
 eq('shortcut link', shortcutHref('🚀 Ship & go'), 'shortcuts://run-shortcut?name=%F0%9F%9A%80%20Ship%20%26%20go');
