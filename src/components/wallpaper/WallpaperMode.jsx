@@ -206,8 +206,15 @@ const MacLinkHint = ({ onDismiss }) => (
  * Keeps the store's `wallpaperPrefs` and the URL in step while the wallpaper shows, so Settings opened
  * over it edits what is on screen. URL → store when the page loads or the URL changes (in Plash the
  * store starts out with its own, unrelated values); store → URL when Settings changes something.
+ *
+ * Appearance too: a colorway or wallpaper named in the URL wins over the store's (App.jsx), so a pick in
+ * Settings → Appearance would otherwise show as selected and change nothing on screen. A pick goes into
+ * the URL like every other wallpaper setting; only the half that changed is written, so a URL without
+ * `wp` keeps following the store's wallpaper. Inside Plash the URL's theme is also copied into the store
+ * on load, so the picker starts on what the wallpaper shows. Plash's store belongs to the wallpaper; in
+ * a browser the store is the visitor's own desktop look, so it is left alone there.
  */
-function usePrefsSync(prefs, theme) {
+function usePrefsSync(prefs, theme, plash) {
   const search = buildWallpaperSearch(prefs, theme);
   const latest = useRef({ prefs, theme });
   // Declared first, so it runs before the effects below read it.
@@ -218,10 +225,27 @@ function usePrefsSync(prefs, theme) {
     if (buildWallpaperSearch(s.wallpaperPrefs, latest.current.theme) !== search) s.setWallpaperPrefs(latest.current.prefs);
   }, [search]);
 
+  useEffect(() => {
+    if (!plash) return;
+    const s = useOSStore.getState();
+    const patch = {};
+    if (theme.colorway && theme.colorway !== s.colorway) patch.colorway = theme.colorway;
+    if (theme.wallpaper && theme.wallpaper !== s.wallpaper) patch.wallpaper = theme.wallpaper;
+    // setState rather than the setters: their Puter sync would push the wallpaper's look to the account.
+    if (Object.keys(patch).length) useOSStore.setState(patch);
+  }, [plash, theme.colorway, theme.wallpaper]);
+
   useEffect(() => useOSStore.subscribe((state, prev) => {
-    if (state.wallpaperPrefs !== prev.wallpaperPrefs) {
-      replaceWallpaperSearch(buildWallpaperSearch(state.wallpaperPrefs, latest.current.theme));
-    }
+    const colorwayPicked = state.colorway !== prev.colorway;
+    const wallpaperPicked = state.wallpaper !== prev.wallpaper;
+    if (state.wallpaperPrefs === prev.wallpaperPrefs && !colorwayPicked && !wallpaperPicked) return;
+    const url = latest.current.theme;
+    const next = {
+      colorway: colorwayPicked ? state.colorway : url.colorway,
+      wallpaper: wallpaperPicked ? state.wallpaper : url.wallpaper,
+    };
+    if (next.colorway === url.colorway && next.wallpaper === url.wallpaper && state.wallpaperPrefs === prev.wallpaperPrefs) return;
+    replaceWallpaperSearch(buildWallpaperSearch(state.wallpaperPrefs, next));
   }), []);
 }
 
@@ -239,7 +263,7 @@ const WallpaperMode = ({ mode, fallbackWallpaper }) => {
   const minimizedWindows = useOSStore((s) => s.minimizedWindows);
   const windowsRef = useRef(null);
   const [macHint, dismissMacHint] = useMacLinkHint(plash);
-  usePrefsSync(prefs, theme);
+  usePrefsSync(prefs, theme, plash);
 
   // In the browser the address bar IS the Plash URL: entering the mode navigated to it.
   const copy = async () => {
