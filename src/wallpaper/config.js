@@ -23,7 +23,8 @@ export const PLASH_BROWSING_CLASS = 'plash-is-browsing-mode';
  * The catalogue. Sizes follow Apple's widget families — small is one 164px square, medium two side
  * by side, large a 2×2 square — plus `bar`, a slim full-width strip for the search box. Every source
  * here is local, localStorage or a plain cross-origin fetch, so all of it works in WebKit; nothing in
- * this list depends on a Chromium-only API.
+ * this list depends on a Chromium-only API. The two battery widgets read battery-guard's relay on the
+ * Mac itself (see battery.js), so they show a setup note until it's installed.
  */
 export const WIDGETS = {
   search:     { name: 'Search',            size: 'bar' },
@@ -38,6 +39,8 @@ export const WIDGETS = {
   music:      { name: 'Now playing',       size: 'medium' },
   agenda:     { name: 'Agenda',            size: 'medium' },
   focus:      { name: 'Today’s one thing', size: 'medium' },
+  battery:    { name: 'Battery',           size: 'small' },
+  batteryHealth: { name: 'Battery health', size: 'medium' },
 };
 
 /** Pixel boxes for each size; the dashboard packs columns from these heights. */
@@ -126,6 +129,9 @@ export const DEFAULT_PREFS = {
   // The Agenda's key for /api/calendar (WALLPAPER_KEY on the server). It rides in the Plash URL, so
   // that URL is private; the calendar's own feed links never leave the server.
   calKey: '',
+  // battery-guard's relay runs on this Mac (battery.js). Off by default, so the page never asks a
+  // visitor's loopback for anything.
+  battery: false,
 };
 
 /** A calendar key as `openssl rand -hex 24` or a password manager makes one: no URL syntax. */
@@ -188,6 +194,7 @@ export function buildWallpaperSearch(prefs, { colorway, wallpaper } = {}) {
   for (const pr of p.projects.slice(0, MAX_PROJECTS)) q.append('proj', `${pr.editor}~${pr.path}`);
   q.set('se', p.engine);
   if (p.calKey) q.set('ck', p.calKey);
+  if (p.battery) q.set('bat', '1');
   if (colorway) q.set('cw', colorway);
   // An uploaded wallpaper is a Blob in THIS browser's IndexedDB; Plash can never load it, so the
   // colorway plane stands in rather than a URL that paints nothing.
@@ -275,6 +282,7 @@ export function readWallpaperMode(search, isPlash, browsing = false) {
       projects,
       engine: oneOf(q.get('se'), ['google', 'duckduckgo', 'bing', 'perplexity'], DEFAULT_PREFS.engine),
       calKey: sanitizeCalKey(q.get('ck')),
+      battery: q.get('bat') === '1',
     },
     // Only overrides the theme when the URL names a real value; otherwise the store's own wins.
     theme: {

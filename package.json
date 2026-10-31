@@ -19,6 +19,7 @@
     "context:check": "node scripts/context-check.mjs",
     "relief:check": "node scripts/relief-check.mjs",
     "url:check": "node scripts/wallpaper-url-check.mjs",
+    "battery:check": "node scripts/battery-check.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "census": "node scripts/token-census.mjs",

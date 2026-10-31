@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Music, MapPin, Search, Plus, X, Globe, Check, CalendarDays, Video, Workflow, FolderCode } from 'lucide-react';
+import {
+  Music, MapPin, Search, Plus, X, Globe, Check, CalendarDays, Video, Workflow, FolderCode,
+  BatteryMedium, BatteryLow, BatteryCharging, Plug, Thermometer, CalendarClock,
+} from 'lucide-react';
 import AppIcon from '../common/AppIcon';
 import { APP_BY_ID } from '../../config/apps';
 import { openLuminaApp } from '../../hooks/useWallpaperMode';
@@ -12,6 +15,7 @@ import useVisiblePoll from '../../hooks/useVisiblePoll';
 import { getNowPlaying } from '../../utils/musicApi';
 import { fetchWeather, describeCode } from '../../wallpaper/weather';
 import { fetchAgenda, agendaView, untilText, localDay } from '../../wallpaper/agenda';
+import { fetchBatteryShared, batteryView, healthView } from '../../wallpaper/battery';
 import { resolveUnit } from '../../wallpaper/config';
 import {
   formatter, timeParts, zoneRelation, cityOf, isoWeek, dayOfYear, daysInYear, dayFraction,
@@ -257,13 +261,13 @@ export const WeatherWidget = ({ prefs }) => {
 
 /* ── Day and year ──────────────────────────────────────────────────────────── */
 
-const Ring = ({ value, caption }) => {
+const Ring = ({ value, caption, ariaLabel }) => {
   const r = 24;
   const c = 2 * Math.PI * r;
   const pct = Math.round(value * 100);
   return (
     <div className="flex flex-col items-center gap-1">
-      <svg width="60" height="60" viewBox="0 0 60 60" role="img" aria-label={`${caption} ${pct}% done`}>
+      <svg width="60" height="60" viewBox="0 0 60 60" role="img" aria-label={ariaLabel ?? `${caption} ${pct}% done`}>
         <circle cx="30" cy="30" r={r} fill="none" strokeWidth="6" style={{ stroke: 'var(--wp-track)' }} />
         <circle
           cx="30" cy="30" r={r} fill="none" strokeWidth="6" strokeLinecap="round"
@@ -721,6 +725,131 @@ export const NotesWidget = ({ interactive }) => {
           {text || 'Nothing yet. Turn on Browsing Mode in Plash to write here.'}
         </p>
       )}
+    </Shell>
+  );
+};
+
+/* ── Battery ───────────────────────────────────────────────────────────────── */
+
+const TONE_INK = { alert: 'var(--sdl-alert)', warn: 'var(--sdl-warn)' };
+const BATTERY_ICONS = { plug: Plug, charging: BatteryCharging, battery: BatteryMedium, low: BatteryLow, hot: Thermometer };
+
+const BATTERY_NOTES = {
+  off: 'Install battery-guard on this Mac, then switch it on in Settings → Wallpaper mode.',
+  unreachable: 'Can’t reach battery-guard. Check it’s running and its certificate is trusted.',
+  error: 'battery-guard sent an answer this page can’t read.',
+};
+
+/** Both battery widgets share one request a minute (fetchBatteryShared), only while the page shows. */
+function useBattery(enabled) {
+  const [result, setResult] = useState(null); // null = not asked yet
+  useVisiblePoll(async () => setResult(await fetchBatteryShared()), 60_000, enabled);
+  return enabled ? result : { status: 'off' };
+}
+
+/**
+ * Where the level sits in the charging band: the daily band (recharge point to cap) shaded, ticks at
+ * the floor and the cap, a dot at the level. law 10: no green for "fine", only warn and alert inks.
+ */
+const BandBar = ({ pct, limits, tone }) => (
+  <div className="relative" style={{ height: 6, borderRadius: 3, background: 'var(--wp-track)', margin: '8px 0 7px' }} aria-hidden="true">
+    <div className="absolute inset-y-0" style={{ left: `${limits.recharge[1]}%`, width: `${limits.cap - limits.recharge[1]}%`, borderRadius: 3, background: 'rgb(var(--sdl-ink-rgb) / 0.2)' }} />
+    {[limits.floor, limits.cap].map((at) => (
+      <div key={at} className="absolute" style={{ left: `${at}%`, top: -3, width: 1, height: 12, background: 'var(--sdl-sec)' }} />
+    ))}
+    <div
+      className="absolute"
+      style={{ left: `${pct}%`, top: -3, width: 12, height: 12, marginLeft: -6, borderRadius: 6, background: TONE_INK[tone] ?? 'var(--wp-mark)', boxShadow: '0 0 0 2px var(--sdl-plane)' }}
+    />
+  </div>
+);
+
+/**
+ * The battery against the README's rules, read from battery-guard on the Mac: the level, where it sits
+ * in the 20–80 band, and one line saying what to do. The guard's notifications are the alarm; this is
+ * the view you glance at.
+ */
+export const BatteryWidget = ({ prefs }) => {
+  const result = useBattery(prefs.battery);
+  if (!result || result.status !== 'ok') {
+    return (
+      <Shell size="small" label="Battery">
+        <Label>Battery</Label>
+        <div className="flex-1 flex flex-col justify-end gap-2">
+          <BatteryMedium size={22} style={{ color: 'var(--sdl-sec)' }} aria-hidden="true" />
+          <Sub style={{ whiteSpace: 'normal' }}>{result ? BATTERY_NOTES[result.status] : ' '}</Sub>
+        </div>
+      </Shell>
+    );
+  }
+  const v = batteryView(result.reading, resolveUnit(prefs.unit));
+  const Icon = BATTERY_ICONS[v.icon];
+  const ink = TONE_INK[v.tone];
+  return (
+    <Shell size="small" label={`Battery ${v.pct}%, ${v.line}`}>
+      {/* The temperature sits beside the icon, so the sub line always has its full width for advice. */}
+      <div className="flex items-start justify-between gap-2">
+        <Label>Battery</Label>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {v.temp && (
+            <span className="tabular-nums" style={{ fontSize: 12, fontWeight: 600, color: TONE_INK[v.tempTone] ?? 'var(--sdl-sec)' }}>{v.temp}</span>
+          )}
+          <Icon size={20} style={{ color: ink ?? 'var(--wp-mark)' }} aria-hidden="true" />
+        </div>
+      </div>
+      <span className="tabular-nums" style={{ fontFamily: ROUNDED, fontSize: 38, fontWeight: 600, lineHeight: 1.1, color: ink ?? 'var(--sdl-ink)' }}>
+        {v.pct}%
+      </span>
+      <BandBar pct={v.pct} limits={v.limits} tone={v.tone} />
+      <span className="block truncate" style={{ fontSize: 13, fontWeight: 650, color: ink ?? 'var(--sdl-ink)' }}>{v.line}</span>
+      <Sub>{v.sub}</Sub>
+    </Shell>
+  );
+};
+
+/**
+ * The slow numbers: maximum capacity as System Settings shows it, cycles, the wear pace against Apple's,
+ * and the one routine from the README that is due. The routine dates and the monthly log come from
+ * battery-guard, so a fresh install says so rather than inventing a history.
+ */
+export const BatteryHealthWidget = ({ now, prefs }) => {
+  const result = useBattery(prefs.battery);
+  const h = result?.status === 'ok' ? healthView(result.reading, now) : null;
+  if (!h) {
+    return (
+      <Shell size="medium" label="Battery health">
+        <Label>Battery health</Label>
+        <Sub style={{ whiteSpace: 'normal', marginTop: 'auto' }}>
+          {!result ? ' ' : result.status === 'ok' ? 'This Mac doesn’t report its battery capacity.' : BATTERY_NOTES[result.status]}
+        </Sub>
+      </Shell>
+    );
+  }
+  return (
+    <Shell size="medium" label="Battery health">
+      <div className="flex gap-4 h-full items-center min-w-0">
+        <Ring value={h.maxPct / 100} caption="Max capacity" ariaLabel={`Maximum capacity ${h.maxPct}%`} />
+        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+          <Label>Battery health</Label>
+          {h.cycles !== null && (
+            <span className="block truncate tabular-nums" style={{ fontSize: 14, fontWeight: 650 }}>
+              {h.cycles} cycles <span style={{ color: 'var(--sdl-sec)', fontWeight: 550 }}>of {h.rated}</span>
+            </span>
+          )}
+          {h.pace !== null && (
+            <Sub>1% per {h.pace} cycles{h.paceSince ? ' lately' : ''} · Apple: 1% per {h.applePace}</Sub>
+          )}
+          {h.due && (
+            <div className="flex items-start gap-1.5 mt-2 min-w-0">
+              <CalendarClock size={14} style={{ color: h.due.done ? 'var(--sdl-sec)' : 'var(--wp-mark)', flexShrink: 0, marginTop: 1 }} aria-hidden="true" />
+              <div className="min-w-0">
+                <span className="block truncate" style={{ fontSize: 12, fontWeight: 650, color: h.due.done ? 'var(--sdl-sec)' : 'var(--sdl-ink)' }}>{h.due.line}</span>
+                {h.due.sub && <Sub style={{ fontSize: 11 }}>{h.due.sub}</Sub>}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </Shell>
   );
 };
