@@ -6,10 +6,12 @@ import { enterWallpaperMode } from '../../hooks/useWallpaperMode';
 import {
   WIDGETS, MAX_ZONES, MAX_LINKS, MAX_MAC_APPS, MAX_SHORTCUTS, MAX_PROJECTS, PROJECT_EDITORS, sanitizeWidgets, safeHttpUrl,
   sanitizeMacApp, sanitizeShortcut, sanitizeProject, projectName, sanitizeCalKey, buildWallpaperUrl, resolveUnit,
+  DEATH_AT_OPTIONS,
 } from '../../wallpaper/config';
 import { fetchAgenda, localDay } from '../../wallpaper/agenda';
 import { fetchClickup } from '../../wallpaper/clickup';
 import { fetchBattery, powerChecklist, minutesText, tempText, BATTERY_RELAY } from '../../wallpaper/battery';
+import { fetchSystem, gbText } from '../../wallpaper/system';
 import { MAC_APPS, WEB_LINKS, LUMINA_APPS, MAX_TILES, SEARCH_ENGINES, OPEN_SHORTCUT, PROJECT_EDITOR_NAMES } from '../../wallpaper/launchers';
 import { APP_BY_ID } from '../../config/apps';
 import { cityOf } from '../../wallpaper/time';
@@ -202,12 +204,13 @@ const WallpaperTab = () => {
     return 'Couldn’t reach ClickUp. Check CLICKUP_TOKEN (and CLICKUP_TEAM_ID, if set) in Vercel.';
   };
 
-  /* Battery: a real round trip to battery-guard's relay on this Mac, and its power-settings checklist. */
-  const [batCheck, setBatCheck] = useState(null); // null | 'busy' | a result from fetchBattery
+  /* Mac readings: a real round trip to both of battery-guard's endpoints, and its power-settings checklist. */
+  const [batCheck, setBatCheck] = useState(null); // null | 'busy' | a result from fetchBattery, plus `system`
   const [copiedFix, setCopiedFix] = useState(null);
   const checkBattery = async () => {
     setBatCheck('busy');
-    setBatCheck(await fetchBattery());
+    const [battery, system] = await Promise.all([fetchBattery(), fetchSystem()]);
+    setBatCheck({ ...battery, system });
   };
   const batteryText = (c) => {
     if (c === 'busy') return 'Checking…';
@@ -215,7 +218,11 @@ const WallpaperTab = () => {
       const r = c.reading;
       const time = r.minutes ? `, ${minutesText(r.minutes)} ${r.ac ? 'to go' : 'left'}` : '';
       const temp = r.tempC === null ? '' : `, ${tempText(r.tempC, resolveUnit(prefs.unit))}`;
-      return `Connected. ${r.pct}% ${r.ac ? 'on the adapter' : 'on battery'}${time}${temp}.`;
+      const s = c.system?.status === 'ok' ? c.system.reading : null;
+      // An older battery-guard has no /v1/system: the battery widgets work, CPU and Memory don't.
+      const sys = !s ? ' CPU and memory: not available. Reinstall battery-guard to get them.'
+        : ` CPU ${s.cpu ? `${Math.round(s.cpu.total * 100)}% busy` : 'not reported'}, memory ${s.memory ? `${gbText(s.memory.used)} of ${gbText(s.memory.total)} GB used` : 'not reported'}.`;
+      return `Connected. ${r.pct}% ${r.ac ? 'on the adapter' : 'on battery'}${time}${temp}.${sys}`;
     }
     if (c.status === 'unreachable') return 'Couldn’t reach battery-guard. Is it running, and is its certificate trusted? Opening the address in step 3 shows which.';
     return 'battery-guard answered, but not in a shape this page can read. Update both to the latest version.';
@@ -594,8 +601,8 @@ const WallpaperTab = () => {
       </Card>
 
       <Card
-        title="Battery"
-        sub="This Mac's battery against your charging rules: where it sits between 20% and 80%, heat, capacity and the routines that are due. It comes from battery-guard, a small background helper on your Mac that also sends the plug-in, Charge Limit and heat alerts."
+        title="Mac readings"
+        sub="This Mac's battery against your charging rules (where it sits between 20% and 80%, heat, capacity, the routines that are due and when capacity runs out), plus how busy its CPU and memory are. It all comes from battery-guard, a small background helper on your Mac that also sends the plug-in, Charge Limit and heat alerts."
       >
         <ol className="list-decimal pl-5 space-y-1.5 text-[13px] mb-4" style={{ color: 'var(--sdl-ink)' }}>
           <li>
@@ -613,10 +620,16 @@ const WallpaperTab = () => {
             </a>
             . It should load with no certificate warning.
           </li>
-          <li>Switch it on below, add the Battery widgets, and copy the Plash URL again.</li>
+          <li>Switch it on below, add the Battery, Battery health, CPU and Memory widgets, and copy the Plash URL again.</li>
         </ol>
-        <Row title="battery-guard runs on this Mac" sub="Only then does the page ask your Mac for its battery. Visitors' browsers never do.">
+        <Row title="battery-guard runs on this Mac" sub="Only then does the page ask your Mac for its readings. Visitors' browsers never do.">
           <Switch label="battery-guard runs on this Mac" checked={prefs.battery} onChange={(on) => { set({ battery: on }); setBatCheck(null); }} />
+        </Row>
+        <Row
+          title="Death clock counts down to"
+          sub="Battery health estimates when maximum capacity reaches this, from how fast you use the battery and how old it is. At 80% Apple's battery check says Service Recommended."
+        >
+          <Segmented label="Death clock threshold" value={prefs.deathAt} options={DEATH_AT_OPTIONS.map((t) => ({ id: t, name: `${t}%` }))} onChange={(v) => set({ deathAt: v })} />
         </Row>
         <div className="flex flex-wrap items-center gap-2 mt-3">
           <Btn onClick={checkBattery} disabled={batCheck === 'busy'}>Check connection</Btn>
