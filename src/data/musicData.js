@@ -125,11 +125,11 @@ export const MUSIC_DATA = [
   },
   {
     id: 'snooze',
-    youtubeId: '2fP6_6EwEqY',
+    youtubeId: 'LDY_XyxBu8A',
     title: 'Snooze',
     artist: 'SZA',
     album: 'SOS',
-    cover: 'https://img.youtube.com/vi/2fP6_6EwEqY/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/LDY_XyxBu8A/hqdefault.jpg',
     duration: 201,
     genre: 'R&B'
   },
