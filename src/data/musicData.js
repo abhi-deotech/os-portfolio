@@ -2,11 +2,11 @@ export const MUSIC_DATA = [
   // CHILL/SAFE (Permissive Embeds)
   {
     id: 'lofi-beats',
-    youtubeId: 'jfKfPfyJRdk',
+    youtubeId: 'lTRiuFIWV54',
     title: 'Lofi Study Radio',
     artist: 'Lofi Girl',
     album: 'Lumina Study Session',
-    cover: 'https://img.youtube.com/vi/jfKfPfyJRdk/hqdefault.jpg',
+    cover: 'https://img.youtube.com/vi/lTRiuFIWV54/hqdefault.jpg',
     duration: 3600,
     genre: 'Indie'
   },
