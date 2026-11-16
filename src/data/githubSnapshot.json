@@ -7,48 +7,24 @@
   "repos": 5,
   "stars": 0,
   "contributions": {
-    "total": 1973,
+    "total": 1934,
     "commits": 228,
     "pullRequests": 71,
     "issues": 0,
     "reposContributedTo": 7,
     "current": 0,
     "longest": 62,
-    "activeDays": 230
+    "activeDays": 224
   },
   "calendar": {
-    "from": "2025-11-10",
-    "to": "2026-11-09",
+    "from": "2025-11-17",
+    "to": "2026-11-16",
     "thresholds": [
       3,
-      6,
+      7,
       12
     ],
     "active": [
-      [
-        "2025-11-10",
-        5
-      ],
-      [
-        "2025-11-11",
-        10
-      ],
-      [
-        "2025-11-12",
-        3
-      ],
-      [
-        "2025-11-13",
-        6
-      ],
-      [
-        "2025-11-14",
-        3
-      ],
-      [
-        "2025-11-15",
-        12
-      ],
       [
         "2025-11-17",
         8
@@ -1019,6 +995,6 @@
     }
   ],
   "source": "graphql",
-  "generatedAt": "2026-11-09T16:27:57.356Z",
+  "generatedAt": "2026-11-16T15:52:55.127Z",
   "stale": false
 }
